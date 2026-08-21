@@ -22,8 +22,10 @@ export function isOnTimeOff(employee: Employee, dateStr: string) {
   return employee.timeOff.some((t) => dateStr >= t.from && dateStr <= t.to);
 }
 
+type WithDuration = Appointment & { durationCache?: number };
+
 export function employeeBusy(
-  appointments: Appointment[],
+  appointments: WithDuration[],
   employeeId: string,
   dateStr: string,
   start: number,
@@ -38,8 +40,6 @@ export function employeeBusy(
     return start < e && end > s;
   });
 }
-
-type WithDuration = Appointment & { durationCache?: number };
 
 export function withDurations(appointments: Appointment[], services: Service[]): WithDuration[] {
   return appointments.map((a) => ({
