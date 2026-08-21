@@ -26,6 +26,13 @@ assert.doesNotMatch(
   /(?:src|href)="\/(?!mawid-pro\/)/,
   "GitHub Pages HTML must not contain root-relative assets outside /mawid-pro/",
 );
+assert.match(
+  indexHtml,
+  /data-mawid-boot-loader="true"/,
+  "GitHub Pages HTML must include the branded MAWID boot loader before hydration",
+);
 assert.equal(fallbackHtml, indexHtml, "404.html must duplicate the SPA entry document");
 
-console.log("Verified GitHub Pages entry, fallback, base path, and .nojekyll output.");
+console.log(
+  "Verified GitHub Pages entry, fallback, base path, branded loader, and .nojekyll output.",
+);

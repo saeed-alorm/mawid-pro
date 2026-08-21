@@ -59,6 +59,7 @@ import { appPath } from "@/lib/navigation";
 import { availableSlots, bookingAvailability, nextDays } from "@/lib/scheduling";
 import { useDemo } from "@/lib/store";
 import { cn } from "@/lib/utils";
+import { canAdvanceBookingStep, type BookingProgress } from "@/lib/workflow";
 
 function useTenant(tenantId: string) {
   const demo = useDemo();
@@ -368,15 +369,6 @@ export function CustomerSalonPage({ tenantId }: { tenantId: string }) {
   );
 }
 
-type BookingDraft = {
-  serviceId: string;
-  employeeId: string;
-  date: string;
-  time: string;
-  name: string;
-  phone: string;
-};
-
 function StepButton({ active, done, label }: { active: boolean; done: boolean; label: string }) {
   return (
     <div
@@ -413,7 +405,7 @@ export function BookingPage({
     useTenant(tenantId);
   const tenantServices = services.filter((item) => item.salonId === tenantId);
   const [step, setStep] = useState(initialService || initialEmployee ? 2 : 1);
-  const [draft, setDraft] = useState<BookingDraft>({
+  const [draft, setDraft] = useState<BookingProgress>({
     serviceId: initialService ?? "",
     employeeId: initialEmployee ?? "",
     date: "",
@@ -451,6 +443,7 @@ export function BookingPage({
     t("phone_number"),
     t("step_verify"),
   ];
+  const canAdvance = canAdvanceBookingStep(step, draft);
 
   if (!ready || salon.id !== tenantId)
     return (
@@ -876,7 +869,7 @@ export function BookingPage({
                 {t("back")}
               </Button>
               {step < 6 ? (
-                <Button onClick={goNext} className="min-h-11 px-6">
+                <Button disabled={!canAdvance} onClick={goNext} className="min-h-11 px-6">
                   {step === 5 ? t("send_code") : t("next")}
                   <ArrowRight className="flip-rtl h-4 w-4" />
                 </Button>
