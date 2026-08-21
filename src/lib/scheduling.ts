@@ -1,7 +1,7 @@
 import type { Appointment, Employee, Service } from "./demo-data";
-import { iso } from "./demo-data";
+import { beirutDate, beirutMinutes, iso } from "./demo-data";
 
-export const BLOCKING_STATUSES = ["pending", "approved", "completed"];
+export const BLOCKING_STATUSES = ["pending", "approved", "completed", "proposed"];
 
 export function toMinutes(t: string) {
   const [h, m] = t.split(":").map(Number);
@@ -66,8 +66,8 @@ export function availableSlots(
   const close = toMinutes(shift.end);
   const bs = shift.breakStart ? toMinutes(shift.breakStart) : null;
   const be = shift.breakEnd ? toMinutes(shift.breakEnd) : null;
-  const nowIso = iso(now);
-  const nowMin = now.getHours() * 60 + now.getMinutes();
+  const nowIso = beirutDate(now);
+  const nowMin = beirutMinutes(now);
 
   const slots: string[] = [];
   for (let start = open; start + service.duration <= close; start += 30) {
@@ -81,9 +81,36 @@ export function availableSlots(
   return slots;
 }
 
+export type BookingDateAvailability = {
+  date: string;
+  slots: string[];
+  available: boolean;
+};
+
+export function bookingAvailability(
+  team: Employee[],
+  service: Service,
+  dates: string[],
+  appointments: Appointment[],
+  services: Service[],
+  now = new Date(),
+): BookingDateAvailability[] {
+  return dates.map((date) => {
+    const slots = [
+      ...new Set(
+        team.flatMap((employee) =>
+          availableSlots(employee, service, date, appointments, services, now),
+        ),
+      ),
+    ].sort();
+
+    return { date, slots, available: slots.length > 0 };
+  });
+}
+
 export function nextDays(count: number, from = new Date()): string[] {
   const out: string[] = [];
-  const base = new Date(from);
+  const base = new Date(`${beirutDate(from)}T12:00:00`);
   base.setHours(0, 0, 0, 0);
   for (let i = 0; i < count; i++) {
     const d = new Date(base);

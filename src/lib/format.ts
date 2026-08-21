@@ -36,3 +36,21 @@ export function formatRelative(isoDate: string, lang: Lang) {
 export function formatNumber(n: number, lang: Lang) {
   return new Intl.NumberFormat(locale(lang)).format(n);
 }
+
+const ARABIC_DIGITS = "٠١٢٣٤٥٦٧٨٩";
+const EASTERN_ARABIC_DIGITS = "۰۱۲۳۴۵۶۷۸۹";
+
+export function normalizeLebanesePhone(input: string): string | null {
+  const western = [...input]
+    .map((char) => {
+      const arabicIndex = ARABIC_DIGITS.indexOf(char);
+      if (arabicIndex >= 0) return `${arabicIndex}`;
+      const easternIndex = EASTERN_ARABIC_DIGITS.indexOf(char);
+      return easternIndex >= 0 ? `${easternIndex}` : char;
+    })
+    .join("");
+  let digits = western.replace(/\D/g, "");
+  if (digits.startsWith("961")) digits = digits.slice(3);
+  if (!/^\d{8}$/.test(digits)) return null;
+  return `${digits.slice(0, 2)} ${digits.slice(2, 5)} ${digits.slice(5)}`;
+}

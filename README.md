@@ -1,5 +1,11 @@
 # MAWID Pro
 
+**Live demo:** [saeed-alorm.github.io/mawid-pro](https://saeed-alorm.github.io/mawid-pro/)
+
+MAWID is a fictional, browser-local product prototype. It uses no backend, real authentication,
+SMS, payments, or customer data. Use demo OTP `123456` and **Reset demo data** to restore the
+seeded presentation state.
+
 Build a polished, mobile-first, bilingual SaaS prototype for salon and barbershop appointment booking and business management.
 
 PRODUCT IDENTITY
@@ -335,4 +341,15 @@ git clone <this-repository-url>
 cd <repository-name>
 npm i
 npm run dev
+```
+
+## GitHub Pages
+
+The Pages workflow runs the unit tests, builds the static SPA at the `/mawid-pro/` repository
+base path, verifies the entry and route fallback files, and deploys the artifact.
+
+```sh
+npm run build:pages
+npm run verify:pages
+npm run preview:pages
 ```
