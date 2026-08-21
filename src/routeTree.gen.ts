@@ -10,33 +10,104 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as CustomerTenantIdIndexRouteImport } from './routes/customer/$tenantId/index'
+import { Route as CustomerTenantIdAppointmentsRouteImport } from './routes/customer/$tenantId/appointments'
+import { Route as CustomerTenantIdBookRouteImport } from './routes/customer/$tenantId/book'
+import { Route as ManageTenantIdSectionRouteImport } from './routes/manage/$tenantId/$section'
+import { Route as ManageTenantIdTeamEmployeeIdRouteImport } from './routes/manage/$tenantId/team/$employeeId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CustomerTenantIdIndexRoute = CustomerTenantIdIndexRouteImport.update({
+  id: '/customer/$tenantId/',
+  path: '/customer/$tenantId/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CustomerTenantIdAppointmentsRoute =
+  CustomerTenantIdAppointmentsRouteImport.update({
+    id: '/customer/$tenantId/appointments',
+    path: '/customer/$tenantId/appointments',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const CustomerTenantIdBookRoute = CustomerTenantIdBookRouteImport.update({
+  id: '/customer/$tenantId/book',
+  path: '/customer/$tenantId/book',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ManageTenantIdSectionRoute = ManageTenantIdSectionRouteImport.update({
+  id: '/manage/$tenantId/$section',
+  path: '/manage/$tenantId/$section',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ManageTenantIdTeamEmployeeIdRoute =
+  ManageTenantIdTeamEmployeeIdRouteImport.update({
+    id: '/manage/$tenantId/team/$employeeId',
+    path: '/manage/$tenantId/team/$employeeId',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/customer/$tenantId/appointments': typeof CustomerTenantIdAppointmentsRoute
+  '/customer/$tenantId/book': typeof CustomerTenantIdBookRoute
+  '/manage/$tenantId/$section': typeof ManageTenantIdSectionRoute
+  '/customer/$tenantId/': typeof CustomerTenantIdIndexRoute
+  '/manage/$tenantId/team/$employeeId': typeof ManageTenantIdTeamEmployeeIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/customer/$tenantId/appointments': typeof CustomerTenantIdAppointmentsRoute
+  '/customer/$tenantId/book': typeof CustomerTenantIdBookRoute
+  '/manage/$tenantId/$section': typeof ManageTenantIdSectionRoute
+  '/customer/$tenantId': typeof CustomerTenantIdIndexRoute
+  '/manage/$tenantId/team/$employeeId': typeof ManageTenantIdTeamEmployeeIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/customer/$tenantId/appointments': typeof CustomerTenantIdAppointmentsRoute
+  '/customer/$tenantId/book': typeof CustomerTenantIdBookRoute
+  '/manage/$tenantId/$section': typeof ManageTenantIdSectionRoute
+  '/customer/$tenantId/': typeof CustomerTenantIdIndexRoute
+  '/manage/$tenantId/team/$employeeId': typeof ManageTenantIdTeamEmployeeIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/customer/$tenantId/appointments'
+    | '/customer/$tenantId/book'
+    | '/manage/$tenantId/$section'
+    | '/customer/$tenantId/'
+    | '/manage/$tenantId/team/$employeeId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/customer/$tenantId/appointments'
+    | '/customer/$tenantId/book'
+    | '/manage/$tenantId/$section'
+    | '/customer/$tenantId'
+    | '/manage/$tenantId/team/$employeeId'
+  id:
+    | '__root__'
+    | '/'
+    | '/customer/$tenantId/appointments'
+    | '/customer/$tenantId/book'
+    | '/manage/$tenantId/$section'
+    | '/customer/$tenantId/'
+    | '/manage/$tenantId/team/$employeeId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  CustomerTenantIdAppointmentsRoute: typeof CustomerTenantIdAppointmentsRoute
+  CustomerTenantIdBookRoute: typeof CustomerTenantIdBookRoute
+  ManageTenantIdSectionRoute: typeof ManageTenantIdSectionRoute
+  CustomerTenantIdIndexRoute: typeof CustomerTenantIdIndexRoute
+  ManageTenantIdTeamEmployeeIdRoute: typeof ManageTenantIdTeamEmployeeIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +119,51 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/customer/$tenantId/': {
+      id: '/customer/$tenantId/'
+      path: '/customer/$tenantId'
+      fullPath: '/customer/$tenantId/'
+      preLoaderRoute: typeof CustomerTenantIdIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/customer/$tenantId/appointments': {
+      id: '/customer/$tenantId/appointments'
+      path: '/customer/$tenantId/appointments'
+      fullPath: '/customer/$tenantId/appointments'
+      preLoaderRoute: typeof CustomerTenantIdAppointmentsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/customer/$tenantId/book': {
+      id: '/customer/$tenantId/book'
+      path: '/customer/$tenantId/book'
+      fullPath: '/customer/$tenantId/book'
+      preLoaderRoute: typeof CustomerTenantIdBookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/manage/$tenantId/$section': {
+      id: '/manage/$tenantId/$section'
+      path: '/manage/$tenantId/$section'
+      fullPath: '/manage/$tenantId/$section'
+      preLoaderRoute: typeof ManageTenantIdSectionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/manage/$tenantId/team/$employeeId': {
+      id: '/manage/$tenantId/team/$employeeId'
+      path: '/manage/$tenantId/team/$employeeId'
+      fullPath: '/manage/$tenantId/team/$employeeId'
+      preLoaderRoute: typeof ManageTenantIdTeamEmployeeIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  CustomerTenantIdAppointmentsRoute: CustomerTenantIdAppointmentsRoute,
+  CustomerTenantIdBookRoute: CustomerTenantIdBookRoute,
+  ManageTenantIdSectionRoute: ManageTenantIdSectionRoute,
+  CustomerTenantIdIndexRoute: CustomerTenantIdIndexRoute,
+  ManageTenantIdTeamEmployeeIdRoute: ManageTenantIdTeamEmployeeIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

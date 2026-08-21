@@ -1,11 +1,4 @@
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-  type ReactNode,
-} from "react";
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 
 export type Lang = "en" | "ar";
 
@@ -70,13 +63,19 @@ export const dict: Dict = {
   choose_employee: { en: "Choose your professional", ar: "اختر الاختصاصي" },
   any_professional: { en: "Any available professional", ar: "أي اختصاصي متاح" },
   any_professional_desc: {
-    en: "We will assign the first available team member for your service.",
-    ar: "سنخصص لك أول عضو متاح من الفريق لخدمتك.",
+    en: "The salon manager will assign an available team member before approval.",
+    ar: "سيختار مدير الصالون اختصاصياً متاحاً قبل الموافقة.",
   },
   choose_time: { en: "Choose a date and time", ar: "اختر التاريخ والوقت" },
   working_days: { en: "Working days", ar: "أيام العمل" },
   slots_available: { en: "slots available", ar: "مواعيد متاحة" },
+  available: { en: "Available", ar: "متاح" },
+  unavailable: { en: "Unavailable", ar: "غير متاح" },
   no_slots: { en: "No available times on this day", ar: "لا توجد أوقات متاحة في هذا اليوم" },
+  no_slots_window: {
+    en: "No times are available in the next 14 days. Choose another professional.",
+    ar: "لا توجد أوقات متاحة خلال الأيام الـ١٤ المقبلة. اختر اختصاصياً آخر.",
+  },
   review_appointment: { en: "Review your appointment", ar: "راجع موعدك" },
   service: { en: "Service", ar: "الخدمة" },
   professional: { en: "Professional", ar: "الاختصاصي" },
@@ -96,7 +95,10 @@ export const dict: Dict = {
     en: "Simulated verification — no SMS is sent in this prototype.",
     ar: "تحقق محاكى — لا يتم إرسال رسائل نصية في هذه النسخة.",
   },
-  wrong_code: { en: "Incorrect code. Try the demo code above.", ar: "رمز غير صحيح. جرّب الرمز التجريبي أعلاه." },
+  wrong_code: {
+    en: "Incorrect code. Try the demo code above.",
+    ar: "رمز غير صحيح. جرّب الرمز التجريبي أعلاه.",
+  },
   verify_and_submit: { en: "Verify and send request", ar: "تحقق وأرسل الطلب" },
   request_sent: { en: "Request sent", ar: "تم إرسال الطلب" },
   request_sent_desc: {
@@ -174,7 +176,10 @@ export const dict: Dict = {
   view_all: { en: "View all", ar: "عرض الكل" },
   no_pending: { en: "No pending requests", ar: "لا توجد طلبات معلّقة" },
   all_caught_up: { en: "You are all caught up.", ar: "لا يوجد ما يتطلب إجراءً." },
-  approved_toast: { en: "Booking approved and added to the calendar", ar: "تمت الموافقة وأضيف الحجز إلى التقويم" },
+  approved_toast: {
+    en: "Booking approved and added to the calendar",
+    ar: "تمت الموافقة وأضيف الحجز إلى التقويم",
+  },
   rejected_toast: { en: "Booking request rejected", ar: "تم رفض طلب الحجز" },
   proposed_toast: { en: "New time proposed to the customer", ar: "تم اقتراح وقت جديد للعميل" },
   reject_confirm: {

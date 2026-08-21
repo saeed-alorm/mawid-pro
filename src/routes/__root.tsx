@@ -11,6 +11,10 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import { LanguageProvider } from "../lib/i18n";
+import { appPath } from "../lib/navigation";
+import { DemoProvider } from "../lib/store";
+import { Toaster } from "../components/ui/sonner";
 
 function NotFoundComponent() {
   return (
@@ -61,7 +65,7 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
             Try again
           </button>
           <a
-            href="/"
+            href={appPath("/")}
             className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
           >
             Go home
@@ -77,21 +81,30 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { title: "MAWID | موعد — Salon booking, beautifully managed" },
+      {
+        name: "description",
+        content: "A bilingual appointment booking and management prototype for salons in Lebanon.",
+      },
+      { name: "author", content: "MAWID prototype" },
+      { name: "robots", content: "noindex, nofollow" },
+      { name: "theme-color", content: "#0B4D3B" },
+      { property: "og:title", content: "MAWID | موعد" },
+      {
+        property: "og:description",
+        content: "Smarter schedules. Stronger salons. A fictional bilingual product prototype.",
+      },
       { property: "og:type", content: "website" },
+      { property: "og:image", content: appPath("/mawid-social-preview.png") },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:site", content: "@Lovable" },
+      { name: "twitter:image", content: appPath("/mawid-social-preview.png") },
     ],
     links: [
       {
         rel: "stylesheet",
         href: appCss,
       },
-      { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+      { rel: "icon", href: appPath("/favicon.ico"), type: "image/x-icon" },
     ],
   }),
   shellComponent: RootShell,
@@ -102,7 +115,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <HeadContent />
       </head>
@@ -119,8 +132,12 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <Outlet />
+      <LanguageProvider>
+        <DemoProvider>
+          <Outlet />
+          <Toaster richColors position="top-center" />
+        </DemoProvider>
+      </LanguageProvider>
     </QueryClientProvider>
   );
 }

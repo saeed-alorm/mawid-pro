@@ -10,7 +10,12 @@ import staff6 from "@/assets/staff-6.jpg";
 
 export type Bi = { en: string; ar: string };
 
-export type DayShift = { start: string; end: string; breakStart?: string; breakEnd?: string } | null;
+export type DayShift = {
+  start: string;
+  end: string;
+  breakStart?: string;
+  breakEnd?: string;
+} | null;
 export type WeekSchedule = DayShift[]; // index 0 = Sunday
 
 export type Salon = {
@@ -35,7 +40,12 @@ export type Service = {
   description: Bi;
 };
 
-export type TimeOff = { id: string; from: string; to: string; reason: Bi | { en: string; ar: string } };
+export type TimeOff = {
+  id: string;
+  from: string;
+  to: string;
+  reason: Bi | { en: string; ar: string };
+};
 
 export type Employee = {
   id: string;
@@ -52,12 +62,7 @@ export type Employee = {
 };
 
 export type BookingStatus =
-  | "pending"
-  | "approved"
-  | "rejected"
-  | "cancelled"
-  | "completed"
-  | "proposed";
+  "pending" | "approved" | "rejected" | "cancelled" | "completed" | "proposed";
 
 export type Appointment = {
   id: string;
@@ -76,6 +81,28 @@ export type Appointment = {
 };
 
 export const DEMO_OTP = "123456";
+
+export function beirutDate(date = new Date()) {
+  const parts = new Intl.DateTimeFormat("en", {
+    timeZone: "Asia/Beirut",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
+  const value = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return `${value.year}-${value.month}-${value.day}`;
+}
+
+export function beirutMinutes(date = new Date()) {
+  const parts = new Intl.DateTimeFormat("en", {
+    timeZone: "Asia/Beirut",
+    hourCycle: "h23",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).formatToParts(date);
+  const value = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return Number(value.hour) * 60 + Number(value.minute);
+}
 
 export const salons: Salon[] = [
   {
@@ -153,23 +180,158 @@ const CAT = {
 
 export const services: Service[] = [
   // Studio Nine
-  svc("studio-nine", "s9-cut", "Precision haircut", "قصّة دقيقة", CAT.hair, 45, "Consultation, wash and a tailored cut finished with light styling.", "استشارة وغسيل وقصّة مفصّلة مع تصفيف خفيف."),
-  svc("studio-nine", "s9-blow", "Blow-dry", "سيشوار", CAT.styling, 30, "Smooth or volumised blow-dry for any hair length.", "سيشوار ناعم أو بحجم إضافي لكل أطوال الشعر."),
-  svc("studio-nine", "s9-colour", "Full colour", "صبغة كاملة", CAT.colour, 90, "Single-process colour with a bond-protecting finish.", "صبغة بلون واحد مع علاج حامٍ لألياف الشعر."),
-  svc("studio-nine", "s9-treat", "Deep hair treatment", "علاج عميق للشعر", CAT.care, 45, "Steam-assisted mask for dry or over-processed hair.", "ماسك بالبخار للشعر الجاف أو المعالج بكثرة."),
-  svc("studio-nine", "s9-beard", "Beard trim", "تهذيب اللحية", CAT.beard, 20, "Shape-up and line detailing with beard oil.", "تحديد وتهذيب مع زيت اللحية."),
+  svc(
+    "studio-nine",
+    "s9-cut",
+    "Precision haircut",
+    "قصّة دقيقة",
+    CAT.hair,
+    45,
+    "Consultation, wash and a tailored cut finished with light styling.",
+    "استشارة وغسيل وقصّة مفصّلة مع تصفيف خفيف.",
+  ),
+  svc(
+    "studio-nine",
+    "s9-blow",
+    "Blow-dry",
+    "سيشوار",
+    CAT.styling,
+    30,
+    "Smooth or volumised blow-dry for any hair length.",
+    "سيشوار ناعم أو بحجم إضافي لكل أطوال الشعر.",
+  ),
+  svc(
+    "studio-nine",
+    "s9-colour",
+    "Full colour",
+    "صبغة كاملة",
+    CAT.colour,
+    90,
+    "Single-process colour with a bond-protecting finish.",
+    "صبغة بلون واحد مع علاج حامٍ لألياف الشعر.",
+  ),
+  svc(
+    "studio-nine",
+    "s9-treat",
+    "Deep hair treatment",
+    "علاج عميق للشعر",
+    CAT.care,
+    45,
+    "Steam-assisted mask for dry or over-processed hair.",
+    "ماسك بالبخار للشعر الجاف أو المعالج بكثرة.",
+  ),
+  svc(
+    "studio-nine",
+    "s9-beard",
+    "Beard trim",
+    "تهذيب اللحية",
+    CAT.beard,
+    20,
+    "Shape-up and line detailing with beard oil.",
+    "تحديد وتهذيب مع زيت اللحية.",
+  ),
   // Cedar & Steel
-  svc("cedar-steel", "cs-cut", "Signature haircut", "قصّة السيغنتشر", CAT.hair, 40, "Scissor and clipper cut finished with a hot towel.", "قصّة بالمقص والماكينة مع منشفة ساخنة."),
-  svc("cedar-steel", "cs-skin", "Skin fade", "تدرّج قصير", CAT.hair, 45, "Clean gradient fade with sharp line work.", "تدرّج نظيف مع تحديد دقيق للخطوط."),
-  svc("cedar-steel", "cs-beard", "Beard styling", "تصميم اللحية", CAT.beard, 30, "Full beard shaping, trim and conditioning.", "تشكيل كامل للحية مع تهذيب وترطيب."),
-  svc("cedar-steel", "cs-shave", "Hot towel shave", "حلاقة بالمنشفة الساخنة", CAT.beard, 35, "Traditional straight-razor shave with hot towels.", "حلاقة تقليدية بالموس مع مناشف ساخنة."),
-  svc("cedar-steel", "cs-kid", "Father & son cut", "قصّة الأب والابن", CAT.hair, 55, "Back-to-back cuts for a father and one child.", "قصتان متتاليتان للأب وطفل واحد."),
+  svc(
+    "cedar-steel",
+    "cs-cut",
+    "Signature haircut",
+    "قصّة السيغنتشر",
+    CAT.hair,
+    40,
+    "Scissor and clipper cut finished with a hot towel.",
+    "قصّة بالمقص والماكينة مع منشفة ساخنة.",
+  ),
+  svc(
+    "cedar-steel",
+    "cs-skin",
+    "Skin fade",
+    "تدرّج قصير",
+    CAT.hair,
+    45,
+    "Clean gradient fade with sharp line work.",
+    "تدرّج نظيف مع تحديد دقيق للخطوط.",
+  ),
+  svc(
+    "cedar-steel",
+    "cs-beard",
+    "Beard styling",
+    "تصميم اللحية",
+    CAT.beard,
+    30,
+    "Full beard shaping, trim and conditioning.",
+    "تشكيل كامل للحية مع تهذيب وترطيب.",
+  ),
+  svc(
+    "cedar-steel",
+    "cs-shave",
+    "Hot towel shave",
+    "حلاقة بالمنشفة الساخنة",
+    CAT.beard,
+    35,
+    "Traditional straight-razor shave with hot towels.",
+    "حلاقة تقليدية بالموس مع مناشف ساخنة.",
+  ),
+  svc(
+    "cedar-steel",
+    "cs-kid",
+    "Father & son cut",
+    "قصّة الأب والابن",
+    CAT.hair,
+    55,
+    "Back-to-back cuts for a father and one child.",
+    "قصتان متتاليتان للأب وطفل واحد.",
+  ),
   // Maison Luma
-  svc("maison-luma", "ml-cut", "Women's cut & finish", "قصّ وتصفيف نسائي", CAT.hair, 60, "Consultation, cut and blow-dry finish.", "استشارة وقصّ وتصفيف بالسيشوار."),
-  svc("maison-luma", "ml-balayage", "Balayage", "بالاياج", CAT.colour, 120, "Hand-painted lightening with a soft grown-out finish.", "تفتيح يدوي بنتيجة طبيعية متدرّجة."),
-  svc("maison-luma", "ml-gloss", "Colour gloss", "لمعة اللون", CAT.colour, 45, "Tone refresh that adds shine between colour visits.", "تجديد اللون ولمعان بين مواعيد الصبغ."),
-  svc("maison-luma", "ml-bridal", "Bridal styling", "تصفيف العرائس", CAT.styling, 90, "Occasion upstyle with a pre-event consultation.", "تسريحة مناسبات مع استشارة قبل المناسبة."),
-  svc("maison-luma", "ml-keratin", "Keratin treatment", "علاج الكيراتين", CAT.care, 120, "Smoothing treatment for frizz control.", "علاج تنعيم للتحكم بالتجعّد."),
+  svc(
+    "maison-luma",
+    "ml-cut",
+    "Women's cut & finish",
+    "قصّ وتصفيف نسائي",
+    CAT.hair,
+    60,
+    "Consultation, cut and blow-dry finish.",
+    "استشارة وقصّ وتصفيف بالسيشوار.",
+  ),
+  svc(
+    "maison-luma",
+    "ml-balayage",
+    "Balayage",
+    "بالاياج",
+    CAT.colour,
+    120,
+    "Hand-painted lightening with a soft grown-out finish.",
+    "تفتيح يدوي بنتيجة طبيعية متدرّجة.",
+  ),
+  svc(
+    "maison-luma",
+    "ml-gloss",
+    "Colour gloss",
+    "لمعة اللون",
+    CAT.colour,
+    45,
+    "Tone refresh that adds shine between colour visits.",
+    "تجديد اللون ولمعان بين مواعيد الصبغ.",
+  ),
+  svc(
+    "maison-luma",
+    "ml-bridal",
+    "Bridal styling",
+    "تصفيف العرائس",
+    CAT.styling,
+    90,
+    "Occasion upstyle with a pre-event consultation.",
+    "تسريحة مناسبات مع استشارة قبل المناسبة.",
+  ),
+  svc(
+    "maison-luma",
+    "ml-keratin",
+    "Keratin treatment",
+    "علاج الكيراتين",
+    CAT.care,
+    120,
+    "Smoothing treatment for frizz control.",
+    "علاج تنعيم للتحكم بالتجعّد.",
+  ),
 ];
 
 const full = (start: string, end: string, breakStart?: string, breakEnd?: string): DayShift => ({
@@ -190,9 +352,20 @@ export const employees: Employee[] = [
       ar: "اثنتا عشرة سنة من الخبرة مع تركيز على القصّات الدقيقة والشعر المجعّد.",
     },
     photo: staff1,
-    specialties: { en: ["Precision cuts", "Curly hair", "Treatments"], ar: ["قصّات دقيقة", "شعر مجعّد", "علاجات"] },
+    specialties: {
+      en: ["Precision cuts", "Curly hair", "Treatments"],
+      ar: ["قصّات دقيقة", "شعر مجعّد", "علاجات"],
+    },
     active: true,
-    schedule: [null, full("09:00", "17:00", "13:00", "13:30"), full("09:00", "18:00", "13:00", "13:30"), full("09:00", "18:00", "13:00", "13:30"), full("10:00", "19:00", "14:00", "14:30"), full("10:00", "19:00"), null],
+    schedule: [
+      null,
+      full("09:00", "17:00", "13:00", "13:30"),
+      full("09:00", "18:00", "13:00", "13:30"),
+      full("09:00", "18:00", "13:00", "13:30"),
+      full("10:00", "19:00", "14:00", "14:30"),
+      full("10:00", "19:00"),
+      null,
+    ],
     timeOff: [],
     serviceIds: ["s9-cut", "s9-blow", "s9-treat", "s9-colour"],
   },
@@ -206,9 +379,20 @@ export const employees: Employee[] = [
       ar: "مؤسس ستوديو ناين، معروف بالتصفيف التحريري وتصحيح الألوان.",
     },
     photo: staff6,
-    specialties: { en: ["Colour correction", "Editorial styling", "Beard"], ar: ["تصحيح اللون", "تصفيف تحريري", "لحية"] },
+    specialties: {
+      en: ["Colour correction", "Editorial styling", "Beard"],
+      ar: ["تصحيح اللون", "تصفيف تحريري", "لحية"],
+    },
     active: true,
-    schedule: [full("11:00", "17:00"), null, full("10:00", "18:00", "14:00", "15:00"), full("10:00", "18:00", "14:00", "15:00"), full("10:00", "18:00"), full("11:00", "19:00"), null],
+    schedule: [
+      full("11:00", "17:00"),
+      null,
+      full("10:00", "18:00", "14:00", "15:00"),
+      full("10:00", "18:00", "14:00", "15:00"),
+      full("10:00", "18:00"),
+      full("11:00", "19:00"),
+      null,
+    ],
     timeOff: [],
     serviceIds: ["s9-cut", "s9-colour", "s9-beard", "s9-blow"],
   },
@@ -222,9 +406,20 @@ export const employees: Employee[] = [
       ar: "مختص بالتدرّجات، تدرّب في بيروت وإسطنبول، بسرعة ودقة في الخطوط.",
     },
     photo: staff2,
-    specialties: { en: ["Skin fades", "Classic cuts", "Beard"], ar: ["تدرّجات قصيرة", "قصّات كلاسيكية", "لحية"] },
+    specialties: {
+      en: ["Skin fades", "Classic cuts", "Beard"],
+      ar: ["تدرّجات قصيرة", "قصّات كلاسيكية", "لحية"],
+    },
     active: true,
-    schedule: [null, full("10:00", "19:00", "14:00", "14:30"), full("10:00", "19:00", "14:00", "14:30"), full("10:00", "19:00"), full("11:00", "20:00"), full("11:00", "20:00"), full("10:00", "18:00")],
+    schedule: [
+      null,
+      full("10:00", "19:00", "14:00", "14:30"),
+      full("10:00", "19:00", "14:00", "14:30"),
+      full("10:00", "19:00"),
+      full("11:00", "20:00"),
+      full("11:00", "20:00"),
+      full("10:00", "18:00"),
+    ],
     timeOff: [],
     serviceIds: ["cs-cut", "cs-skin", "cs-beard", "cs-kid"],
   },
@@ -238,9 +433,20 @@ export const employees: Employee[] = [
       ar: "متمسّك بالحلاقة بالموس. يشرف على طقوس الحلاقة ويدرّب الحلاقين الجدد.",
     },
     photo: staff4,
-    specialties: { en: ["Hot towel shave", "Beard design", "Classic cuts"], ar: ["حلاقة بالمنشفة الساخنة", "تصميم اللحية", "قصّات كلاسيكية"] },
+    specialties: {
+      en: ["Hot towel shave", "Beard design", "Classic cuts"],
+      ar: ["حلاقة بالمنشفة الساخنة", "تصميم اللحية", "قصّات كلاسيكية"],
+    },
     active: true,
-    schedule: [null, full("10:00", "18:00"), null, full("10:00", "19:00", "13:30", "14:00"), full("10:00", "19:00", "13:30", "14:00"), full("10:00", "20:00"), full("10:00", "19:00")],
+    schedule: [
+      null,
+      full("10:00", "18:00"),
+      null,
+      full("10:00", "19:00", "13:30", "14:00"),
+      full("10:00", "19:00", "13:30", "14:00"),
+      full("10:00", "20:00"),
+      full("10:00", "19:00"),
+    ],
     timeOff: [],
     serviceIds: ["cs-cut", "cs-shave", "cs-beard", "cs-skin"],
   },
@@ -254,9 +460,20 @@ export const employees: Employee[] = [
       ar: "متخصصة في البالاياج والأشقر مع أسلوب لطيف لتفتيح الشعر الحساس.",
     },
     photo: staff3,
-    specialties: { en: ["Balayage", "Blonde", "Colour gloss"], ar: ["بالاياج", "أشقر", "لمعة اللون"] },
+    specialties: {
+      en: ["Balayage", "Blonde", "Colour gloss"],
+      ar: ["بالاياج", "أشقر", "لمعة اللون"],
+    },
     active: true,
-    schedule: [full("10:00", "17:00"), null, full("10:00", "18:00", "13:00", "14:00"), full("10:00", "18:00", "13:00", "14:00"), full("10:00", "19:00"), full("10:00", "19:00"), null],
+    schedule: [
+      full("10:00", "17:00"),
+      null,
+      full("10:00", "18:00", "13:00", "14:00"),
+      full("10:00", "18:00", "13:00", "14:00"),
+      full("10:00", "19:00"),
+      full("10:00", "19:00"),
+      null,
+    ],
     timeOff: [],
     serviceIds: ["ml-balayage", "ml-gloss", "ml-cut", "ml-keratin"],
   },
@@ -270,9 +487,20 @@ export const employees: Employee[] = [
       ar: "تصفيف المناسبات وعلاجات التنعيم مع جلسة تجربة كاملة للعرائس.",
     },
     photo: staff5,
-    specialties: { en: ["Bridal", "Upstyles", "Keratin"], ar: ["عرائس", "تسريحات مرفوعة", "كيراتين"] },
+    specialties: {
+      en: ["Bridal", "Upstyles", "Keratin"],
+      ar: ["عرائس", "تسريحات مرفوعة", "كيراتين"],
+    },
     active: true,
-    schedule: [full("10:00", "18:00"), null, full("11:00", "19:00"), full("11:00", "19:00", "14:00", "14:30"), full("10:00", "18:00"), full("10:00", "19:00"), null],
+    schedule: [
+      full("10:00", "18:00"),
+      null,
+      full("11:00", "19:00"),
+      full("11:00", "19:00", "14:00", "14:30"),
+      full("10:00", "18:00"),
+      full("10:00", "19:00"),
+      null,
+    ],
     timeOff: [],
     serviceIds: ["ml-cut", "ml-bridal", "ml-keratin", "ml-gloss"],
   },
@@ -292,7 +520,15 @@ export function addDays(base: Date, n: number) {
   return d;
 }
 
-type Seed = [offset: number, time: string, employeeId: string, serviceId: string, name: string, phone: string, status: BookingStatus];
+type Seed = [
+  offset: number,
+  time: string,
+  employeeId: string,
+  serviceId: string,
+  name: string,
+  phone: string,
+  status: BookingStatus,
+];
 
 const seeds: Seed[] = [
   // Studio Nine
@@ -342,7 +578,7 @@ const seeds: Seed[] = [
 ];
 
 export function buildAppointments(): Appointment[] {
-  const today = new Date();
+  const today = new Date(`${beirutDate()}T12:00:00`);
   today.setHours(0, 0, 0, 0);
   return seeds.map((s, i) => {
     const [offset, time, employeeId, serviceId, customerName, phone, status] = s;

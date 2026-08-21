@@ -6,10 +6,33 @@
 // You can pass additional config via defineConfig({ vite: { ... }, etc... }) if needed.
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
+const isGitHubPages = process.env.npm_lifecycle_event === "build:pages";
+const repositoryBase = "/mawid-pro";
+
 export default defineConfig({
+  ...(isGitHubPages
+    ? {
+        nitro: false,
+        vite: { base: `${repositoryBase}/` },
+      }
+    : {}),
   tanstackStart: {
     // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
     // nitro/vite builds from this
     server: { entry: "server" },
+    ...(isGitHubPages
+      ? {
+          router: { basepath: repositoryBase },
+          spa: {
+            enabled: true,
+            maskPath: `${repositoryBase}/`,
+            prerender: {
+              outputPath: `${repositoryBase}/index`,
+              crawlLinks: false,
+            },
+          },
+          sitemap: { enabled: false },
+        }
+      : {}),
   },
 });
