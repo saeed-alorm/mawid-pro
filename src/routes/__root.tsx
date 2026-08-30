@@ -15,6 +15,7 @@ import { LanguageProvider } from "../lib/i18n";
 import { appPath } from "../lib/navigation";
 import { DemoProvider } from "../lib/store";
 import { Toaster } from "../components/ui/sonner";
+import { MawidBootLoader } from "../components/mawid-boot-loader";
 
 function NotFoundComponent() {
   return (
@@ -120,6 +121,7 @@ function RootShell({ children }: { children: ReactNode }) {
         <HeadContent />
       </head>
       <body>
+        <MawidBootLoader />
         {children}
         <Scripts />
       </body>

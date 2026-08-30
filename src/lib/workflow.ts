@@ -1,5 +1,32 @@
 import type { Appointment, Service } from "./demo-data";
+import { normalizeLebanesePhone } from "./format";
 import { employeeBusy, toMinutes, withDurations } from "./scheduling";
+
+export type BookingProgress = {
+  serviceId: string;
+  employeeId: string;
+  date: string;
+  time: string;
+  name: string;
+  phone: string;
+};
+
+export function canAdvanceBookingStep(step: number, draft: BookingProgress) {
+  switch (step) {
+    case 1:
+      return Boolean(draft.serviceId);
+    case 2:
+      return Boolean(draft.employeeId);
+    case 3:
+      return Boolean(draft.date && draft.time);
+    case 4:
+      return Boolean(draft.name.trim());
+    case 5:
+      return Boolean(normalizeLebanesePhone(draft.phone));
+    default:
+      return true;
+  }
+}
 
 export type BookingDecision =
   | { type: "approve"; employeeId?: string }

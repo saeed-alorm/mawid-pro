@@ -1,0 +1,394 @@
+{
+  "surface": "report",
+  "manifest": {
+    "version": 1,
+    "surface": "report",
+    "title": "MAWID | موعد — Evidence-Gated Business Plan",
+    "description": "Local draft business plan for a bilingual private-workspace salon SaaS concept in Lebanon.",
+    "generatedAt": "2026-08-25T02:00:00+03:00",
+    "cards": [
+      {
+        "id": "customer-interviews",
+        "description": "Completed customer interviews available to this sprint.",
+        "dataset": "evidence_summary",
+        "sourceId": "customer-evidence",
+        "metrics": [{ "label": "Customer interviews", "field": "customer_interviews", "format": "number" }]
+      },
+      {
+        "id": "validated-icps",
+        "description": "Segments supported by validated customer evidence; three cohorts remain hypotheses only.",
+        "dataset": "evidence_summary",
+        "sourceId": "customer-evidence",
+        "metrics": [{ "label": "Validated ICPs", "field": "validated_icps", "format": "number" }]
+      },
+      {
+        "id": "competitor-benchmarks",
+        "description": "Current official public-price captures used only as locale-specific context.",
+        "dataset": "evidence_summary",
+        "sourceId": "market-screen",
+        "metrics": [{ "label": "Price benchmarks", "field": "competitor_benchmarks", "format": "number" }]
+      },
+      {
+        "id": "finance-qa",
+        "description": "Formula and evidence-gate cases passed; this is control evidence, not commercial proof.",
+        "dataset": "evidence_summary",
+        "sourceId": "finance-qa-source",
+        "metrics": [
+          { "label": "Finance QA passed", "field": "finance_qa_passed", "format": "number" },
+          { "label": "Cases run", "field": "finance_qa_cases", "format": "number" }
+        ]
+      },
+      {
+        "id": "legal-gates",
+        "description": "External-pilot gate conditions that remain unresolved.",
+        "dataset": "evidence_summary",
+        "sourceId": "legal-register",
+        "metrics": [{ "label": "Unresolved legal gates", "field": "legal_gates_unresolved", "format": "number" }]
+      }
+    ],
+    "charts": [
+      {
+        "id": "capacity-cases",
+        "title": "Illustrative month-12 delivery-capacity cases",
+        "subtitle": "Recommended planning endpoints only; not demand, market share, conversion, or a sales forecast.",
+        "type": "bar",
+        "dataset": "capacity_cases",
+        "sourceId": "finance-qa-source",
+        "valueFormat": "number",
+        "encodings": {
+          "x": { "field": "scenario", "type": "nominal", "label": "Scenario" },
+          "y": { "field": "workspace_endpoint", "type": "quantitative", "label": "Active workspaces at month 12" },
+          "tooltip": [
+            { "field": "evidence_label", "label": "Evidence label" },
+            { "field": "interpretation", "label": "Interpretation" }
+          ]
+        }
+      }
+    ],
+    "tables": [
+      {
+        "id": "decision-gates",
+        "title": "Decision and evidence gates",
+        "subtitle": "What can and cannot be decided from the current package.",
+        "dataset": "decision_gates",
+        "sourceId": "reality-check",
+        "defaultSort": { "field": "priority", "direction": "asc" },
+        "columns": [
+          { "field": "priority", "label": "Priority", "format": "number" },
+          { "field": "decision_area", "label": "Decision area" },
+          { "field": "gate_and_evidence", "label": "Label, gate, and evidence needed" }
+        ]
+      },
+      {
+        "id": "competitor-context",
+        "title": "Official competitor price context",
+        "subtitle": "Captured 25 August 2026; never a proxy for MAWID price or Lebanon willingness to pay.",
+        "dataset": "competitor_context",
+        "sourceId": "market-screen",
+        "defaultSort": { "field": "vendor", "direction": "asc" },
+        "columns": [
+          { "field": "vendor", "label": "Vendor" },
+          { "field": "public_price_capture", "label": "Public price captured" },
+          { "field": "evidence_limits", "label": "Locale and evidence limits" }
+        ]
+      },
+      {
+        "id": "validation-roadmap",
+        "title": "90-day discovery-first roadmap",
+        "subtitle": "All activities remain local or separately authorization-gated; no outreach was sent.",
+        "dataset": "validation_roadmap",
+        "sourceId": "growth-plan",
+        "defaultSort": { "field": "phase", "direction": "asc" },
+        "columns": [
+          { "field": "phase", "label": "Phase" },
+          { "field": "owner", "label": "Owner" },
+          { "field": "focus_and_gate", "label": "Recommended focus and evidence gate" }
+        ]
+      }
+    ],
+    "sources": [
+      {
+        "id": "product-reference",
+        "label": "Authoritative MAWID product reference",
+        "path": "mawid-github/README.md",
+        "query": {
+          "engine": "DuckDB",
+          "language": "sql",
+          "sql": "SELECT 'Private-workspace bilingual B2B salon SaaS prototype' AS product_scope, 'marketplace, hardware/signage, advertising, payments, POS, payroll, inventory, bespoke salon apps' AS excluded_scope;",
+          "description": "Product scope, workflow, bilingual behavior, private-workspace model, and exclusions.",
+          "executed_at": "2026-08-25T00:00:00+03:00",
+          "tables_used": ["mawid-github/README.md"]
+        }
+      },
+      {
+        "id": "customer-evidence",
+        "label": "Customer evidence and ICP synthesis",
+        "path": "outputs/mawid-business-plan-sprint/04-customer-evidence-and-icp.md",
+        "query": {
+          "engine": "DuckDB",
+          "language": "sql",
+          "sql": "SELECT 0 AS customer_interviews, 0 AS validated_icps, 3 AS provisional_cohorts, DATE '2026-08-25' AS as_of;",
+          "description": "Evidence inventory showing zero customer interviews, zero validated ICPs, and three provisional test cohorts.",
+          "executed_at": "2026-08-25T00:00:00+03:00",
+          "tables_used": ["outputs/mawid-business-plan-sprint/04-customer-evidence-and-icp.md"],
+          "metric_definitions": {
+            "customer_interviews": "Count of completed customer interviews available to the sprint: 0.",
+            "validated_icps": "Count of ICPs promoted from hypothesis to validated evidence: 0."
+          }
+        }
+      },
+      {
+        "id": "market-screen",
+        "label": "Market sizing and competition screen",
+        "path": "outputs/mawid-business-plan-sprint/03-market-sizing-and-competition.md",
+        "query": {
+          "engine": "DuckDB",
+          "language": "sql",
+          "sql": "WITH competitor_context(vendor, public_price_capture, locale_currency, lebanon_availability, arabic_rtl, use_restriction) AS (VALUES ('Booksy','US$29.99/month + US$20/additional user','United States / USD','Missing','Missing','Benchmark only; not MAWID WTP or price'),('Fresha','€14.95/month Independent; €9.95/bookable team member/month Team','Returned page / EUR','Missing','Missing','Benchmark only; adjacent marketplace/payment features excluded'),('SimplyBook.me','Monthly: $0 / $13.90 / $29.90 / $59.90','English page / USD','Missing','Missing','Benchmark only; not MAWID WTP or price')) SELECT *, locale_currency || '; Lebanon and Arabic/RTL: Missing; ' || use_restriction AS evidence_limits, COUNT(*) OVER () AS competitor_benchmarks FROM competitor_context ORDER BY vendor;",
+          "description": "Cross-country establishment-universe screen, judgmental sensitivity, and official competitor price captures.",
+          "executed_at": "2026-08-25T00:00:00+03:00",
+          "tables_used": [
+            "outputs/mawid-business-plan-sprint/03-market-sizing-and-competition.md",
+            "outputs/mawid-business-plan-sprint/working/market-inputs.json"
+          ],
+          "metric_definitions": {
+            "central_proxy": "9,388 Jordan establishments multiplied by the Lebanon-to-Jordan 2018 WDI population ratio, yielding 5,369.65.",
+            "sensitivity_envelope": "Recommended judgmental multipliers of 75% and 125% applied to the central proxy, yielding 4,027.24 to 6,712.06."
+          }
+        }
+      },
+      {
+        "id": "finance-qa-source",
+        "label": "Evidence-gated financial workbook and QA",
+        "path": "outputs/mawid-business-plan-sprint/qa/financial-model-functional-test.json",
+        "query": {
+          "engine": "DuckDB",
+          "language": "sql",
+          "sql": "WITH capacity_cases(scenario, workspace_endpoint, horizon_month, evidence_label, interpretation, demand_validated) AS (VALUES ('Downside',6,12,'Recommended','Delivery-capacity case only',FALSE),('Base',12,12,'Recommended','Delivery-capacity case only',FALSE),('Upside',24,12,'Recommended','Delivery-capacity case only',FALSE)) SELECT *, 12 AS finance_qa_cases, 12 AS finance_qa_passed FROM capacity_cases;",
+          "description": "Twelve fresh in-memory workbook cases covering complete scenarios, blocked outputs, provenance, endpoints, non-negativity, contribution, and collection lag.",
+          "executed_at": "2026-08-25T00:00:00+03:00",
+          "tables_used": [
+            "outputs/mawid-business-plan-sprint/MAWID-Financial-Model-DRAFT.xlsx",
+            "outputs/mawid-business-plan-sprint/qa/financial-model-functional-test.json"
+          ],
+          "metric_definitions": {
+            "finance_qa_passed": "Count of functional QA cases passing all expected/actual assertions: 12 of 12.",
+            "workspace_endpoint": "Recommended month-12 delivery-capacity endpoint, not demand or forecast."
+          }
+        }
+      },
+      {
+        "id": "growth-plan",
+        "label": "90-day discovery-first pilot and GTM plan",
+        "path": "outputs/mawid-business-plan-sprint/07-90-day-pilot-and-gtm.md",
+        "query": {
+          "engine": "DuckDB",
+          "language": "sql",
+          "sql": "WITH validation_roadmap(order_no,weeks,owner,focus,evidence_gate) AS (VALUES (1,'1–2','Founder / Discovery / Legal','Research controls and bilingual drafts','DO NOT SEND; no external activity'),(2,'3–4','Founder / Discovery','Separately authorized permissioned discovery','De-identified records or no-evidence status'),(3,'5–7','Discovery / Product','Code counterevidence and compare cohorts','Continue, pivot, or stop by cohort'),(4,'8–10','Product / Legal / Engineering','Readiness candidate and production prerequisites','No deployment'),(5,'11–13','Finance / Product / Legal / Reality','Traceable inputs and cross-functional gate','Governed readiness decision only')) SELECT order_no || '. Weeks ' || weeks AS phase, owner, focus || ' — Gate: ' || evidence_gate AS focus_and_gate, focus, evidence_gate FROM validation_roadmap ORDER BY order_no;",
+          "description": "Thirteen-week evidence program with authorization, research, concept evaluation, synthesis, and stop/pivot/continue gates.",
+          "executed_at": "2026-08-25T00:00:00+03:00",
+          "tables_used": ["outputs/mawid-business-plan-sprint/07-90-day-pilot-and-gtm.md"]
+        }
+      },
+      {
+        "id": "legal-register",
+        "label": "Lebanon legal and compliance issue-spotting register",
+        "path": "outputs/mawid-business-plan-sprint/08-legal-compliance-risk-register.md",
+        "query": {
+          "engine": "DuckDB",
+          "language": "sql",
+          "sql": "SELECT 6 AS legal_gates_unresolved, DATE '2026-08-25' AS as_of;",
+          "description": "Primary-source issue spotting and six-condition external-pilot gate; not legal clearance or advice.",
+          "executed_at": "2026-08-25T00:00:00+03:00",
+          "tables_used": ["outputs/mawid-business-plan-sprint/08-legal-compliance-risk-register.md"],
+          "metric_definitions": {
+            "legal_gates_unresolved": "Count of required external-pilot gate conditions currently labelled Missing: 6."
+          }
+        }
+      },
+      {
+        "id": "reality-check",
+        "label": "Stage 9 independent reality check",
+        "path": "outputs/mawid-business-plan-sprint/qa/09-final-validation.md",
+        "query": {
+          "engine": "DuckDB",
+          "language": "sql",
+          "sql": "WITH decision_gates(priority,decision_area,label,current_gate,promotion_evidence) AS (VALUES (1,'External pilot or launch','Recommended','NO-GO','Legal, customer, production, support, and operating gates reviewed'),(2,'Customer validation and ICP','Missing','Blocked','Traceable multi-account discovery and counterevidence'),(3,'TAM / SAM / SOM','Missing','Blocked','Lebanon establishment frame, eligibility, reach, and adoption evidence'),(4,'MAWID price and packaging','Missing','Blocked','Defined offer, local buyer process, willingness-to-pay evidence, and costs'),(5,'Financial forecast or investment','Missing','Blocked','Sourced price, costs, demand, churn, collections, cash, FX, and tax'),(6,'Production readiness and real data','Missing','Blocked','Reviewed architecture, security, privacy, vendor, incident, and support controls'),(7,'Local planning and qualified review','Recommended','GO only','Remain local; no outreach or real-data processing')) SELECT *, label || ' / ' || current_gate || ' — ' || promotion_evidence AS gate_and_evidence FROM decision_gates ORDER BY priority;",
+          "description": "Independent final validation of scope, evidence labels, financial controls, legal register, and decision wording.",
+          "executed_at": "2026-08-25T00:00:00+03:00",
+          "tables_used": [
+            "outputs/mawid-business-plan-sprint/09-reality-check.md",
+            "outputs/mawid-business-plan-sprint/qa/09-final-validation.md"
+          ]
+        }
+      }
+    ],
+    "blocks": [
+      {
+        "id": "title",
+        "type": "markdown",
+        "body": "# MAWID | موعد — Evidence-Gated Business Plan"
+      },
+      {
+        "id": "executive-summary",
+        "type": "markdown",
+        "body": "## Executive Summary\n\n**Confirmed:** MAWID is a fictional, browser-local bilingual private-workspace SaaS concept for salons and barbershops in Lebanon; it is not a public marketplace. **Missing:** Customer validation, a primary ICP, demand, willingness to pay, MAWID pricing, TAM/SAM/SOM, production readiness, legal clearance, and decision-ready financial outputs.\n\n**Recommended:** Maintain **NO-GO** for an external pilot, launch, pricing, hiring, financial forecast, investment, charging, real-data processing, and external communications. **Recommended:** **GO only** for local planning, qualified Lebanese legal/tax/security review, and separately authorized discovery after the legal/research gate.\n\n**Inferred:** A 5,369.65 low-confidence establishment-universe proxy is useful only to avoid false precision and guide account-list research. **Recommended:** Treat 4,027.24–6,712.06 as a judgmental sensitivity—not TAM, SAM, demand, or a confidence interval."
+      },
+      {
+        "id": "evidence-snapshot-heading",
+        "type": "markdown",
+        "body": "## Evidence Snapshot\n\n**Confirmed:** The numbers below describe evidence coverage and control quality, not commercial traction."
+      },
+      {
+        "id": "evidence-metrics",
+        "type": "metric-strip",
+        "cardIds": ["customer-interviews", "validated-icps", "competitor-benchmarks", "finance-qa", "legal-gates"]
+      },
+      {
+        "id": "decision-gates-heading",
+        "type": "markdown",
+        "body": "## Decision Gates\n\n**Recommended:** Keep unresolved decisions blocked until their promotion evidence exists and is reviewed."
+      },
+      { "id": "decision-gates-table", "type": "table", "tableId": "decision-gates" },
+      {
+        "id": "product-and-customer",
+        "type": "markdown",
+        "sourceId": "product-reference",
+        "body": "## Product and Customer Proposition\n\n**Confirmed:** The concept connects a salon-branded customer booking journey with a tenant-private management workspace, shared booking status, employee schedules, calendars, customer records, analytics, and settings. English/LTR and Arabic/RTL are first-class prototype requirements.\n\n**Recommended:** Test three provisional cohorts: independent owner-managed salons, multi-barber shops, and multi-service women’s hair-and-beauty salons. **Missing:** No cohort is a validated ICP and no buyer, workflow pain, adoption condition, or language preference is established.\n\n**Confirmed:** Initial non-goals are public marketplace, hardware/signage, advertising, payments, POS, payroll, inventory, and bespoke salon applications."
+      },
+      {
+        "id": "market-and-competition",
+        "type": "markdown",
+        "sourceId": "market-screen",
+        "body": "## Market and Competition\n\n**Inferred:** Population-scaling 9,388 Jordan 2018 ISIC 9602 establishments by the Lebanon-to-Jordan 2018 WDI population ratio yields a 5,369.65 low-confidence establishment-universe proxy. **Recommended:** A 75%–125% judgmental sensitivity produces 4,027.24–6,712.06. **Missing:** These figures do not establish TAM, SAM, eligibility, digital readiness, reachability, adoption, or demand.\n\n**Confirmed:** Three official public-price pages provide current international context. **Missing:** Lebanon availability and Arabic/RTL evidence are unverified for all three; no benchmark supports MAWID price or willingness to pay."
+      },
+      { "id": "competitor-table", "type": "table", "tableId": "competitor-context" },
+      {
+        "id": "offer-and-packaging",
+        "type": "markdown",
+        "body": "## Offering and Packaging Hypotheses\n\n**Recommended:** Test a single core private-workspace package around booking requests, manager approval/rejection/proposed time, employee schedules, customer status visibility, and bilingual operation. **Recommended:** Treat employee performance and analytics as operational support, not commercial proof.\n\n**Missing:** Package boundaries, onboarding effort, support expectations, billing unit, contract structure, and price require discovery and production-cost evidence. **Recommended:** Do not use competitor list prices to fill those gaps."
+      },
+      {
+        "id": "financial-model",
+        "type": "markdown",
+        "sourceId": "finance-qa-source",
+        "body": "## Financial Model and Capacity\n\n**Confirmed:** The workbook is formula-complete and evidence-gated. It remains blocked by default; all summary outputs are suppressed until required numeric inputs, provenance, endpoint reconciliation, scope isolation, formula integrity, and non-negative capacity checks pass. Twelve of twelve in-memory QA cases passed.\n\n**Recommended:** Use 6, 12, and 24 workspaces only as editable month-12 delivery-capacity cases. **Missing:** Price, setup fee, variable service cost, fixed operating cost, cash, collection policy, demand, conversion, churn, and tax treatment are not business evidence. No financial forecast, break-even, cash-need, hiring, or investment conclusion is authorized."
+      },
+      { "id": "capacity-chart", "type": "chart", "chartId": "capacity-cases" },
+      {
+        "id": "validation-roadmap-heading",
+        "type": "markdown",
+        "sourceId": "growth-plan",
+        "body": "## 90-Day Validation Roadmap\n\n**Recommended:** Use the 13-week plan as a permissioned evidence program, not a launch funnel. Weeks 1–2 prepare research controls and bilingual drafts marked `DO NOT SEND`; any weeks 3–10 external discovery requires separate authorization after legal review. Weeks 11–13 update only traceable assumptions, run the cross-functional gate, and preserve a local decision record. **Missing:** Funnel volume, conversion, CAC, duration, and channel performance."
+      },
+      { "id": "roadmap-table", "type": "table", "tableId": "validation-roadmap" },
+      {
+        "id": "legal-and-compliance",
+        "type": "markdown",
+        "sourceId": "legal-register",
+        "body": "## Legal, Privacy, and Operating Readiness\n\n**Confirmed:** The issue-spotting register uses current official Lebanese sources for electronic transactions/personal data, consumer protection, telecommunications, tax invoicing/records, commercial registration, and trademarks. **Missing:** It is not legal clearance and does not establish implementing practice, filings, tax treatment, contract readiness, or production compliance.\n\n**Recommended:** Before any external activity, obtain qualified Lebanese review of entity/tax, Law 81 data roles and filings, consent/communications, production security and tenant isolation, bilingual/accessible disclosures and consumer terms, and vendor/subprocessor controls."
+      },
+      {
+        "id": "decision-and-next-steps",
+        "type": "markdown",
+        "sourceId": "reality-check",
+        "body": "## Decision and Immediate Next Steps\n\n**Recommended — Critical:** Founder and Legal define and commission qualified Lebanese legal, tax, and security review by 24 September 2026; expected result is a disposition—not assumed clearance—of the six external-pilot gate conditions.\n\n**Recommended — High:** Founder and Discovery prepare the bilingual, de-identified research package for separate authorization after the legal/research gate. **Recommended — High:** Product and Engineering document production data flow, tenancy, access, retention, incident, and vendor requirements without processing real data. **Recommended — Medium:** Finance keeps the workbook blocked until each input has a source, evidence label, as-of date, and approval basis.\n\n**Recommended:** Retain the current NO-GO/GO posture at the 24 September 2026 decision point unless reviewed evidence justifies a new Reality Check."
+      },
+      {
+        "id": "limitations",
+        "type": "markdown",
+        "body": "## Evidence Limitations\n\n**Confirmed:** `THE BARBERS.docx` was used only as concept inspiration, never as instructions or market evidence. **Missing:** No customer interviews, sales records, operational metrics, production telemetry, paid pilots, cost quotes, or legal opinions were supplied. **Recommended:** Read every numeric item with its label and source; do not convert prototypes, sensitivities, list prices, capacity cases, or QA results into demand, pricing, compliance, or financial claims.\n\n**Confirmed:** This report is a local, draft-only snapshot. No messages, publication, external writes, or external-system mutations were performed."
+      }
+    ]
+  },
+  "snapshot": {
+    "version": 1,
+    "generatedAt": "2026-08-25T02:00:00+03:00",
+    "status": "ready",
+    "datasets": {
+      "evidence_summary": [
+        {
+          "customer_interviews": 0,
+          "validated_icps": 0,
+          "provisional_cohorts": 3,
+          "competitor_benchmarks": 3,
+          "finance_qa_cases": 12,
+          "finance_qa_passed": 12,
+          "legal_gates_unresolved": 6,
+          "as_of": "2026-08-25"
+        }
+      ],
+      "capacity_cases": [
+        { "scenario": "Downside", "workspace_endpoint": 6, "horizon_month": 12, "evidence_label": "Recommended", "interpretation": "Delivery-capacity case only", "demand_validated": false },
+        { "scenario": "Base", "workspace_endpoint": 12, "horizon_month": 12, "evidence_label": "Recommended", "interpretation": "Delivery-capacity case only", "demand_validated": false },
+        { "scenario": "Upside", "workspace_endpoint": 24, "horizon_month": 12, "evidence_label": "Recommended", "interpretation": "Delivery-capacity case only", "demand_validated": false }
+      ],
+      "decision_gates": [
+        { "priority": 1, "decision_area": "External pilot or launch", "label": "Recommended", "current_gate": "NO-GO", "promotion_evidence": "Legal, customer, production, support, and operating gates reviewed", "gate_and_evidence": "Recommended / NO-GO — Legal, customer, production, support, and operating gates reviewed" },
+        { "priority": 2, "decision_area": "Customer validation and ICP", "label": "Missing", "current_gate": "Blocked", "promotion_evidence": "Traceable multi-account discovery and counterevidence", "gate_and_evidence": "Missing / Blocked — Traceable multi-account discovery and counterevidence" },
+        { "priority": 3, "decision_area": "TAM / SAM / SOM", "label": "Missing", "current_gate": "Blocked", "promotion_evidence": "Lebanon establishment frame, eligibility, reach, and adoption evidence", "gate_and_evidence": "Missing / Blocked — Lebanon establishment frame, eligibility, reach, and adoption evidence" },
+        { "priority": 4, "decision_area": "MAWID price and packaging", "label": "Missing", "current_gate": "Blocked", "promotion_evidence": "Defined offer, local buyer process, willingness-to-pay evidence, and costs", "gate_and_evidence": "Missing / Blocked — Defined offer, local buyer process, willingness-to-pay evidence, and costs" },
+        { "priority": 5, "decision_area": "Financial forecast or investment", "label": "Missing", "current_gate": "Blocked", "promotion_evidence": "Sourced price, costs, demand, churn, collections, cash, FX, and tax", "gate_and_evidence": "Missing / Blocked — Sourced price, costs, demand, churn, collections, cash, FX, and tax" },
+        { "priority": 6, "decision_area": "Production readiness and real data", "label": "Missing", "current_gate": "Blocked", "promotion_evidence": "Reviewed architecture, security, privacy, vendor, incident, and support controls", "gate_and_evidence": "Missing / Blocked — Reviewed architecture, security, privacy, vendor, incident, and support controls" },
+        { "priority": 7, "decision_area": "Local planning and qualified review", "label": "Recommended", "current_gate": "GO only", "promotion_evidence": "Remain local; no outreach or real-data processing", "gate_and_evidence": "Recommended / GO only — Remain local; no outreach or real-data processing" }
+      ],
+      "competitor_context": [
+        { "vendor": "Booksy", "public_price_capture": "US$29.99/month + US$20/additional user", "locale_currency": "United States / USD", "lebanon_availability": "Missing", "arabic_rtl": "Missing", "use_restriction": "Benchmark only; not MAWID WTP or price", "evidence_limits": "United States / USD; Lebanon and Arabic/RTL: Missing; benchmark only" },
+        { "vendor": "Fresha", "public_price_capture": "€14.95/month Independent; €9.95/bookable team member/month Team", "locale_currency": "Returned page / EUR", "lebanon_availability": "Missing", "arabic_rtl": "Missing", "use_restriction": "Benchmark only; adjacent marketplace/payment features excluded", "evidence_limits": "Returned page / EUR; Lebanon and Arabic/RTL: Missing; adjacent marketplace/payment features excluded" },
+        { "vendor": "SimplyBook.me", "public_price_capture": "Monthly: $0 / $13.90 / $29.90 / $59.90", "locale_currency": "English page / USD", "lebanon_availability": "Missing", "arabic_rtl": "Missing", "use_restriction": "Benchmark only; not MAWID WTP or price", "evidence_limits": "English page / USD; Lebanon and Arabic/RTL: Missing; benchmark only" }
+      ],
+      "validation_roadmap": [
+        { "order": 1, "phase": "1. Weeks 1–2", "weeks": "1–2", "owner": "Founder / Discovery / Legal", "focus": "Confirm scope, minimization, cohorts, hypothesis log, bilingual drafts, and consent questions", "evidence_gate": "Research pack remains DO NOT SEND; no external activity", "focus_and_gate": "Research controls and bilingual drafts — Gate: DO NOT SEND; no external activity" },
+        { "order": 2, "phase": "2. Weeks 3–4", "weeks": "3–4", "owner": "Founder / Discovery", "focus": "Only if separately authorized, use permissioned recruitment and current-state discovery", "evidence_gate": "De-identified records or explicit no-evidence status; no channel claim", "focus_and_gate": "Separately authorized permissioned discovery — Gate: de-identified records or no-evidence status" },
+        { "order": 3, "phase": "3. Weeks 5–7", "weeks": "5–7", "owner": "Discovery / Product", "focus": "Quality-check notes, code counterevidence, run post-discovery concept tasks, compare cohorts", "evidence_gate": "Conditional continue, pivot, or stop by cohort", "focus_and_gate": "Code counterevidence and compare cohorts — Gate: continue, pivot, or stop by cohort" },
+        { "order": 4, "phase": "4. Weeks 8–10", "weeks": "8–10", "owner": "Product / Legal / Engineering", "focus": "Define a readiness candidate only if evidence passes; test setup, roles, communications, and support assumptions", "evidence_gate": "Readiness checklist and production prerequisites; no deployment", "focus_and_gate": "Readiness candidate and prerequisites — Gate: no deployment" },
+        { "order": 5, "phase": "5. Weeks 11–13", "weeks": "11–13", "owner": "Finance / Product / Legal / Reality", "focus": "Update only traceable inputs, run cross-functional gate, preserve local learning summary", "evidence_gate": "Governed readiness decision, pivot, extend, or stop; no launch commitment", "focus_and_gate": "Traceable inputs and cross-functional gate — Gate: governed readiness decision only" }
+      ]
+    },
+    "accessIssues": []
+  },
+  "sources": [
+    {
+      "id": "product-reference",
+      "label": "Authoritative MAWID product reference",
+      "path": "mawid-github/README.md",
+      "query": { "engine": "file", "description": "Product scope and exclusions.", "executed_at": "2026-08-25T00:00:00+03:00" }
+    },
+    {
+      "id": "customer-evidence",
+      "label": "Customer evidence and ICP synthesis",
+      "path": "outputs/mawid-business-plan-sprint/04-customer-evidence-and-icp.md",
+      "query": { "engine": "file", "description": "No-evidence synthesis and provisional cohorts.", "executed_at": "2026-08-25T00:00:00+03:00" }
+    },
+    {
+      "id": "market-screen",
+      "label": "Market sizing and competition screen",
+      "path": "outputs/mawid-business-plan-sprint/03-market-sizing-and-competition.md",
+      "query": { "engine": "file", "description": "Market proxy, sensitivity, and competitor context.", "executed_at": "2026-08-25T00:00:00+03:00" }
+    },
+    {
+      "id": "finance-qa-source",
+      "label": "Evidence-gated financial workbook and QA",
+      "path": "outputs/mawid-business-plan-sprint/qa/financial-model-functional-test.json",
+      "query": { "engine": "file", "description": "Financial-control QA and capacity cases.", "executed_at": "2026-08-25T00:00:00+03:00" }
+    },
+    {
+      "id": "growth-plan",
+      "label": "90-day discovery-first plan",
+      "path": "outputs/mawid-business-plan-sprint/07-90-day-pilot-and-gtm.md",
+      "query": { "engine": "file", "description": "Thirteen-week validation roadmap.", "executed_at": "2026-08-25T00:00:00+03:00" }
+    },
+    {
+      "id": "legal-register",
+      "label": "Lebanon legal and compliance issue spotting",
+      "path": "outputs/mawid-business-plan-sprint/08-legal-compliance-risk-register.md",
+      "query": { "engine": "file", "description": "Official-source issue spotting and external-pilot gates.", "executed_at": "2026-08-25T00:00:00+03:00" }
+    },
+    {
+      "id": "reality-check",
+      "label": "Stage 9 independent final validation",
+      "path": "outputs/mawid-business-plan-sprint/qa/09-final-validation.md",
+      "query": { "engine": "file", "description": "Independent final decision gate.", "executed_at": "2026-08-25T00:00:00+03:00" }
+    }
+  ]
+}

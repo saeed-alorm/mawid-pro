@@ -13,7 +13,7 @@ import { dict } from "./i18n";
 import { appPath } from "./navigation";
 import { availableSlots, bookingAvailability } from "./scheduling";
 import { DEMO_SCHEMA_VERSION, restoreDemoState, type DemoState } from "./store";
-import { applyBookingDecision } from "./workflow";
+import { applyBookingDecision, canAdvanceBookingStep, type BookingProgress } from "./workflow";
 
 const service: Service = {
   id: "service-1",
@@ -315,5 +315,66 @@ describe("repository-base navigation", () => {
       "/mawid-pro/customer/studio-nine/book",
     );
     expect(appPath("/", "/mawid-pro/")).toBe("/mawid-pro/");
+  });
+});
+
+const emptyBookingProgress: BookingProgress = {
+  serviceId: "",
+  employeeId: "",
+  date: "",
+  time: "",
+  name: "",
+  phone: "",
+};
+
+describe("booking step eligibility", () => {
+  it("requires a service before leaving the service step", () => {
+    expect(canAdvanceBookingStep(1, emptyBookingProgress)).toBe(false);
+    expect(canAdvanceBookingStep(1, { ...emptyBookingProgress, serviceId: "service-1" })).toBe(
+      true,
+    );
+  });
+
+  it("accepts either a selected employee or the explicit any-professional option", () => {
+    expect(canAdvanceBookingStep(2, { ...emptyBookingProgress, serviceId: "service-1" })).toBe(
+      false,
+    );
+    expect(
+      canAdvanceBookingStep(2, {
+        ...emptyBookingProgress,
+        serviceId: "service-1",
+        employeeId: "employee-1",
+      }),
+    ).toBe(true);
+    expect(
+      canAdvanceBookingStep(2, {
+        ...emptyBookingProgress,
+        serviceId: "service-1",
+        employeeId: "any",
+      }),
+    ).toBe(true);
+  });
+
+  it("requires both a date and a time before leaving availability", () => {
+    expect(canAdvanceBookingStep(3, { ...emptyBookingProgress, date: "2026-08-24" })).toBe(false);
+    expect(
+      canAdvanceBookingStep(3, {
+        ...emptyBookingProgress,
+        date: "2026-08-24",
+        time: "09:00",
+      }),
+    ).toBe(true);
+  });
+
+  it("requires a non-blank customer name on the review step", () => {
+    expect(canAdvanceBookingStep(4, { ...emptyBookingProgress, name: "   " })).toBe(false);
+    expect(canAdvanceBookingStep(4, { ...emptyBookingProgress, name: "Maya Demo" })).toBe(true);
+  });
+
+  it("requires a valid Lebanese phone number before sending the demo code", () => {
+    expect(canAdvanceBookingStep(5, { ...emptyBookingProgress, phone: "555" })).toBe(false);
+    expect(canAdvanceBookingStep(5, { ...emptyBookingProgress, phone: "+961 71 123 456" })).toBe(
+      true,
+    );
   });
 });

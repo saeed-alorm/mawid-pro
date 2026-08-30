@@ -1,0 +1,463 @@
+{
+  "testedAt": "2026-08-24T23:01:24.578Z",
+  "workbookPath": "C:\\Users\\Saeed\\Desktop\\The Agency Agents\\outputs\\mawid-business-plan-sprint\\MAWID-Financial-Model-DRAFT.xlsx",
+  "testMode": "Synthetic values applied to fresh in-memory imports only; the source workbook is never modified or re-exported.",
+  "caution": "Synthetic values validate formulas and gates only. They are not MAWID business assumptions, market evidence, pricing, costs, or a forecast.",
+  "caseCount": 12,
+  "pass": true,
+  "cases": [
+    {
+      "id": "default-blocked",
+      "purpose": "The exported workbook remains blocked with all evidence sentinels intact.",
+      "expected": {
+        "overall": "BLOCKED",
+        "modelStatusIncludes": "BLOCKED",
+        "provenanceControl": "INPUT REQUIRED",
+        "outputsSuppressed": true
+      },
+      "actual": {
+        "overall": "BLOCKED",
+        "modelStatus": "BLOCKED — MISSING OR UNVERIFIED INPUTS",
+        "endpointControl": "INPUT REQUIRED",
+        "provenanceControl": "INPUT REQUIRED",
+        "nonNegativeControl": "PASS",
+        "activeWorkspaces": "N/A — Blocked by evidence controls",
+        "endingCash": "N/A — Blocked by evidence controls",
+        "breakEven": "N/A — Blocked by evidence controls",
+        "yearCashReceipts": "N/A — Blocked by evidence controls",
+        "outputsSuppressed": true,
+        "formulaErrorCount": 0
+      },
+      "assertions": {
+        "overall": true,
+        "modelStatusIncludes": true,
+        "endpointControl": true,
+        "provenanceControl": true,
+        "nonNegativeControl": true,
+        "outputsSuppressed": true,
+        "breakEven": true,
+        "yearCashReceipts": true,
+        "endingCash": true,
+        "formulaErrors": true
+      },
+      "pass": true
+    },
+    {
+      "id": "downside-complete",
+      "purpose": "Downside becomes calculable only after numeric inputs, reconciled ramp, and provenance are complete.",
+      "expected": {
+        "overall": "PASS",
+        "modelStatusIncludes": "CALCULABLE — ILLUSTRATIVE SCENARIO, NOT A FORECAST",
+        "endpointControl": "PASS",
+        "provenanceControl": "PASS",
+        "nonNegativeControl": "PASS",
+        "outputsSuppressed": false
+      },
+      "actual": {
+        "overall": "PASS",
+        "modelStatus": "CALCULABLE — ILLUSTRATIVE SCENARIO, NOT A FORECAST",
+        "endpointControl": "PASS",
+        "provenanceControl": "PASS",
+        "nonNegativeControl": "PASS",
+        "activeWorkspaces": "6",
+        "endingCash": "812",
+        "breakEven": "3.5714285714285716",
+        "yearCashReceipts": "1620",
+        "outputsSuppressed": false,
+        "formulaErrorCount": 0
+      },
+      "assertions": {
+        "overall": true,
+        "modelStatusIncludes": true,
+        "endpointControl": true,
+        "provenanceControl": true,
+        "nonNegativeControl": true,
+        "outputsSuppressed": true,
+        "breakEven": true,
+        "yearCashReceipts": true,
+        "endingCash": true,
+        "formulaErrors": true
+      },
+      "pass": true
+    },
+    {
+      "id": "base-complete",
+      "purpose": "Base becomes calculable only after numeric inputs, reconciled ramp, and provenance are complete.",
+      "expected": {
+        "overall": "PASS",
+        "modelStatusIncludes": "CALCULABLE — ILLUSTRATIVE SCENARIO, NOT A FORECAST",
+        "endpointControl": "PASS",
+        "provenanceControl": "PASS",
+        "nonNegativeControl": "PASS",
+        "outputsSuppressed": false
+      },
+      "actual": {
+        "overall": "PASS",
+        "modelStatus": "CALCULABLE — ILLUSTRATIVE SCENARIO, NOT A FORECAST",
+        "endpointControl": "PASS",
+        "provenanceControl": "PASS",
+        "nonNegativeControl": "PASS",
+        "activeWorkspaces": "12",
+        "endingCash": "1316",
+        "breakEven": "3.5714285714285716",
+        "yearCashReceipts": "2160",
+        "outputsSuppressed": false,
+        "formulaErrorCount": 0
+      },
+      "assertions": {
+        "overall": true,
+        "modelStatusIncludes": true,
+        "endpointControl": true,
+        "provenanceControl": true,
+        "nonNegativeControl": true,
+        "outputsSuppressed": true,
+        "breakEven": true,
+        "yearCashReceipts": true,
+        "endingCash": true,
+        "formulaErrors": true
+      },
+      "pass": true
+    },
+    {
+      "id": "upside-complete",
+      "purpose": "Upside becomes calculable only after numeric inputs, reconciled ramp, and provenance are complete.",
+      "expected": {
+        "overall": "PASS",
+        "modelStatusIncludes": "CALCULABLE — ILLUSTRATIVE SCENARIO, NOT A FORECAST",
+        "endpointControl": "PASS",
+        "provenanceControl": "PASS",
+        "nonNegativeControl": "PASS",
+        "outputsSuppressed": false
+      },
+      "actual": {
+        "overall": "PASS",
+        "modelStatus": "CALCULABLE — ILLUSTRATIVE SCENARIO, NOT A FORECAST",
+        "endpointControl": "PASS",
+        "provenanceControl": "PASS",
+        "nonNegativeControl": "PASS",
+        "activeWorkspaces": "24",
+        "endingCash": "3332",
+        "breakEven": "3.5714285714285716",
+        "yearCashReceipts": "4320",
+        "outputsSuppressed": false,
+        "formulaErrorCount": 0
+      },
+      "assertions": {
+        "overall": true,
+        "modelStatusIncludes": true,
+        "endpointControl": true,
+        "provenanceControl": true,
+        "nonNegativeControl": true,
+        "outputsSuppressed": true,
+        "breakEven": true,
+        "yearCashReceipts": true,
+        "endingCash": true,
+        "formulaErrors": true
+      },
+      "pass": true
+    },
+    {
+      "id": "missing-provenance",
+      "purpose": "Numeric inputs without provenance cannot promote the model.",
+      "expected": {
+        "overall": "BLOCKED",
+        "modelStatusIncludes": "BLOCKED",
+        "provenanceControl": "INPUT REQUIRED",
+        "outputsSuppressed": true
+      },
+      "actual": {
+        "overall": "BLOCKED",
+        "modelStatus": "BLOCKED — MISSING OR UNVERIFIED INPUTS",
+        "endpointControl": "PASS",
+        "provenanceControl": "INPUT REQUIRED",
+        "nonNegativeControl": "PASS",
+        "activeWorkspaces": "N/A — Blocked by evidence controls",
+        "endingCash": "N/A — Blocked by evidence controls",
+        "breakEven": "N/A — Blocked by evidence controls",
+        "yearCashReceipts": "N/A — Blocked by evidence controls",
+        "outputsSuppressed": true,
+        "formulaErrorCount": 0
+      },
+      "assertions": {
+        "overall": true,
+        "modelStatusIncludes": true,
+        "endpointControl": true,
+        "provenanceControl": true,
+        "nonNegativeControl": true,
+        "outputsSuppressed": true,
+        "breakEven": true,
+        "yearCashReceipts": true,
+        "endingCash": true,
+        "formulaErrors": true
+      },
+      "pass": true
+    },
+    {
+      "id": "missing-input",
+      "purpose": "A provenance-complete scenario still blocks when one required input is missing.",
+      "expected": {
+        "overall": "BLOCKED",
+        "modelStatusIncludes": "BLOCKED",
+        "outputsSuppressed": true
+      },
+      "actual": {
+        "overall": "BLOCKED",
+        "modelStatus": "BLOCKED — MISSING OR UNVERIFIED INPUTS",
+        "endpointControl": "PASS",
+        "provenanceControl": "INPUT REQUIRED",
+        "nonNegativeControl": "PASS",
+        "activeWorkspaces": "N/A — Blocked by evidence controls",
+        "endingCash": "N/A — Blocked by evidence controls",
+        "breakEven": "N/A — Blocked by evidence controls",
+        "yearCashReceipts": "N/A — Blocked by evidence controls",
+        "outputsSuppressed": true,
+        "formulaErrorCount": 0
+      },
+      "assertions": {
+        "overall": true,
+        "modelStatusIncludes": true,
+        "endpointControl": true,
+        "provenanceControl": true,
+        "nonNegativeControl": true,
+        "outputsSuppressed": true,
+        "breakEven": true,
+        "yearCashReceipts": true,
+        "endingCash": true,
+        "formulaErrors": true
+      },
+      "pass": true
+    },
+    {
+      "id": "endpoint-mismatch",
+      "purpose": "A complete ramp must reconcile to its selected month-12 planning endpoint.",
+      "expected": {
+        "overall": "BLOCKED",
+        "modelStatusIncludes": "BLOCKED",
+        "endpointControl": "CHECK FAIL",
+        "outputsSuppressed": true
+      },
+      "actual": {
+        "overall": "BLOCKED",
+        "modelStatus": "BLOCKED — MISSING OR UNVERIFIED INPUTS",
+        "endpointControl": "CHECK FAIL",
+        "provenanceControl": "PASS",
+        "nonNegativeControl": "PASS",
+        "activeWorkspaces": "N/A — Blocked by evidence controls",
+        "endingCash": "N/A — Blocked by evidence controls",
+        "breakEven": "N/A — Blocked by evidence controls",
+        "yearCashReceipts": "N/A — Blocked by evidence controls",
+        "outputsSuppressed": true,
+        "formulaErrorCount": 0
+      },
+      "assertions": {
+        "overall": true,
+        "modelStatusIncludes": true,
+        "endpointControl": true,
+        "provenanceControl": true,
+        "nonNegativeControl": true,
+        "outputsSuppressed": true,
+        "breakEven": true,
+        "yearCashReceipts": true,
+        "endingCash": true,
+        "formulaErrors": true
+      },
+      "pass": true
+    },
+    {
+      "id": "non-positive-contribution",
+      "purpose": "A zero contribution margin remains calculable but explicitly reports no recurring break-even.",
+      "expected": {
+        "overall": "PASS",
+        "modelStatusIncludes": "CALCULABLE — ILLUSTRATIVE SCENARIO, NOT A FORECAST",
+        "endpointControl": "PASS",
+        "provenanceControl": "PASS",
+        "nonNegativeControl": "PASS",
+        "outputsSuppressed": false,
+        "breakEven": "No break-even"
+      },
+      "actual": {
+        "overall": "PASS",
+        "modelStatus": "CALCULABLE — ILLUSTRATIVE SCENARIO, NOT A FORECAST",
+        "endpointControl": "PASS",
+        "provenanceControl": "PASS",
+        "nonNegativeControl": "PASS",
+        "activeWorkspaces": "12",
+        "endingCash": "-700",
+        "breakEven": "No break-even",
+        "yearCashReceipts": "144",
+        "outputsSuppressed": false,
+        "formulaErrorCount": 0
+      },
+      "assertions": {
+        "overall": true,
+        "modelStatusIncludes": true,
+        "endpointControl": true,
+        "provenanceControl": true,
+        "nonNegativeControl": true,
+        "outputsSuppressed": true,
+        "breakEven": true,
+        "yearCashReceipts": true,
+        "endingCash": true,
+        "formulaErrors": true
+      },
+      "pass": true
+    },
+    {
+      "id": "excessive-churn",
+      "purpose": "A ramp that goes negative is blocked even when its final endpoint reconciles.",
+      "expected": {
+        "overall": "BLOCKED",
+        "modelStatusIncludes": "BLOCKED",
+        "endpointControl": "PASS",
+        "nonNegativeControl": "CHECK FAIL",
+        "outputsSuppressed": true
+      },
+      "actual": {
+        "overall": "BLOCKED",
+        "modelStatus": "BLOCKED — MISSING OR UNVERIFIED INPUTS",
+        "endpointControl": "PASS",
+        "provenanceControl": "PASS",
+        "nonNegativeControl": "CHECK FAIL",
+        "activeWorkspaces": "N/A — Blocked by evidence controls",
+        "endingCash": "N/A — Blocked by evidence controls",
+        "breakEven": "N/A — Blocked by evidence controls",
+        "yearCashReceipts": "N/A — Blocked by evidence controls",
+        "outputsSuppressed": true,
+        "formulaErrorCount": 0
+      },
+      "assertions": {
+        "overall": true,
+        "modelStatusIncludes": true,
+        "endpointControl": true,
+        "provenanceControl": true,
+        "nonNegativeControl": true,
+        "outputsSuppressed": true,
+        "breakEven": true,
+        "yearCashReceipts": true,
+        "endingCash": true,
+        "formulaErrors": true
+      },
+      "pass": true
+    },
+    {
+      "id": "collection-lag-0",
+      "purpose": "Collection lag 0 month(s) follows the supported 0–2 month branch without formula errors.",
+      "expected": {
+        "overall": "PASS",
+        "modelStatusIncludes": "CALCULABLE — ILLUSTRATIVE SCENARIO, NOT A FORECAST",
+        "endpointControl": "PASS",
+        "provenanceControl": "PASS",
+        "nonNegativeControl": "PASS",
+        "outputsSuppressed": false,
+        "yearCashReceipts": 2160,
+        "endingCash": 1316
+      },
+      "actual": {
+        "overall": "PASS",
+        "modelStatus": "CALCULABLE — ILLUSTRATIVE SCENARIO, NOT A FORECAST",
+        "endpointControl": "PASS",
+        "provenanceControl": "PASS",
+        "nonNegativeControl": "PASS",
+        "activeWorkspaces": "12",
+        "endingCash": "1316",
+        "breakEven": "3.5714285714285716",
+        "yearCashReceipts": "2160",
+        "outputsSuppressed": false,
+        "formulaErrorCount": 0
+      },
+      "assertions": {
+        "overall": true,
+        "modelStatusIncludes": true,
+        "endpointControl": true,
+        "provenanceControl": true,
+        "nonNegativeControl": true,
+        "outputsSuppressed": true,
+        "breakEven": true,
+        "yearCashReceipts": true,
+        "endingCash": true,
+        "formulaErrors": true
+      },
+      "pass": true
+    },
+    {
+      "id": "collection-lag-1",
+      "purpose": "Collection lag 1 month(s) follows the supported 0–2 month branch without formula errors.",
+      "expected": {
+        "overall": "PASS",
+        "modelStatusIncludes": "CALCULABLE — ILLUSTRATIVE SCENARIO, NOT A FORECAST",
+        "endpointControl": "PASS",
+        "provenanceControl": "PASS",
+        "nonNegativeControl": "PASS",
+        "outputsSuppressed": false,
+        "yearCashReceipts": 1815,
+        "endingCash": 971
+      },
+      "actual": {
+        "overall": "PASS",
+        "modelStatus": "CALCULABLE — ILLUSTRATIVE SCENARIO, NOT A FORECAST",
+        "endpointControl": "PASS",
+        "provenanceControl": "PASS",
+        "nonNegativeControl": "PASS",
+        "activeWorkspaces": "12",
+        "endingCash": "971",
+        "breakEven": "3.5714285714285716",
+        "yearCashReceipts": "1815",
+        "outputsSuppressed": false,
+        "formulaErrorCount": 0
+      },
+      "assertions": {
+        "overall": true,
+        "modelStatusIncludes": true,
+        "endpointControl": true,
+        "provenanceControl": true,
+        "nonNegativeControl": true,
+        "outputsSuppressed": true,
+        "breakEven": true,
+        "yearCashReceipts": true,
+        "endingCash": true,
+        "formulaErrors": true
+      },
+      "pass": true
+    },
+    {
+      "id": "collection-lag-2",
+      "purpose": "Collection lag 2 month(s) follows the supported 0–2 month branch without formula errors.",
+      "expected": {
+        "overall": "PASS",
+        "modelStatusIncludes": "CALCULABLE — ILLUSTRATIVE SCENARIO, NOT A FORECAST",
+        "endpointControl": "PASS",
+        "provenanceControl": "PASS",
+        "nonNegativeControl": "PASS",
+        "outputsSuppressed": false,
+        "yearCashReceipts": 1500,
+        "endingCash": 656
+      },
+      "actual": {
+        "overall": "PASS",
+        "modelStatus": "CALCULABLE — ILLUSTRATIVE SCENARIO, NOT A FORECAST",
+        "endpointControl": "PASS",
+        "provenanceControl": "PASS",
+        "nonNegativeControl": "PASS",
+        "activeWorkspaces": "12",
+        "endingCash": "656",
+        "breakEven": "3.5714285714285716",
+        "yearCashReceipts": "1500",
+        "outputsSuppressed": false,
+        "formulaErrorCount": 0
+      },
+      "assertions": {
+        "overall": true,
+        "modelStatusIncludes": true,
+        "endpointControl": true,
+        "provenanceControl": true,
+        "nonNegativeControl": true,
+        "outputsSuppressed": true,
+        "breakEven": true,
+        "yearCashReceipts": true,
+        "endingCash": true,
+        "formulaErrors": true
+      },
+      "pass": true
+    }
+  ]
+}
