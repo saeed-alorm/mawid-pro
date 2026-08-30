@@ -1,0 +1,24 @@
+{
+  "artifact": "outputs/mawid-business-plan-sprint/artifact.json",
+  "html": "outputs/mawid-business-plan-sprint/MAWID-Business-Plan-DRAFT.html",
+  "builtAt": "2026-08-25T02:00:00+03:00",
+  "canonicalBuilder": "data-analytics build-report deliver_portable_artifact.mjs",
+  "validation": "passed",
+  "package": "passed",
+  "structuralVerification": "passed",
+  "counts": {
+    "blocks": 21,
+    "charts": 1,
+    "metrics": 5,
+    "tables": 3,
+    "customHtmlBlocks": 0
+  },
+  "enhancedBrowserVerification": {
+    "status": "not_passed",
+    "firstAttempt": "Sandboxed Chromium could not start (spawn EPERM), so the canonical builder completed structural-only verification.",
+    "escalatedAttempt": "Headless Chromium started, but the canonical verifier reported horizontal_overflow at the 1440px desktop viewport.",
+    "evidence": "outputs/mawid-business-plan-sprint/qa/report-verification-desktop-overflow.png",
+    "disposition": "The final HTML was regenerated from the canonical artifact and passed validation, packaging, exact-payload structural verification, and semantic fallback checks. Desktop/mobile enhanced-reader geometry and source-dialog interaction remain unverified."
+  },
+  "scope": "Local draft only; no publication or external send."
+}

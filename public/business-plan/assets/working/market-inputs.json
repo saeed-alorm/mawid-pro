@@ -1,0 +1,50 @@
+{
+  "status": "local-draft-only",
+  "asOf": "2026-08-25",
+  "formulaVersion": "market-screen-v2",
+  "sourceCaptureDate": "2026-08-25",
+  "sources": [
+    {"id":"wdi-population-2018","url":"https://databank.worldbank.org/reports.aspx?country=LBN%2CJOR&series=SP.POP.TOTL&source=2","retrievedOn":"2026-08-25","observationYear":2018},
+    {"id":"jordan-dos-table-18","url":"https://dosweb.dos.gov.jo/DataBank/Census_Establishment2018/table18.pdf","retrievedOn":"2026-08-25","observationYear":2018,"definition":"ISIC 9602 active establishments"},
+    {"id":"jordan-dos-table-38","url":"https://dosweb.dos.gov.jo/DataBank/Census_Establishment2018/En/table38.pdf","retrievedOn":"2026-08-25","observationYear":2018,"definition":"ISIC 9602 employees"},
+    {"id":"fresha-pricing","url":"https://www.fresha.com/pricing","retrievedOn":"2026-08-25"},
+    {"id":"booksy-pricing","url":"https://biz.booksy.com/pricing","retrievedOn":"2026-08-25"},
+    {"id":"simplybook-pricing","url":"https://simplybook.me/en/pricing","retrievedOn":"2026-08-25"}
+  ],
+  "inputs": {
+    "jordanActiveEstablishmentsIsic9602_2018":{"value":9388,"sourceId":"jordan-dos-table-18","evidenceLabel":"Confirmed"},
+    "jordanEmployeesIsic9602_2018":{"value":16607,"sourceId":"jordan-dos-table-38","evidenceLabel":"Confirmed","usedInCalculation":false},
+    "lebanonPopulation_2018":{"value":5984119,"sourceId":"wdi-population-2018","evidenceLabel":"Confirmed"},
+    "jordanPopulation_2018":{"value":10462306,"sourceId":"wdi-population-2018","evidenceLabel":"Confirmed"},
+    "sensitivityLow":{"value":0.75,"evidenceLabel":"Recommended"},
+    "sensitivityHigh":{"value":1.25,"evidenceLabel":"Recommended"},
+    "workspaceCapacityCases":{"downside":6,"base":12,"upside":24,"evidenceLabel":"Recommended"}
+  },
+  "formulae": {
+    "centralProxy":"jordanActiveEstablishmentsIsic9602_2018 * lebanonPopulation_2018 / jordanPopulation_2018",
+    "lowSensitivity":"centralProxy * sensitivityLow",
+    "highSensitivity":"centralProxy * sensitivityHigh",
+    "tam":"Missing",
+    "sam":"Missing"
+  },
+  "derived": {
+    "lowConfidenceEstablishmentUniverseProxyCentral":{"value":5369.65,"evidenceLabel":"Inferred"},
+    "recommendedSensitivityEnvelope":{"low":4027.24,"high":6712.06,"evidenceLabel":"Recommended"},
+    "tam":{"value":null,"evidenceLabel":"Missing"},
+    "sam":{"value":null,"evidenceLabel":"Missing"}
+  },
+  "competitorCapture": [
+    {"vendor":"Fresha","sourceId":"fresha-pricing","displayLocaleCurrency":"English page; EUR","publicPriceAsDisplayed":"€14.95 per month Independent; €9.95 per team member monthly Team; Enterprise Custom rates","lebanonAvailability":"Missing","arabicAdminUi":"Missing","arabicCustomerUi":"Missing","fullRtl":"Missing"},
+    {"vendor":"Booksy","sourceId":"booksy-pricing","displayLocaleCurrency":"Official US English page; USD","publicPriceAsDisplayed":"$29.99 per month + tax; $20/month each extra user","lebanonAvailability":"Missing","arabicAdminUi":"Missing","arabicCustomerUi":"Missing","fullRtl":"Missing"},
+    {"vendor":"SimplyBook.me","sourceId":"simplybook-pricing","displayLocaleCurrency":"English /en/ page; USD","publicPriceAsDisplayed":"Free $0 per month; Basic $13.9 per month; Standard $29.9 per month; Premium $59.9 per month; Enterprise Custom","lebanonAvailability":"Missing","arabicAdminUi":"Missing","arabicCustomerUi":"Missing","fullRtl":"Missing"}
+  ],
+  "checks": {
+    "centralFormulaExpected":5369.65,
+    "lowFormulaExpected":4027.24,
+    "highFormulaExpected":6712.06,
+    "rounding":"Display to two decimals; recompute before reuse.",
+    "osmUsed":false,
+    "osmReason":"No reproducible query/raw export was retained; all OSM counts and derived SAM removed.",
+    "prohibitions":["Do not label proxy TAM or SAM.","Do not infer Lebanon availability/Arabic UI/RTL from English pricing pages.","Do not infer demand, WTP, CAC, retention, churn, adoption or a MAWID price from competitor prices."]
+  }
+}

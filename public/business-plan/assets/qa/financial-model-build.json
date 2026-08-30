@@ -1,0 +1,35 @@
+{
+  "builtAt": "2026-08-24T23:00:36.908Z",
+  "outputPath": "C:\\Users\\Saeed\\Desktop\\The Agency Agents\\outputs\\mawid-business-plan-sprint\\MAWID-Financial-Model-DRAFT.xlsx",
+  "sheetNames": [
+    "Summary",
+    "Assumptions",
+    "Input_Provenance",
+    "Capacity_Ramp",
+    "Forecast",
+    "Checks",
+    "Sources"
+  ],
+  "previewDir": "C:\\Users\\Saeed\\Desktop\\The Agency Agents\\outputs\\mawid-business-plan-sprint\\previews\\financial-model",
+  "buildTimeAudits": {
+    "excludedScope": {
+      "pass": true,
+      "hits": [],
+      "scannedRanges": [
+        "Assumptions!A5:F15",
+        "Capacity_Ramp!A4:P19",
+        "Forecast!A4:R16"
+      ]
+    },
+    "competitorIsolation": {
+      "pass": true,
+      "hits": [],
+      "prohibitedFormulaReferences": "Assumptions!A20:H22"
+    },
+    "formulaErrors": {
+      "pass": true,
+      "inspect": "{\"kind\":\"notice\",\"message\":\"Cell search matched 0 entries.\"}"
+    }
+  },
+  "expectedModelStatus": "BLOCKED — MISSING OR UNVERIFIED INPUTS"
+}
