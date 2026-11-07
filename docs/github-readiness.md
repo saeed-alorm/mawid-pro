@@ -1,140 +1,140 @@
-# GitHub engineering readiness — 7 November 2026 (Asia/Beirut)
+# MAWID readiness — 7 November 2026, Asia/Beirut
 
-**Verdict: partially prepared; not yet ready for plan execution.** Web source changes
-are in [PR #17](https://github.com/saeed-alorm/mawid-pro/pull/17) for review. Private mobile import/PR,
-source provenance, account metadata/settings and final CI/merges remain gates.
-No P1 product capability, backend, production release, app publishing or paid service
-was implemented or provisioned.
+**Overall: not fully ready for plan execution.** PR17 remains open for Saeed's merge
+review. Private source and a regenerated bundle are prepared and verified locally;
+private GitHub import/PR, its checks and merge remain separate gates. Android debug compilation now passes locally.
+No P1 production service, database, app-store release or paid infrastructure was created.
 
-## Live audit and baseline
+| Area | Current evidence / state | Remaining owner action |
+|---|---|---|
+| Public web readiness | [PR17](https://github.com/saeed-alorm/mawid-pro/pull/17) inspected; standard independent toolchain retained; [review verdict](engineering/pr17-review.md) | Saeed reviews/merges after the current `web-checks` is green |
+| Private mobile source onboarding | Original prepared history reused; new private delta/source commits appended locally; no authoritative remote found in accessible inventory | Saeed runs the narrow import command with his existing authenticated account; private repository/import PR not yet created here |
+| Private web source/build | Working-source supplement ported as a 33-path delta against public commit `16ca565831a67588dc1df9967b6740f44b757f99`; actual generating source now committed | Maintain/review the private delta and merge its import PR; historical generating commit stays unknown |
+| Android build reproducibility | Flutter analysis/tests and private bundle checks pass; full compile status recorded in the continuation evidence below | Local debug compile passed; private remote CI/import review remain pending; emulator/physical acceptance is later and unrun |
+| Optional account enforcement | Current main reports unprotected; rulesets `[]`; connector cannot administer settings/Projects or report plan; browser signed out | Apply available controls with existing authority; no paid plan or broad token request |
+| Product decisions | [P1-ARCH #4](https://github.com/saeed-alorm/mawid-pro/issues/4) analysis started; [alternatives/cost/capacity/effort draft](engineering/p1-architecture-analysis.md) | Saeed/Rabeeh review decision requests; no architecture, provider, budget or date is approved |
+| Later pilot acceptance | No usable emulator/KVM, physical-device rehearsal or live two-device service evidence | Saeed and eventual pilot participants verify exact target builds; three shops/two paid discussions remain targets |
 
-- Repository: https://github.com/saeed-alorm/mawid-pro (public; unchanged ownership/visibility).
-- Actual default branch: `main`, head `cbf16d7fb5b7384690952613faab4bb3cf125742`.
-- Only existing secondary branch: `codex/github-pages`; no open PRs/issues before this task. PRs #1/#2 were already merged. No readiness work was overwritten.
-- Actual Cloud checkout had only `.github/workflows/deploy-pages.yml`, with push/manual deployment and no PR trigger. The local handoff's warning about possibly existing PR CI was checked against the actual checkout; no duplicate PR workflow was added.
-- Latest pre-task Pages run: https://github.com/saeed-alorm/mawid-pro/actions/runs/33301691777 (30 August; historical success only).
-- Owner permission API reports `admin`. Connector scope is narrower: protection inspection returned 403, webhook API is unsupported, profile exposes no account plan. Branch summary reports `protected: false`; rulesets returned `[]`.
-- Current Projects cannot be comprehensively inspected/changed through this connector; browser has no signed-in session. No Project URL is claimed.
-- Accessible repository inventory/search found no authoritative mobile repository/history. The handoff snapshot has no `.git` history.
-- [Notion HQ](https://www.notion.so/40cf53c2a11d80c493fede8991643fea) returned 404 to the current connection. Its supplied link is retained without inventing feature/database links.
+## Audit and preservation
 
-Checks were run **before editing** at the default-branch commit, on Node 24.22.1/npm 11.9.0:
+Actual default branch remains `main` at `cbf16d7fb5b7384690952613faab4bb3cf125742`.
+PR17 was open and mergeable at `16ca565831a67588dc1df9967b6740f44b757f99` when reviewed;
+it was not merged, replaced or force-pushed. Existing issues #3–#16 and their linked
+dependencies remain. All FEAT-01–FEAT-50 IDs and phase assignments remain in the
+[traceability index](engineering/feature-index.md). No duplicate engineering board,
+50-issue expansion, new dates or customer commitments were created.
 
-| Baseline check | Actual result |
-|---|---|
-| Clean `npm ci` | Passed |
-| Unit/integration tests | 22 passed in 2 files |
-| ESLint | Failed: 1 existing formatting error; 11 existing fast-refresh warnings |
-| Strict TypeScript | Failed: 42 diagnostics, including optional/array/index-signature handling |
-| Normal build | Passed |
-| Pages build | Failed: Vite prerender preview called unavailable interface enumeration |
-| Pages verification | Failed because prerender emitted no entry document |
-| Browser/readiness workflow | None existed on inspected default branch |
+The original default-branch baseline had 22 passing tests and a normal build;
+lint had one error/11 warnings, strict types had 42 diagnostics, and Pages prerender
+failed in this environment. PR17 fixed those failures without relaxing tests/types
+and removed the inherited wrapper, metadata, hooks, dependency/lock entries and
+connection instructions. General SSR/route error handling and Pages routing remain.
+The original audit is retained in [the earlier readiness revision](https://github.com/saeed-alorm/mawid-pro/blob/16ca565831a67588dc1df9967b6740f44b757f99/docs/github-readiness.md).
 
-## Completed source work (awaiting review/merge)
-
-- [x] Preserved history, local demo behavior, Pages base path and SPA fallback.
-- [x] Replaced inherited wrapper with explicit Vite, React, TanStack Start, Tailwind,
-  paths and build-only Nitro plugins; retained the normal build target for compatibility,
-  without approving production hosting. Explicit loopback preview fixes local prerender.
-- [x] Removed wrapper dependency, obsolete metadata, runtime reporting hooks,
-  inherited connection instructions, Bun lock/config; regenerated the npm lockfile.
-  Useful general SSR error capture/page and route console handling remain.
-- [x] Fixed baseline lint error and strict type issues without disabling rules or
-  weakening existing test assertions. Existing 11 fast-refresh warnings remain visible.
-- [x] Added read-only PR validation `web-checks`: clean install, existing tests, lint,
-  types, normal build, Pages build, original artifact assertions, independent-toolchain
-  scan and Chromium deep-link/EN/RTL smoke checks.
-- [x] Kept Pages deployment separate, restricted to `main`; deployment permissions
-  apply only to its deploy job. No PR receives deployment credentials.
-- [x] Added pinned setup, README/source map, CONTRIBUTING, AGENTS, feature/bug forms,
-  PR template, historical prototype brief and release evidence guidance.
-- [x] Preserved all 50 feature IDs/phase assignments in the [traceability index](engineering/feature-index.md).
-- [x] Created 14 real, deduplicated engineering issues, assigned to eligible `saeed-alorm`.
-  Dependencies link actual issues; private mobile issue remains prepared, not created.
-
-## PR and remote verification
-
-- PR: https://github.com/saeed-alorm/mawid-pro/pull/17 (open; not merged).
-- Verified implementation commit: `a27b11a418e57d1060a8a608ab49f1acde1d7a53`.
-- Remote CI: https://github.com/saeed-alorm/mawid-pro/actions/runs/42369169261 — completed successfully, including `web-checks` and all browser checks.
-- The remote tree matches the locally tested implementation. This evidence-only follow-up records the links/results and small continuation-script recovery improvements; its own exact commit/check is visible in the PR.
-
-## Final local verification
+## Checks and exact source provenance
 
 | Check | Result |
 |---|---|
-| Clean web install | Passed |
-| Existing unit/integration tests | 22 passed |
-| ESLint | Passed: 0 errors, 11 pre-existing warnings |
-| Strict TypeScript | Passed; strict flags unchanged |
-| Normal SSR/Nitro build | Passed |
-| Pages build + original route/artifact checks | Passed |
-| Independent-toolchain source/lock/built-client scan | Passed |
-| Chromium browser smoke | 2 passed: deep-link hydration/booking navigation; Arabic persistence/staff route |
-| Mobile locked dependency resolution | Passed |
-| Flutter analysis | Passed, no issues |
-| Existing Flutter unit/widget tests | 5 passed |
-| Private bundle hash/variant/bridge/runtime check | Passed |
-| Android APK compile | Failed during Gradle distribution download: Java `Network is unreachable`; no APK produced |
-| Emulator / physical Android / two-device live-service checks | Not run; no usable emulator/KVM or live shared service |
-| Account setup continuation | Python/shell/JS syntax checked; not live account mutation tested |
+| Public implementation CI at 16ca565 | [Successful web-checks](https://github.com/saeed-alorm/mawid-pro/actions/runs/42369439217): clean install, 22 tests, lint/types, normal/Pages builds, original artifact/toolchain checks, 2 browser tests |
+| Public continuation tests/types/lint | Passed: 22 tests; strict types; lint 0 errors/11 existing warnings. The final continuation commit also receives [its own PR validation](https://github.com/saeed-alorm/mawid-pro/pull/17/checks); its exact SHA/run result is recorded in the PR continuation comment |
+| Supplied private snapshot | All 195 selected file hashes verified; base 6367a318… is context, not an old bundle generator |
+| Private web unit/integration/bridge tests | 113 passed across 8 files |
+| Private strict types/lint | Passed without relaxed flags; lint 0 errors/18 warnings in the larger supplied private runtime |
+| Private normal/static builds and original artifact checks | Passed using PR17's Vite/React/TanStack/Tailwind/Nitro configuration and npm lock |
+| Private vendor-hook/source/lock/client scan | Passed; no inherited builder dependency or runtime hook restored |
+| Rendered private bridge | 2 Chromium checks passed: manual approval/route continuity; tenant rejection/Arabic reload |
+| Bundle reproduction from a clean detached source checkout | 40 non-HTML runtime files matched exact hashes; HTML differed only in one TanStack prerender timestamp; build manifest has a per-build timestamp. No byte-identical HTML/APK claim |
+| Flutter analysis and tests after regeneration | Analysis clean; all 5 existing unit/widget tests passed |
+| Android debug APK compile | **Passed**: `flutter build apk --debug --no-pub`, full JDK 17, Gradle 8.14, Android platform 36/Build Tools 35.0.0/NDK 28.2.13676358; private debug test artifact only. Exact mobile source SHA and APK hash are in the private evidence package |
+| Emulator/physical-device/live two-device acceptance | Not run; no acceptance inferred from web CI or a compile |
 
-Chromium's initial CDN download was truncated; smoke checks ran with the matching
-vendor Chrome-for-Testing headless build from its official distribution. CI uses
-the standard Playwright installer. Initial Flutter startup was blocked by automatic
-review because bot detection attempted cloud metadata access. Inspection of the
-SDK showed its CI flag bypasses that unnecessary probe; checks passed with
-`CI=true FLUTTER_SUPPRESS_ANALYTICS=true`. No metadata request was authorized or retried.
+New private web output was generated after committing source
+`aa04d1a6412defdcb35687331a3c26f833375781`; generated bundle commit
+`67d5af0146595f546e48511f4d0c409675aa70ce` records that source, the public pin,
+Node 24.22.1/npm 11.9.0, command `npm run build:android:platinum`, lock hash and all
+42 packaged output hashes. Its content is kept private. The historical bundle's
+generating SHA remains null. Old bundle hashes identify an artifact only and do not
+prove source equivalence. The newly maintained source is a port of a working snapshot,
+not a recovered clean historical commit.
 
-## Gates and next steps
+The private layout has one documented public-source pin, one shared patch and added
+private bridge/assets/tests. Materialized `.work/web` is disposable, not a second
+editable application. It retains `mawid.platinum.demo.v1`, `MawidNativeBridge` v1,
+manual approval and simulated demo identity. Public Pages is never synced over it.
+A separately delivered private Git bundle retains the original prepared history
+plus these source/setup/output commits; no private source/assets are placed here.
 
-| State | Work / evidence required |
-|---|---|
-| Awaiting merge | Web readiness PR; review actual remote checks and diff, then maintainer merges |
-| Awaiting access/import | Create/reuse private `saeed-alorm/mawid-mobile`, import reviewed source on its readiness PR; never put it here |
-| Awaiting source | Recover the private web Android variant source/history and exact generating commit; full source regeneration cannot yet be verified |
-| Awaiting account access | Current plan/allowance, one Engineering Project, phase/type/priority labels, P0–P5 no-date milestones, branch controls |
-| Awaiting account audit | Verify/remove only active Lovable-only authorization/webhook; repository cleanup does not prove disconnection |
-| Pending product decision | Architecture/host/store/providers, spending cap, available capacity, pending/proposed/Any rules, ownership, support and dates |
-| Future product implementation | P1 shared booking core, identity, isolation, notifications and cross-channel clients; later phases remain epics |
+## Gradle diagnosis and authorized fix
 
-[Account continuation and exact commands](engineering/account-setup.md) provides
-an idempotent gh/API script for operations this connection cannot perform. No
-Project, label, milestone, branch protection or account disconnection is claimed
-as completed. New work remains Backlog until actual dependencies/decisions allow
-Ready. After setup merges and gates are resolved, start
-[P1-ARCH #4](https://github.com/saeed-alorm/mawid-pro/issues/4), a decision/feasibility
-spike that does not provision infrastructure or commit delivery dates.
+The old `Network is unreachable` distribution failure did not establish a server
+outage, DNS failure, bad credentials or source compile error. HTTPS transport through
+the session proxy was verified with normal certificate checking: services.gradle.org
+redirects via github.com to release-assets.githubusercontent.com and returns 200.
+The official Gradle 8.14 archive was checksum-verified before seeding its standard
+local wrapper cache. No URL repository substitution or TLS bypass was used.
 
-## Release/build distinction
+The Java/Gradle process needs explicit task-local proxy properties; single-use Gradle
+processes prevent reuse of an expired session proxy. Plugin resolution was then
+observed from plugins.gradle.org. A concurrent diagnostic/build cache lock was
+resolved by ending the diagnostic and retrying sequentially; locking was not disabled.
+Subsequent checks identified two missing environment requirements: full JDK 17 with
+`javac` (the installed runtime lacked the compiler), and AGP 8.11.1's Build Tools
+35.0.0 alongside Android platform 36. Both were installed from official sources;
+Temurin JDK 17.0.21+9 and its provider checksum were verified. Setup/CI preflight now
+requires the compiler and correct Build Tools; CMake 3.22.1 was also installed by the SDK build. The downloaded JDK initially lacked the supplied proxy CA and reported PKIX chain failures to dl.google.com, repo.maven.apache.org and storage.googleapis.com. Pointing Java to the provided `/etc/ssl/certs/java/cacerts` trust store resolved that TLS trust configuration without disabling verification. The subsequent Android debug compile passed. No authentication challenge or DNS failure was observed. No broad network policy change has
+been needed on the verified route. Any later blocked host must be reported from its
+actual failure, rather than requesting unrestricted access.
 
-No version/tag or production release was invented. The web prototype is untagged;
-Android snapshot declares 0.2.0+2 with debug/test signing, not a store-ready release.
-[Release evidence requirements](engineering/release-evidence.md) cover exact commits,
-variant, locks, CI, hashes, platform and target acceptance. Pages build provenance
-is generated from the checked source commit; local dirty builds are marked as such.
-The [mobile provenance gap](mobile-handoff.md) remains explicit.
+## Remaining narrow account actions
 
-GitHub owns engineering status/source/docs/builds/releases; Notion owns intent,
-business work, pilots, decisions and later support/CRM. No second editable engineering
-board or paid sync was created. Three pilot shops and two paid discussions are targets.
-The historical 6 November review is not a new deadline. Saeed leads engineering;
-Rabeeh/Rabih is a partner, with no inferred product role or GitHub account.
+Current tools support source/PR/issue writes but do not expose repository creation,
+Project creation or label/milestone administration. Label/milestone endpoint reads
+were explicitly rejected by the connector's endpoint allowlist; account plan and
+Lovable authorizations are not exposed. The browser is signed out. Owner `admin`
+permission on the repository is distinct from the connector's API capability.
 
-## Created issue links
+Use the existing [gh/API continuation](../scripts/github-setup.py) with Saeed's
+already-authenticated account. It preserves edited issues/status, detects duplicates,
+recovers empty partially created Projects, refreshes bundle refs after partial imports,
+and pushes without force. It does not upgrade plans, change billing, merge, deploy,
+change repository visibility or set nonexistent required checks.
 
-- [ENG-SETUP #3](https://github.com/saeed-alorm/mawid-pro/issues/3)
-- [P1-ARCH #4](https://github.com/saeed-alorm/mawid-pro/issues/4)
-- [P1-IDENTITY #5](https://github.com/saeed-alorm/mawid-pro/issues/5)
-- [P1-DATA #6](https://github.com/saeed-alorm/mawid-pro/issues/6)
-- [P1-BOOKING #7](https://github.com/saeed-alorm/mawid-pro/issues/7)
-- [P1-NOTIFY #8](https://github.com/saeed-alorm/mawid-pro/issues/8)
-- [P1-WEB #9](https://github.com/saeed-alorm/mawid-pro/issues/9)
-- [P1-BRAND #10](https://github.com/saeed-alorm/mawid-pro/issues/10)
-- [P1-OPS #11](https://github.com/saeed-alorm/mawid-pro/issues/11)
-- [P1-ACCEPT #12](https://github.com/saeed-alorm/mawid-pro/issues/12)
-- [EPIC-P2 #13](https://github.com/saeed-alorm/mawid-pro/issues/13)
-- [EPIC-P3 #14](https://github.com/saeed-alorm/mawid-pro/issues/14)
-- [EPIC-P4 #15](https://github.com/saeed-alorm/mawid-pro/issues/15)
-- [EPIC-P5 #16](https://github.com/saeed-alorm/mawid-pro/issues/16)
+```sh
+python3 scripts/github-setup.py audit
+python3 scripts/github-setup.py mobile-import --bundle ../mawid-private-readiness/mawid-mobile-readiness.git.bundle
+python3 scripts/github-setup.py metadata
+# Optional branch enforcement, only with an actual successful current checked SHA:
+python3 scripts/github-setup.py protect --sha CURRENT_SUCCESSFUL_WEB_PR_SHA
+```
+
+`metadata` reuses the 14 live issues and separately creates the prepared mobile issue
+only in the private target, then reconciles one private MAWID Engineering Project,
+phase/type/priority labels and P0–P5 milestones without dates. New items start Backlog;
+existing states are preserved. Private Actions remain gated until included allowance
+and a paid-usage hard stop are verified. Optional unsupported enforcement uses manual
+PR/check/self-review discipline, not a paid upgrade or impossible independent review.
+
+## Account authorization is a separate unresolved audit
+
+Source/lock/output scans prove code cleanup only. No active account authorization or
+webhook could be inspected or removed with current authority. Saeed's precise remaining
+action: inspect GitHub Settings → Applications (Authorized OAuth Apps and Installed
+GitHub Apps), mawid-pro Settings → Webhooks, and the matching project's GitHub connection
+in Lovable. Remove only verified Lovable-only access/hooks, preserve unrelated
+integrations, and record the actual result. No disconnection is claimed.
+
+## Decision work and next action
+
+P1-ARCH analysis is underway now under the continuation instruction; it does not wait
+for emulator/physical acceptance or optional account controls. The draft compares
+three unapproved service/storage alternatives, workload/hosting and messaging-cost
+assumptions, manual/pending/Any/proposal capacity rules, concurrency/idempotency and
+Beirut-time questions, and preliminary effort ranges. The existing #3 dependency is
+preserved for implementation readiness. No provider, spending cap, staffing capacity,
+delivery date, automatic member eligibility, iOS timing or mass publishing is approved.
+
+Saeed reviews/merges PR17 and completes the narrow private import action; Saeed/Rabeeh
+review #4's decision requests in parallel. Product intent/decisions remain in
+[Notion HQ](https://www.notion.so/40cf53c2a11d80c493fede8991643fea), whose feature/database
+pages remain unverified. A merged PR, compiled test APK, released fix and resolved
+customer ticket are distinct. Follow [release evidence](engineering/release-evidence.md).

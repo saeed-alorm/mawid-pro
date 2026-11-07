@@ -150,7 +150,12 @@ def metadata():
     names=[o['name'] for o in status['options']]
     if names!=STATUSES:
         # Do not remap live statuses or destroy existing Project configuration.
-        if not created:raise RuntimeError(f"Existing Project {project['url']} has other Status options; reconcile to {STATUSES} without losing item states, then rerun")
+        if not created:
+            # A previous run may have created an empty project then lost access.
+            sample=gql('query($id:ID!){node(id:$id){... on ProjectV2{items(first:1){totalCount}}}}',id=project['id'])['node']['items']['totalCount']
+            defaults=set(names).issubset({'Todo','In Progress','Done','Backlog','In progress'})
+            if sample or not defaults:
+                raise RuntimeError(f"Existing Project {project['url']} has live/nondefault states; reconcile without losing items before rerun")
         options=[{'name':s,'color':c,'description':d} for s,c,d in zip(STATUSES,['GRAY','BLUE','YELLOW','ORANGE','PURPLE','GREEN'],['Not yet implementation ready','Dependencies/decisions allow work','Active branch work','PR checks and review','Merged; target build verification pending','Acceptance and release evidence complete'])]
         status=gql('mutation($id:ID!,$opts:[ProjectV2SingleSelectFieldOptionInput!]!){updateProjectV2Field(input:{fieldId:$id,singleSelectOptions:$opts}){projectV2Field{... on ProjectV2SingleSelectField{id name options{id name}}}}}',id=status['id'],opts=options)['updateProjectV2Field']['projectV2Field']
     backlog=next(o['id'] for o in status['options'] if o['name']=='Backlog')
@@ -197,28 +202,46 @@ def protect(sha):
 def mobile_import(bundle):
     identify();bundle=Path(bundle).resolve()
     if not bundle.is_file():raise RuntimeError('Private reviewed Git bundle is required before repository creation')
-    run(['git','bundle','list-heads',str(bundle)])
+    run(['git','bundle','verify',str(bundle)],cwd=ROOT)
+    bundle_refs={line.split()[1]:line.split()[0] for line in run(['git','bundle','list-heads',str(bundle)]).stdout.splitlines()}
+    required={'refs/heads/main','refs/heads/codex/github-readiness-2026-11-07'}
+    if set(bundle_refs)!=required or bundle_refs['refs/heads/main']!='3467593ab798caed5b3a8c3e94e362fd5a341149':
+        raise RuntimeError('Bundle is not the reviewed complete private import history; reconcile before repository creation')
+    if bundle_refs['refs/heads/main']==bundle_refs['refs/heads/codex/github-readiness-2026-11-07']:
+        raise RuntimeError('Bundle has no source/setup branch changes; refusing empty onboarding')
     existing=api(f'repos/{MOBILE}',allow_missing=True)
     if existing and not existing['private']:raise RuntimeError('Existing mobile repository is public; do not import private source or change visibility here')
     if existing:
-        refs=run(['git','ls-remote',f'https://github.com/{MOBILE}.git'],check=False)
+        refs=run(['git','-c','credential.helper=','-c','credential.helper=!gh auth git-credential','ls-remote',f'https://github.com/{MOBILE}.git'],check=False)
         # Reuse history rather than importing over an existing authoritative repository.
         if refs.returncode:raise RuntimeError('Cannot inspect existing mobile refs')
         allowed='refs/heads/codex/github-readiness-2026-11-07'
-        if refs.stdout.strip() and allowed not in refs.stdout:raise RuntimeError('Existing mobile history found; reconcile authoritative source before snapshot import')
+        for line in refs.stdout.splitlines():
+            remote_sha,remote_ref=line.split()
+            if remote_ref=='HEAD':continue
+            if remote_ref not in bundle_refs:
+                raise RuntimeError('Existing mobile history has unrelated refs; reconcile before snapshot import')
+            if remote_sha!=bundle_refs[remote_ref] and remote_ref!='refs/heads/codex/github-readiness-2026-11-07':
+                raise RuntimeError('Existing mobile baseline differs; reconcile authoritative history before import')
+        # Branch pushes below are fast-forward only; independent newer work cannot be overwritten.
     else:
         api('user/repos','POST',{'name':'mawid-mobile','private':True,'description':'Private MAWID Android engineering source; fictional demo, not production','auto_init':False})
     temp=ROOT.parent/'mawid-mobile-import'
     if not (temp/'.git').exists():run(['git','clone','--branch','main',str(bundle),str(temp)])
+    # Refresh local bundle refs on every run, including after a partial earlier import.
+    run(['git','fetch',str(bundle),'refs/heads/main:refs/remotes/mawid-bundle/main','refs/heads/codex/github-readiness-2026-11-07:refs/remotes/mawid-bundle/readiness'],cwd=temp)
     # Remote visibility was checked before any source push. Never force push.
     remotes=run(['git','remote'],cwd=temp).stdout.split()
     if 'github' not in remotes:run(['git','remote','add','github',f'https://github.com/{MOBILE}.git'],cwd=temp)
-    run(['git','push','github','refs/heads/main:refs/heads/main','refs/remotes/origin/codex/github-readiness-2026-11-07:refs/heads/codex/github-readiness-2026-11-07'],cwd=temp)
+    actual=run(['git','remote','get-url','--push','github'],cwd=temp).stdout.strip()
+    if actual!=f'https://github.com/{MOBILE}.git':
+        raise RuntimeError('Existing import checkout has a different push destination; reconcile before private source push')
+    run(['git','-c','credential.helper=','-c','credential.helper=!gh auth git-credential','push','github','refs/remotes/mawid-bundle/main:refs/heads/main','refs/remotes/mawid-bundle/readiness:refs/heads/codex/github-readiness-2026-11-07'],cwd=temp)
     api(f'repos/{MOBILE}','PATCH',{'default_branch':'main'})
     prs=pages(f'repos/{MOBILE}/pulls?state=open')
     match=next((p for p in prs if p['head']['ref']=='codex/github-readiness-2026-11-07'),None)
     if not match:
-        match=api(f'repos/{MOBILE}/pulls','POST',{'title':'Import private Android demo and reproducible engineering setup','head':'codex/github-readiness-2026-11-07','base':'main','body':'Imports the supplied source snapshot with provenance, Linux setup, tests and gated private CI. Full private web source provenance remains unresolved. No production/store release. Review docs/github-readiness.md and test evidence before merging.'})
+        match=api(f'repos/{MOBILE}/pulls','POST',{'title':'Import private Android demo and reproducible engineering setup','head':'codex/github-readiness-2026-11-07','base':'main','body':'Imports the supplied source snapshot with provenance, Linux setup, tests and gated private CI. Private working-source delta is pinned to the independent public toolchain; historical bundle-generating provenance remains unknown. No production/store release. Review docs/github-readiness.md and test evidence before merging.'})
     print('Private import PR:',match['html_url'])
     print('CI remains gated until included allowance and hard-stop billing settings are verified. No source onboarding is complete until merge and checks pass.')
 
