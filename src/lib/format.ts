@@ -17,7 +17,7 @@ export function formatLongDate(dateStr: string, lang: Lang) {
 }
 
 export function formatTime(time: string, lang: Lang) {
-  const [h, m] = time.split(":").map(Number);
+  const [h = Number.NaN, m = Number.NaN] = time.split(":").map(Number);
   const d = new Date();
   d.setHours(h, m, 0, 0);
   return new Intl.DateTimeFormat(locale(lang), { hour: "2-digit", minute: "2-digit" }).format(d);

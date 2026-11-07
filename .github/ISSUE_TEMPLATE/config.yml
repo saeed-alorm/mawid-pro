@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Product intent and business work
+    url: https://www.notion.so/40cf53c2a11d80c493fede8991643fea
+    about: Keep business tasks, pilots and decisions in Notion; engineering state lives in GitHub

@@ -13,8 +13,8 @@ export type Bi = { en: string; ar: string };
 export type DayShift = {
   start: string;
   end: string;
-  breakStart?: string;
-  breakEnd?: string;
+  breakStart?: string | undefined;
+  breakEnd?: string | undefined;
 } | null;
 export type WeekSchedule = DayShift[]; // index 0 = Sunday
 
@@ -75,9 +75,9 @@ export type Appointment = {
   time: string; // HH:mm
   status: BookingStatus;
   createdAt: string; // ISO
-  proposedDate?: string;
-  proposedTime?: string;
-  note?: string;
+  proposedDate?: string | undefined;
+  proposedTime?: string | undefined;
+  note?: string | undefined;
 };
 
 export const DEMO_OTP = "123456";
@@ -90,7 +90,7 @@ export function beirutDate(date = new Date()) {
     day: "2-digit",
   }).formatToParts(date);
   const value = Object.fromEntries(parts.map((part) => [part.type, part.value]));
-  return `${value.year}-${value.month}-${value.day}`;
+  return `${value["year"]}-${value["month"]}-${value["day"]}`;
 }
 
 export function beirutMinutes(date = new Date()) {
@@ -101,7 +101,7 @@ export function beirutMinutes(date = new Date()) {
     minute: "2-digit",
   }).formatToParts(date);
   const value = Object.fromEntries(parts.map((part) => [part.type, part.value]));
-  return Number(value.hour) * 60 + Number(value.minute);
+  return Number(value["hour"]) * 60 + Number(value["minute"]);
 }
 
 export const salons: Salon[] = [

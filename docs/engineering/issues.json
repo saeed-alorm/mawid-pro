@@ -1,0 +1,463 @@
+[
+  {
+    "key": "ENG-SETUP",
+    "title": "[ENG-SETUP] Complete and verify engineering readiness",
+    "repository": "saeed-alorm/mawid-pro",
+    "phase": "P0",
+    "type": "task",
+    "priority": "critical",
+    "feature_ids": [],
+    "dependencies": [],
+    "scope": "Review the readiness PR; finish private mobile import, account integration audit, board and branch controls. No production infrastructure.",
+    "acceptance": [
+      "Web readiness PR merged after actual checks and self-review.",
+      "Private mobile source imported through its own PR; analysis, tests and APK compile evidenced.",
+      "One Engineering Project has six agreed statuses and real issue links.",
+      "Account plan/allowance verified; enforce available controls without independent reviewer requirement.",
+      "Embedded private bundle has independently verified source provenance or an explicit unresolved source gate; do not claim full readiness without it."
+    ],
+    "verification": "Use docs/github-readiness.md and linked CI runs; record exact imported source, tested commits and target-build results.",
+    "decisions": "Account admin/Projects/repository-creation access, private variant source provenance, physical Android rehearsal.",
+    "status": "Backlog",
+    "body": "<!-- maw-id:ENG-SETUP -->\n## Outcome and scope\nReview the readiness PR; finish private mobile import, account integration audit, board and branch controls. No production infrastructure.\n\n## Acceptance criteria\n- [ ] Web readiness PR merged after actual checks and self-review.\n- [ ] Private mobile source imported through its own PR; analysis, tests and APK compile evidenced.\n- [ ] One Engineering Project has six agreed statuses and real issue links.\n- [ ] Account plan/allowance verified; enforce available controls without independent reviewer requirement.\n- [ ] Embedded private bundle has independently verified source provenance or an explicit unresolved source gate; do not claim full readiness without it.\n\n## Dependencies\nNo engineering prerequisites; close only after linked evidence is complete.\n\n## Source\nFeatures: Engineering readiness; supports the phased plan.\n[Notion HQ](https://www.notion.so/40cf53c2a11d80c493fede8991643fea) — product intent/decisions; individual feature pages are not verified.\n\n## Verification\nUse docs/github-readiness.md and linked CI runs; record exact imported source, tested commits and target-build results.\n\n## Unresolved decisions / readiness\nAccount admin/Projects/repository-creation access, private variant source provenance, physical Android rehearsal.\nInitial engineering status: Backlog. Project status is authoritative; dependencies and decisions must be satisfied before Ready.\n\nLead engineer: @saeed-alorm. Rabeeh/Rabih Bou Diab is a partner; no product role or GitHub account has been assigned.\n"
+  },
+  {
+    "key": "P1-ARCH",
+    "title": "[P1-ARCH] Decide shared booking architecture, feasibility and capacity policies",
+    "repository": "saeed-alorm/mawid-pro",
+    "phase": "P1",
+    "type": "decision",
+    "priority": "high",
+    "feature_ids": [
+      "FEAT-01",
+      "FEAT-09",
+      "FEAT-10",
+      "FEAT-11",
+      "FEAT-25",
+      "FEAT-38",
+      "FEAT-45"
+    ],
+    "dependencies": [
+      "ENG-SETUP"
+    ],
+    "scope": "Produce an ADR and cost/capacity model comparing feasible mobile/web/service/storage/hosting and identity/notification options. Recommendations remain proposals until approved; do not provision anything.",
+    "acceptance": [
+      "Document workload assumptions, included allowances, messaging/support cost, backup/export and migration/exit path.",
+      "Approve an internal contract for all channels: tenant/location IDs, time representation, errors, versions, permissions and idempotency.",
+      "Decide whether pending/proposed requests consume capacity, how Any-professional requests reserve capacity, expiry, assignment and cancellation rules.",
+      "Record spending cap, available engineering capacity, ownership and estimate ranges separately from dates.",
+      "Manual approval is initial; automatic member/regular eligibility, iOS timing and P4/P5 work are explicitly deferred."
+    ],
+    "verification": "Review ADR against representative shop scenarios, simultaneous requests and outage/retry examples; record approval in Notion HQ with a direct decision link only when it exists.",
+    "decisions": "Flutter + React, PostgreSQL, managed hosting, spend/capacity, slot holds/expiry, Any policy and service durations are open.",
+    "status": "Backlog",
+    "body": "<!-- maw-id:P1-ARCH -->\n## Outcome and scope\nProduce an ADR and cost/capacity model comparing feasible mobile/web/service/storage/hosting and identity/notification options. Recommendations remain proposals until approved; do not provision anything.\n\n## Acceptance criteria\n- [ ] Document workload assumptions, included allowances, messaging/support cost, backup/export and migration/exit path.\n- [ ] Approve an internal contract for all channels: tenant/location IDs, time representation, errors, versions, permissions and idempotency.\n- [ ] Decide whether pending/proposed requests consume capacity, how Any-professional requests reserve capacity, expiry, assignment and cancellation rules.\n- [ ] Record spending cap, available engineering capacity, ownership and estimate ranges separately from dates.\n- [ ] Manual approval is initial; automatic member/regular eligibility, iOS timing and P4/P5 work are explicitly deferred.\n\n## Dependencies\nENG-SETUP\n\n## Source\nFeatures: FEAT-01, FEAT-09, FEAT-10, FEAT-11, FEAT-25, FEAT-38, FEAT-45.\n[Notion HQ](https://www.notion.so/40cf53c2a11d80c493fede8991643fea) — product intent/decisions; individual feature pages are not verified.\n\n## Verification\nReview ADR against representative shop scenarios, simultaneous requests and outage/retry examples; record approval in Notion HQ with a direct decision link only when it exists.\n\n## Unresolved decisions / readiness\nFlutter + React, PostgreSQL, managed hosting, spend/capacity, slot holds/expiry, Any policy and service durations are open.\nInitial engineering status: Backlog. Project status is authoritative; dependencies and decisions must be satisfied before Ready.\n\nLead engineer: @saeed-alorm. Rabeeh/Rabih Bou Diab is a partner; no product role or GitHub account has been assigned.\n"
+  },
+  {
+    "key": "P1-IDENTITY",
+    "title": "[P1-IDENTITY] Implement real customer/staff identity and server permissions",
+    "repository": "saeed-alorm/mawid-pro",
+    "phase": "P1",
+    "type": "task",
+    "priority": "high",
+    "feature_ids": [
+      "FEAT-26",
+      "FEAT-47"
+    ],
+    "dependencies": [
+      "P1-ARCH"
+    ],
+    "scope": "Replace simulated identity in the future shared service with approved identity/session strategy, owner/staff/customer permission matrix and abuse controls.",
+    "acceptance": [
+      "Owner, manager/reception, professional and customer scopes enforced by server; no client role switch grants authority.",
+      "Verification resend/attempt limits, expiry, recovery, logout/revocation and session expiry tested.",
+      "Cross-shop object access, role escalation and customer access to other records denied.",
+      "Logs redact identity secrets; collect the minimum required customer data."
+    ],
+    "verification": "Automated positive/negative permission matrix, verification retry/rate-limit tests and two-device session exercise in a versioned test build.",
+    "decisions": "Provider, phone verification/recovery policy, staff invitations and retention require approval.",
+    "status": "Backlog",
+    "body": "<!-- maw-id:P1-IDENTITY -->\n## Outcome and scope\nReplace simulated identity in the future shared service with approved identity/session strategy, owner/staff/customer permission matrix and abuse controls.\n\n## Acceptance criteria\n- [ ] Owner, manager/reception, professional and customer scopes enforced by server; no client role switch grants authority.\n- [ ] Verification resend/attempt limits, expiry, recovery, logout/revocation and session expiry tested.\n- [ ] Cross-shop object access, role escalation and customer access to other records denied.\n- [ ] Logs redact identity secrets; collect the minimum required customer data.\n\n## Dependencies\nP1-ARCH\n\n## Source\nFeatures: FEAT-26, FEAT-47.\n[Notion HQ](https://www.notion.so/40cf53c2a11d80c493fede8991643fea) — product intent/decisions; individual feature pages are not verified.\n\n## Verification\nAutomated positive/negative permission matrix, verification retry/rate-limit tests and two-device session exercise in a versioned test build.\n\n## Unresolved decisions / readiness\nProvider, phone verification/recovery policy, staff invitations and retention require approval.\nInitial engineering status: Backlog. Project status is authoritative; dependencies and decisions must be satisfied before Ready.\n\nLead engineer: @saeed-alorm. Rabeeh/Rabih Bou Diab is a partner; no product role or GitHub account has been assigned.\n"
+  },
+  {
+    "key": "P1-DATA",
+    "title": "[P1-DATA] Persist booking data with tested tenant isolation and safe imports",
+    "repository": "saeed-alorm/mawid-pro",
+    "phase": "P1",
+    "type": "task",
+    "priority": "high",
+    "feature_ids": [
+      "FEAT-09",
+      "FEAT-25",
+      "FEAT-27",
+      "FEAT-29",
+      "FEAT-30"
+    ],
+    "dependencies": [
+      "P1-ARCH",
+      "P1-IDENTITY"
+    ],
+    "scope": "Implement approved persistent storage, tenant/location separation, minimal customer records, migrations, event history and tenant-scoped exports. Assisted imports need preview, duplicate checks and rollback.",
+    "acceptance": [
+      "Records survive restart and are visible only to authorized clients.",
+      "Two-tenant tests cover every read/write/export/import path and guessed IDs.",
+      "Migration and authorized import have preview/duplicate detection, transactional rollback and audit evidence.",
+      "Separate organization and location model without committing multi-branch operations in P1."
+    ],
+    "verification": "Persistence/restart tests, isolation suite on real chosen datastore, migration rollback and import/export fixtures with synthetic data.",
+    "decisions": "Storage choice, retention/deletion, data ownership/export and migration limits pending ADR.",
+    "status": "Backlog",
+    "body": "<!-- maw-id:P1-DATA -->\n## Outcome and scope\nImplement approved persistent storage, tenant/location separation, minimal customer records, migrations, event history and tenant-scoped exports. Assisted imports need preview, duplicate checks and rollback.\n\n## Acceptance criteria\n- [ ] Records survive restart and are visible only to authorized clients.\n- [ ] Two-tenant tests cover every read/write/export/import path and guessed IDs.\n- [ ] Migration and authorized import have preview/duplicate detection, transactional rollback and audit evidence.\n- [ ] Separate organization and location model without committing multi-branch operations in P1.\n\n## Dependencies\nP1-ARCH; P1-IDENTITY\n\n## Source\nFeatures: FEAT-09, FEAT-25, FEAT-27, FEAT-29, FEAT-30.\n[Notion HQ](https://www.notion.so/40cf53c2a11d80c493fede8991643fea) — product intent/decisions; individual feature pages are not verified.\n\n## Verification\nPersistence/restart tests, isolation suite on real chosen datastore, migration rollback and import/export fixtures with synthetic data.\n\n## Unresolved decisions / readiness\nStorage choice, retention/deletion, data ownership/export and migration limits pending ADR.\nInitial engineering status: Backlog. Project status is authoritative; dependencies and decisions must be satisfied before Ready.\n\nLead engineer: @saeed-alorm. Rabeeh/Rabih Bou Diab is a partner; no product role or GitHub account has been assigned.\n"
+  },
+  {
+    "key": "P1-BOOKING",
+    "title": "[P1-BOOKING] Implement authoritative availability and booking transitions",
+    "repository": "saeed-alorm/mawid-pro",
+    "phase": "P1",
+    "type": "task",
+    "priority": "high",
+    "feature_ids": [
+      "FEAT-09",
+      "FEAT-10",
+      "FEAT-11",
+      "FEAT-17",
+      "FEAT-38",
+      "FEAT-45"
+    ],
+    "dependencies": [
+      "P1-ARCH",
+      "P1-DATA",
+      "P1-IDENTITY"
+    ],
+    "scope": "One shared booking core handles Beirut dates/DST, staff hours/breaks/absence, selected or Any professional, manual requests, approvals/rejections/proposals, cancellation and rebooking.",
+    "acceptance": [
+      "Server revalidates service duration, availability and permissions on every transition.",
+      "Persist instants with explicit Asia/Beirut presentation; test DST gaps/folds and midnight boundaries.",
+      "Atomic conflict handling, idempotency and approved pending/proposed capacity rules prevent double booking under parallel requests.",
+      "Retries cannot create duplicate appointments or repeat terminal transitions; stale updates return useful conflicts.",
+      "Staff-entered appointments use the same core; booking works without payment collection.",
+      "Offline requests stay visibly unconfirmed until server acceptance."
+    ],
+    "verification": "Parallel request tests against real datastore; transition table tests; time-zone/DST fixtures; duplicate/retry/stale request and two-device acceptance tests.",
+    "decisions": "Capacity hold/expiry, Any assignment, duration granularity and cancellation cutoffs must be decided by P1-ARCH.",
+    "status": "Backlog",
+    "body": "<!-- maw-id:P1-BOOKING -->\n## Outcome and scope\nOne shared booking core handles Beirut dates/DST, staff hours/breaks/absence, selected or Any professional, manual requests, approvals/rejections/proposals, cancellation and rebooking.\n\n## Acceptance criteria\n- [ ] Server revalidates service duration, availability and permissions on every transition.\n- [ ] Persist instants with explicit Asia/Beirut presentation; test DST gaps/folds and midnight boundaries.\n- [ ] Atomic conflict handling, idempotency and approved pending/proposed capacity rules prevent double booking under parallel requests.\n- [ ] Retries cannot create duplicate appointments or repeat terminal transitions; stale updates return useful conflicts.\n- [ ] Staff-entered appointments use the same core; booking works without payment collection.\n- [ ] Offline requests stay visibly unconfirmed until server acceptance.\n\n## Dependencies\nP1-ARCH; P1-DATA; P1-IDENTITY\n\n## Source\nFeatures: FEAT-09, FEAT-10, FEAT-11, FEAT-17, FEAT-38, FEAT-45.\n[Notion HQ](https://www.notion.so/40cf53c2a11d80c493fede8991643fea) — product intent/decisions; individual feature pages are not verified.\n\n## Verification\nParallel request tests against real datastore; transition table tests; time-zone/DST fixtures; duplicate/retry/stale request and two-device acceptance tests.\n\n## Unresolved decisions / readiness\nCapacity hold/expiry, Any assignment, duration granularity and cancellation cutoffs must be decided by P1-ARCH.\nInitial engineering status: Backlog. Project status is authoritative; dependencies and decisions must be satisfied before Ready.\n\nLead engineer: @saeed-alorm. Rabeeh/Rabih Bou Diab is a partner; no product role or GitHub account has been assigned.\n"
+  },
+  {
+    "key": "P1-NOTIFY",
+    "title": "[P1-NOTIFY] Deliver transactional notifications with visible failure handling",
+    "repository": "saeed-alorm/mawid-pro",
+    "phase": "P1",
+    "type": "task",
+    "priority": "high",
+    "feature_ids": [
+      "FEAT-32",
+      "FEAT-34"
+    ],
+    "dependencies": [
+      "P1-ARCH",
+      "P1-BOOKING"
+    ],
+    "scope": "Integrate one approved transactional channel and a fallback with bilingual templates and status visibility; no marketing campaigns.",
+    "acceptance": [
+      "Only committed booking events enqueue notifications; deduplicate repeated events.",
+      "Bounded retry/backoff handles provider timeouts, rejection and delayed callbacks.",
+      "Owner/customer sees delivery failure and truthful booking status; undelivered does not mean unbooked.",
+      "Secrets stay outside Git; logs omit sensitive message content; delivery costs and opt-in rules documented."
+    ],
+    "verification": "Provider sandbox/contract tests for success, duplicate, timeout, rejection, delayed receipt and fallback; demonstrate visible failure in EN/AR.",
+    "decisions": "Channel/provider, fallback, consent, sender identity and messaging allowance/spend remain open.",
+    "status": "Backlog",
+    "body": "<!-- maw-id:P1-NOTIFY -->\n## Outcome and scope\nIntegrate one approved transactional channel and a fallback with bilingual templates and status visibility; no marketing campaigns.\n\n## Acceptance criteria\n- [ ] Only committed booking events enqueue notifications; deduplicate repeated events.\n- [ ] Bounded retry/backoff handles provider timeouts, rejection and delayed callbacks.\n- [ ] Owner/customer sees delivery failure and truthful booking status; undelivered does not mean unbooked.\n- [ ] Secrets stay outside Git; logs omit sensitive message content; delivery costs and opt-in rules documented.\n\n## Dependencies\nP1-ARCH; P1-BOOKING\n\n## Source\nFeatures: FEAT-32, FEAT-34.\n[Notion HQ](https://www.notion.so/40cf53c2a11d80c493fede8991643fea) — product intent/decisions; individual feature pages are not verified.\n\n## Verification\nProvider sandbox/contract tests for success, duplicate, timeout, rejection, delayed receipt and fallback; demonstrate visible failure in EN/AR.\n\n## Unresolved decisions / readiness\nChannel/provider, fallback, consent, sender identity and messaging allowance/spend remain open.\nInitial engineering status: Backlog. Project status is authoritative; dependencies and decisions must be satisfied before Ready.\n\nLead engineer: @saeed-alorm. Rabeeh/Rabih Bou Diab is a partner; no product role or GitHub account has been assigned.\n"
+  },
+  {
+    "key": "P1-MOBILE",
+    "title": "[P1-MOBILE] Connect Flutter to the shared booking service",
+    "repository": "saeed-alorm/mawid-mobile",
+    "phase": "P1",
+    "type": "task",
+    "priority": "high",
+    "feature_ids": [
+      "FEAT-01",
+      "FEAT-09",
+      "FEAT-26",
+      "FEAT-45"
+    ],
+    "dependencies": [
+      "P1-ARCH",
+      "P1-BOOKING",
+      "P1-IDENTITY"
+    ],
+    "scope": "Integrate the private Android candidate with approved shared service and identity contract; remove demo-only bridge assumptions from live paths while retaining labelled demo mode.",
+    "acceptance": [
+      "Native customer and embedded staff views read the same server records and permissions.",
+      "Restart/reconnect/session expiry show truthful states; duplicate retries and offline requests stay unconfirmed.",
+      "A customer request on Android is acted on by staff on a different device, then reflected on Android.",
+      "Private bundle generation records exact web/mobile commits and cannot accept the public Pages variant.",
+      "APK is labelled private test artifact; no iOS/store or mass-branded release commitment."
+    ],
+    "verification": "Flutter analysis/unit/widget tests, Android compile, emulator integration and physical two-device rehearsal using a versioned APK and isolated test workspace.",
+    "decisions": "Client architecture/session handoff, missing private web variant source and approved API contract.",
+    "status": "Backlog",
+    "body": "<!-- maw-id:P1-MOBILE -->\n## Outcome and scope\nIntegrate the private Android candidate with approved shared service and identity contract; remove demo-only bridge assumptions from live paths while retaining labelled demo mode.\n\n## Acceptance criteria\n- [ ] Native customer and embedded staff views read the same server records and permissions.\n- [ ] Restart/reconnect/session expiry show truthful states; duplicate retries and offline requests stay unconfirmed.\n- [ ] A customer request on Android is acted on by staff on a different device, then reflected on Android.\n- [ ] Private bundle generation records exact web/mobile commits and cannot accept the public Pages variant.\n- [ ] APK is labelled private test artifact; no iOS/store or mass-branded release commitment.\n\n## Dependencies\nP1-ARCH; P1-BOOKING; P1-IDENTITY\n\n## Source\nFeatures: FEAT-01, FEAT-09, FEAT-26, FEAT-45.\n[Notion HQ](https://www.notion.so/40cf53c2a11d80c493fede8991643fea) — product intent/decisions; individual feature pages are not verified.\n\n## Verification\nFlutter analysis/unit/widget tests, Android compile, emulator integration and physical two-device rehearsal using a versioned APK and isolated test workspace.\n\n## Unresolved decisions / readiness\nClient architecture/session handoff, missing private web variant source and approved API contract.\nInitial engineering status: Backlog. Project status is authoritative; dependencies and decisions must be satisfied before Ready.\n\nLead engineer: @saeed-alorm. Rabeeh/Rabih Bou Diab is a partner; no product role or GitHub account has been assigned.\n"
+  },
+  {
+    "key": "P1-WEB",
+    "title": "[P1-WEB] Connect mobile web and staff workspace with cross-device continuity",
+    "repository": "saeed-alorm/mawid-pro",
+    "phase": "P1",
+    "type": "task",
+    "priority": "high",
+    "feature_ids": [
+      "FEAT-03",
+      "FEAT-17",
+      "FEAT-23",
+      "FEAT-24",
+      "FEAT-29",
+      "FEAT-45"
+    ],
+    "dependencies": [
+      "P1-BOOKING",
+      "P1-IDENTITY",
+      "P1-DATA"
+    ],
+    "scope": "Integrate responsive branded web/staff views with approved shared service. Dashboard derives tenant-scoped metrics from stored booking events; no unsupported revenue figures.",
+    "acceptance": [
+      "Customer web, Android and staff dashboard share booking IDs, states and authorization.",
+      "Two-device approve/reject/propose/cancel/rebook flow works after restart and reconnect.",
+      "Staff calendar/manual bookings use server availability, with clear conflicts, loading and failure states.",
+      "Operational metrics/exports match authoritative records; prototype launcher never becomes a public marketplace."
+    ],
+    "verification": "Browser E2E against isolated service with Android cross-channel contract evidence, real permission checks and reload/reconnect tests.",
+    "decisions": "Update transport/polling, supported browsers and operational metric definitions after ADR.",
+    "status": "Backlog",
+    "body": "<!-- maw-id:P1-WEB -->\n## Outcome and scope\nIntegrate responsive branded web/staff views with approved shared service. Dashboard derives tenant-scoped metrics from stored booking events; no unsupported revenue figures.\n\n## Acceptance criteria\n- [ ] Customer web, Android and staff dashboard share booking IDs, states and authorization.\n- [ ] Two-device approve/reject/propose/cancel/rebook flow works after restart and reconnect.\n- [ ] Staff calendar/manual bookings use server availability, with clear conflicts, loading and failure states.\n- [ ] Operational metrics/exports match authoritative records; prototype launcher never becomes a public marketplace.\n\n## Dependencies\nP1-BOOKING; P1-IDENTITY; P1-DATA\n\n## Source\nFeatures: FEAT-03, FEAT-17, FEAT-23, FEAT-24, FEAT-29, FEAT-45.\n[Notion HQ](https://www.notion.so/40cf53c2a11d80c493fede8991643fea) — product intent/decisions; individual feature pages are not verified.\n\n## Verification\nBrowser E2E against isolated service with Android cross-channel contract evidence, real permission checks and reload/reconnect tests.\n\n## Unresolved decisions / readiness\nUpdate transport/polling, supported browsers and operational metric definitions after ADR.\nInitial engineering status: Backlog. Project status is authoritative; dependencies and decisions must be satisfied before Ready.\n\nLead engineer: @saeed-alorm. Rabeeh/Rabih Bou Diab is a partner; no product role or GitHub account has been assigned.\n"
+  },
+  {
+    "key": "P1-BRAND",
+    "title": "[P1-BRAND] Add controlled shop branding and stable booking links/QR",
+    "repository": "saeed-alorm/mawid-pro",
+    "phase": "P1",
+    "type": "task",
+    "priority": "high",
+    "feature_ids": [
+      "FEAT-02",
+      "FEAT-03",
+      "FEAT-05",
+      "FEAT-06",
+      "FEAT-07"
+    ],
+    "dependencies": [
+      "P1-ARCH",
+      "P1-IDENTITY",
+      "P1-WEB"
+    ],
+    "scope": "Implement approved name/logo/colors and stable shop/professional routing; preserve selection through sign-in. P1 Google entry is an ordinary booking URL where supported.",
+    "acceptance": [
+      "Stable link and QR survive branding edits and retain authorized shop/professional context.",
+      "Reject unsafe uploads/URLs and cross-tenant branding edits; use approved assets only.",
+      "Broken/retired professional links have an explicit shop fallback.",
+      "Minimal campaign attribution is privacy-conscious; no third-party/native Google booking integration or publishing builder."
+    ],
+    "verification": "Deep-link/QR scan tests on Android and mobile web, sign-in redirect preservation, tenant isolation and invalid-link/asset fixtures in EN/AR.",
+    "decisions": "Stable identifier/domain ownership, upload limits, asset permission and attribution policy.",
+    "status": "Backlog",
+    "body": "<!-- maw-id:P1-BRAND -->\n## Outcome and scope\nImplement approved name/logo/colors and stable shop/professional routing; preserve selection through sign-in. P1 Google entry is an ordinary booking URL where supported.\n\n## Acceptance criteria\n- [ ] Stable link and QR survive branding edits and retain authorized shop/professional context.\n- [ ] Reject unsafe uploads/URLs and cross-tenant branding edits; use approved assets only.\n- [ ] Broken/retired professional links have an explicit shop fallback.\n- [ ] Minimal campaign attribution is privacy-conscious; no third-party/native Google booking integration or publishing builder.\n\n## Dependencies\nP1-ARCH; P1-IDENTITY; P1-WEB\n\n## Source\nFeatures: FEAT-02, FEAT-03, FEAT-05, FEAT-06, FEAT-07.\n[Notion HQ](https://www.notion.so/40cf53c2a11d80c493fede8991643fea) — product intent/decisions; individual feature pages are not verified.\n\n## Verification\nDeep-link/QR scan tests on Android and mobile web, sign-in redirect preservation, tenant isolation and invalid-link/asset fixtures in EN/AR.\n\n## Unresolved decisions / readiness\nStable identifier/domain ownership, upload limits, asset permission and attribution policy.\nInitial engineering status: Backlog. Project status is authoritative; dependencies and decisions must be satisfied before Ready.\n\nLead engineer: @saeed-alorm. Rabeeh/Rabih Bou Diab is a partner; no product role or GitHub account has been assigned.\n"
+  },
+  {
+    "key": "P1-OPS",
+    "title": "[P1-OPS] Prepare deployment, monitoring, backup/restore and rollback",
+    "repository": "saeed-alorm/mawid-pro",
+    "phase": "P1",
+    "type": "task",
+    "priority": "high",
+    "feature_ids": [
+      "FEAT-09",
+      "FEAT-31",
+      "FEAT-45",
+      "FEAT-49"
+    ],
+    "dependencies": [
+      "P1-ARCH",
+      "P1-DATA",
+      "P1-BOOKING"
+    ],
+    "scope": "Implement deployment only after architecture/spend approval: isolated environments, minimal secrets, monitoring, restoration and rollback runbooks with release provenance.",
+    "acceptance": [
+      "PR validation cannot access deployment secrets; deployment is explicit and tied to reviewed source.",
+      "Record version/tag, exact web/service/mobile commits, migrations, platform/build hashes and test evidence.",
+      "Demonstrate backup restore in an isolated environment and rollback compatible with the data schema.",
+      "Alert ownership, escalation, realistic support hours and budget hard stops are documented.",
+      "No production provisioning, database or store publishing is authorized by this readiness issue."
+    ],
+    "verification": "Staging deploy/health/alert drill, restored synthetic records, rollback drill, secret-boundary review and release evidence review after separate authorization.",
+    "decisions": "Host/region, spending cap, recovery objectives, support/on-call owner and operational authorization.",
+    "status": "Backlog",
+    "body": "<!-- maw-id:P1-OPS -->\n## Outcome and scope\nImplement deployment only after architecture/spend approval: isolated environments, minimal secrets, monitoring, restoration and rollback runbooks with release provenance.\n\n## Acceptance criteria\n- [ ] PR validation cannot access deployment secrets; deployment is explicit and tied to reviewed source.\n- [ ] Record version/tag, exact web/service/mobile commits, migrations, platform/build hashes and test evidence.\n- [ ] Demonstrate backup restore in an isolated environment and rollback compatible with the data schema.\n- [ ] Alert ownership, escalation, realistic support hours and budget hard stops are documented.\n- [ ] No production provisioning, database or store publishing is authorized by this readiness issue.\n\n## Dependencies\nP1-ARCH; P1-DATA; P1-BOOKING\n\n## Source\nFeatures: FEAT-09, FEAT-31, FEAT-45, FEAT-49.\n[Notion HQ](https://www.notion.so/40cf53c2a11d80c493fede8991643fea) — product intent/decisions; individual feature pages are not verified.\n\n## Verification\nStaging deploy/health/alert drill, restored synthetic records, rollback drill, secret-boundary review and release evidence review after separate authorization.\n\n## Unresolved decisions / readiness\nHost/region, spending cap, recovery objectives, support/on-call owner and operational authorization.\nInitial engineering status: Backlog. Project status is authoritative; dependencies and decisions must be satisfied before Ready.\n\nLead engineer: @saeed-alorm. Rabeeh/Rabih Bou Diab is a partner; no product role or GitHub account has been assigned.\n"
+  },
+  {
+    "key": "P1-ACCEPT",
+    "title": "[P1-ACCEPT] Verify bilingual/RTL pilot flow in exact target builds",
+    "repository": "saeed-alorm/mawid-pro",
+    "phase": "P1",
+    "type": "task",
+    "priority": "high",
+    "feature_ids": [
+      "FEAT-01",
+      "FEAT-03",
+      "FEAT-09",
+      "FEAT-10",
+      "FEAT-11",
+      "FEAT-26",
+      "FEAT-30",
+      "FEAT-31",
+      "FEAT-32",
+      "FEAT-49"
+    ],
+    "dependencies": [
+      "P1-NOTIFY",
+      "P1-MOBILE",
+      "P1-WEB",
+      "P1-BRAND",
+      "P1-OPS"
+    ],
+    "scope": "Create and execute one end-to-end pilot acceptance matrix for Android, branded mobile web and staff workspace; assisted onboarding/import and escalation are part of acceptance.",
+    "acceptance": [
+      "EN/LTR and AR/RTL verify service → professional/Any → availability → pending → staff decision → status → calendar → cancel/rebook.",
+      "Cover persistence, two devices, identity/permissions/isolation, concurrent slot conflict, retry/offline/reconnect and notification failure.",
+      "Keyboard/focus, text scaling, contrast and mobile layout checked; agreed accessibility target recorded.",
+      "Onboarding completes a successful two-device test booking; named support owner and shop asset consent recorded.",
+      "Acceptance cites version/tag, exact commits, artifact hashes, devices/platforms, CI/tests, reviewer and unresolved defects.",
+      "Three shops/two paid discussions remain targets; merge alone cannot close a customer ticket or prove release."
+    ],
+    "verification": "Execute matrix on the exact private APK and web/service build; emulator plus physical Android evidence; record product acceptance in existing Notion HQ without guessed feature URLs.",
+    "decisions": "Pilot commitments, support owner, accessibility target, dates/capacity and paid discussions remain unconfirmed.",
+    "status": "Backlog",
+    "body": "<!-- maw-id:P1-ACCEPT -->\n## Outcome and scope\nCreate and execute one end-to-end pilot acceptance matrix for Android, branded mobile web and staff workspace; assisted onboarding/import and escalation are part of acceptance.\n\n## Acceptance criteria\n- [ ] EN/LTR and AR/RTL verify service → professional/Any → availability → pending → staff decision → status → calendar → cancel/rebook.\n- [ ] Cover persistence, two devices, identity/permissions/isolation, concurrent slot conflict, retry/offline/reconnect and notification failure.\n- [ ] Keyboard/focus, text scaling, contrast and mobile layout checked; agreed accessibility target recorded.\n- [ ] Onboarding completes a successful two-device test booking; named support owner and shop asset consent recorded.\n- [ ] Acceptance cites version/tag, exact commits, artifact hashes, devices/platforms, CI/tests, reviewer and unresolved defects.\n- [ ] Three shops/two paid discussions remain targets; merge alone cannot close a customer ticket or prove release.\n\n## Dependencies\nP1-NOTIFY; P1-MOBILE; P1-WEB; P1-BRAND; P1-OPS\n\n## Source\nFeatures: FEAT-01, FEAT-03, FEAT-09, FEAT-10, FEAT-11, FEAT-26, FEAT-30, FEAT-31, FEAT-32, FEAT-49.\n[Notion HQ](https://www.notion.so/40cf53c2a11d80c493fede8991643fea) — product intent/decisions; individual feature pages are not verified.\n\n## Verification\nExecute matrix on the exact private APK and web/service build; emulator plus physical Android evidence; record product acceptance in existing Notion HQ without guessed feature URLs.\n\n## Unresolved decisions / readiness\nPilot commitments, support owner, accessibility target, dates/capacity and paid discussions remain unconfirmed.\nInitial engineering status: Backlog. Project status is authoritative; dependencies and decisions must be satisfied before Ready.\n\nLead engineer: @saeed-alorm. Rabeeh/Rabih Bou Diab is a partner; no product role or GitHub account has been assigned.\n"
+  },
+  {
+    "key": "EPIC-P2",
+    "title": "[EPIC-P2] Daily shop operations",
+    "repository": "saeed-alorm/mawid-pro",
+    "phase": "P2",
+    "type": "epic",
+    "priority": "normal",
+    "feature_ids": [
+      "FEAT-08",
+      "FEAT-12",
+      "FEAT-13",
+      "FEAT-14",
+      "FEAT-15",
+      "FEAT-16",
+      "FEAT-18",
+      "FEAT-19",
+      "FEAT-20",
+      "FEAT-21",
+      "FEAT-27",
+      "FEAT-29"
+    ],
+    "dependencies": [
+      "P1-ACCEPT"
+    ],
+    "scope": "Phase envelope only. Manual intake, queue, waitlist, service flexibility, optional kiosk and TV.\n\n- FEAT-08 — Professional lookbooks: P2: small image portfolio with captions and a professional-specific booking action.\n- FEAT-12 — Staff service and duration overrides: P2: service overrides and explicit price-visibility settings.\n- FEAT-13 — Service add-ons: P2: select extras and recompute both duration and availability.\n- FEAT-14 — Service combinations and packages: P2: fixed-duration combinations first. Prepaid visit bundles require separate entitlement work.\n- FEAT-15 — Pricing and schedule gap rules: P2: configurable increments/buffers; defer complex price rules until demanded.\n- FEAT-16 — Recurring appointments: P2: preview conflicts for each occurrence and permit per-occurrence changes.\n- FEAT-18 — Walk-in queue: P2: staff-operated queue using the booking capacity model.\n- FEAT-19 — Future appointment waitlist: P2: service/staff/time preferences and an invitation to claim a slot.\n- FEAT-20 — Self-check-in kiosk: P2: add after staff-operated queue rules stabilize.\n- FEAT-21 — TV appointment and queue board: P2: optional read-only display with ticket/initials and expiring display access.\n- FEAT-27 — Customer records and preferences: P1: minimal customer record; P2: structured preferences and consented notes.\n- FEAT-29 — Operational reporting and exports: P1: tenant-scoped exports and event history; P2: useful owner reports.",
+    "acceptance": [
+      "Phase entry/exit criteria and business evidence approved before decomposition.",
+      "Create independently deliverable engineering issues only when prerequisites and decisions exist.",
+      "No delivery date, automatic member eligibility, iOS timing, mass publishing or payment commitment implied."
+    ],
+    "verification": "Review prior phase acceptance and evidence, define target-build verification when work is authorized.",
+    "decisions": "Demand, capacity, spending, sequencing and phase gate unresolved; phase epic stays Backlog.",
+    "status": "Backlog",
+    "body": "<!-- maw-id:EPIC-P2 -->\n## Outcome and scope\nPhase envelope only. Manual intake, queue, waitlist, service flexibility, optional kiosk and TV.\n\n- FEAT-08 — Professional lookbooks: P2: small image portfolio with captions and a professional-specific booking action.\n- FEAT-12 — Staff service and duration overrides: P2: service overrides and explicit price-visibility settings.\n- FEAT-13 — Service add-ons: P2: select extras and recompute both duration and availability.\n- FEAT-14 — Service combinations and packages: P2: fixed-duration combinations first. Prepaid visit bundles require separate entitlement work.\n- FEAT-15 — Pricing and schedule gap rules: P2: configurable increments/buffers; defer complex price rules until demanded.\n- FEAT-16 — Recurring appointments: P2: preview conflicts for each occurrence and permit per-occurrence changes.\n- FEAT-18 — Walk-in queue: P2: staff-operated queue using the booking capacity model.\n- FEAT-19 — Future appointment waitlist: P2: service/staff/time preferences and an invitation to claim a slot.\n- FEAT-20 — Self-check-in kiosk: P2: add after staff-operated queue rules stabilize.\n- FEAT-21 — TV appointment and queue board: P2: optional read-only display with ticket/initials and expiring display access.\n- FEAT-27 — Customer records and preferences: P1: minimal customer record; P2: structured preferences and consented notes.\n- FEAT-29 — Operational reporting and exports: P1: tenant-scoped exports and event history; P2: useful owner reports.\n\n## Acceptance criteria\n- [ ] Phase entry/exit criteria and business evidence approved before decomposition.\n- [ ] Create independently deliverable engineering issues only when prerequisites and decisions exist.\n- [ ] No delivery date, automatic member eligibility, iOS timing, mass publishing or payment commitment implied.\n\n## Dependencies\nP1-ACCEPT\n\n## Source\nFeatures: FEAT-08, FEAT-12, FEAT-13, FEAT-14, FEAT-15, FEAT-16, FEAT-18, FEAT-19, FEAT-20, FEAT-21, FEAT-27, FEAT-29.\n[Notion HQ](https://www.notion.so/40cf53c2a11d80c493fede8991643fea) — product intent/decisions; individual feature pages are not verified.\n\n## Verification\nReview prior phase acceptance and evidence, define target-build verification when work is authorized.\n\n## Unresolved decisions / readiness\nDemand, capacity, spending, sequencing and phase gate unresolved; phase epic stays Backlog.\nInitial engineering status: Backlog. Project status is authoritative; dependencies and decisions must be satisfied before Ready.\n\nLead engineer: @saeed-alorm. Rabeeh/Rabih Bou Diab is a partner; no product role or GitHub account has been assigned.\n"
+  },
+  {
+    "key": "EPIC-P3",
+    "title": "[EPIC-P3] Retention and later approval automation",
+    "repository": "saeed-alorm/mawid-pro",
+    "phase": "P3",
+    "type": "epic",
+    "priority": "normal",
+    "feature_ids": [
+      "FEAT-28",
+      "FEAT-33",
+      "FEAT-35",
+      "FEAT-36"
+    ],
+    "dependencies": [
+      "EPIC-P2"
+    ],
+    "scope": "Phase envelope only. Rebooking and useful customer insights; later automatic approval rules for members and regulars.\n\n- FEAT-28 — Client insights: P3: explainable visit/return indicators first; financial insights after reliable payment data.\n- FEAT-33 — Marketing campaigns: P3: opt-in campaigns to explicit customer segments, with suppression and spend limits.\n- FEAT-35 — Loyalty points: P3: one simple earn/redeem rule, with reversal for corrections.\n- FEAT-36 — Personal rewards and discounts: P3: add only the reward types pilots understand and can afford.",
+    "acceptance": [
+      "Phase entry/exit criteria and business evidence approved before decomposition.",
+      "Create independently deliverable engineering issues only when prerequisites and decisions exist.",
+      "No delivery date, automatic member eligibility, iOS timing, mass publishing or payment commitment implied."
+    ],
+    "verification": "Review prior phase acceptance and evidence, define target-build verification when work is authorized.",
+    "decisions": "Demand, capacity, spending, sequencing and phase gate unresolved; phase epic stays Backlog.",
+    "status": "Backlog",
+    "body": "<!-- maw-id:EPIC-P3 -->\n## Outcome and scope\nPhase envelope only. Rebooking and useful customer insights; later automatic approval rules for members and regulars.\n\n- FEAT-28 — Client insights: P3: explainable visit/return indicators first; financial insights after reliable payment data.\n- FEAT-33 — Marketing campaigns: P3: opt-in campaigns to explicit customer segments, with suppression and spend limits.\n- FEAT-35 — Loyalty points: P3: one simple earn/redeem rule, with reversal for corrections.\n- FEAT-36 — Personal rewards and discounts: P3: add only the reward types pilots understand and can afford.\n\n## Acceptance criteria\n- [ ] Phase entry/exit criteria and business evidence approved before decomposition.\n- [ ] Create independently deliverable engineering issues only when prerequisites and decisions exist.\n- [ ] No delivery date, automatic member eligibility, iOS timing, mass publishing or payment commitment implied.\n\n## Dependencies\nEPIC-P2\n\n## Source\nFeatures: FEAT-28, FEAT-33, FEAT-35, FEAT-36.\n[Notion HQ](https://www.notion.so/40cf53c2a11d80c493fede8991643fea) — product intent/decisions; individual feature pages are not verified.\n\n## Verification\nReview prior phase acceptance and evidence, define target-build verification when work is authorized.\n\n## Unresolved decisions / readiness\nDemand, capacity, spending, sequencing and phase gate unresolved; phase epic stays Backlog.\nInitial engineering status: Backlog. Project status is authoritative; dependencies and decisions must be satisfied before Ready.\n\nLead engineer: @saeed-alorm. Rabeeh/Rabih Bou Diab is a partner; no product role or GitHub account has been assigned.\n"
+  },
+  {
+    "key": "EPIC-P4",
+    "title": "[EPIC-P4] Repeatable branded distribution",
+    "repository": "saeed-alorm/mawid-pro",
+    "phase": "P4",
+    "type": "epic",
+    "priority": "normal",
+    "feature_ids": [
+      "FEAT-01",
+      "FEAT-02",
+      "FEAT-03",
+      "FEAT-04",
+      "FEAT-07",
+      "FEAT-24",
+      "FEAT-25",
+      "FEAT-45",
+      "FEAT-46"
+    ],
+    "dependencies": [
+      "EPIC-P3"
+    ],
+    "scope": "Phase envelope only. Repeatable branded releases, domains, platform coverage, and booking integrations.\n\n- FEAT-01 — Branded customer mobile app: P1: prioritize the initial mobile app using the Android candidate; P4: scale branded releases after live usage and publishing review.\n- FEAT-02 — Shop branding configuration: P1: controlled branding fields; P4: reusable builder with preview and versioning.\n- FEAT-03 — Branded booking website: P1: hosted shop page; P4: domain setup and self-service publishing.\n- FEAT-04 — Booking widgets: P4: begin with a button/link, then an embedded flow using the same booking engine.\n- FEAT-07 — Google booking entry: P1: ordinary booking URL where supported; P4: assess deeper integration separately.\n- FEAT-24 — Staff business workspace: P1: responsive staff workspace alongside the prioritized customer mobile app; P4: expand staff app coverage if justified.\n- FEAT-25 — Multiple business locations: P1: model organization/location separately; P4: operate multiple branches after demand.\n- FEAT-45 — Booking API: P1: internal service contract; P4: documented external API with scoped access.\n- FEAT-46 — Chatbot and voice booking integrations: P4: integrate through the same validated booking service. A possible integration is not a turnkey assistant.",
+    "acceptance": [
+      "Phase entry/exit criteria and business evidence approved before decomposition.",
+      "Create independently deliverable engineering issues only when prerequisites and decisions exist.",
+      "No delivery date, automatic member eligibility, iOS timing, mass publishing or payment commitment implied."
+    ],
+    "verification": "Review prior phase acceptance and evidence, define target-build verification when work is authorized.",
+    "decisions": "Demand, capacity, spending, sequencing and phase gate unresolved; phase epic stays Backlog.",
+    "status": "Backlog",
+    "body": "<!-- maw-id:EPIC-P4 -->\n## Outcome and scope\nPhase envelope only. Repeatable branded releases, domains, platform coverage, and booking integrations.\n\n- FEAT-01 — Branded customer mobile app: P1: prioritize the initial mobile app using the Android candidate; P4: scale branded releases after live usage and publishing review.\n- FEAT-02 — Shop branding configuration: P1: controlled branding fields; P4: reusable builder with preview and versioning.\n- FEAT-03 — Branded booking website: P1: hosted shop page; P4: domain setup and self-service publishing.\n- FEAT-04 — Booking widgets: P4: begin with a button/link, then an embedded flow using the same booking engine.\n- FEAT-07 — Google booking entry: P1: ordinary booking URL where supported; P4: assess deeper integration separately.\n- FEAT-24 — Staff business workspace: P1: responsive staff workspace alongside the prioritized customer mobile app; P4: expand staff app coverage if justified.\n- FEAT-25 — Multiple business locations: P1: model organization/location separately; P4: operate multiple branches after demand.\n- FEAT-45 — Booking API: P1: internal service contract; P4: documented external API with scoped access.\n- FEAT-46 — Chatbot and voice booking integrations: P4: integrate through the same validated booking service. A possible integration is not a turnkey assistant.\n\n## Acceptance criteria\n- [ ] Phase entry/exit criteria and business evidence approved before decomposition.\n- [ ] Create independently deliverable engineering issues only when prerequisites and decisions exist.\n- [ ] No delivery date, automatic member eligibility, iOS timing, mass publishing or payment commitment implied.\n\n## Dependencies\nEPIC-P3\n\n## Source\nFeatures: FEAT-01, FEAT-02, FEAT-03, FEAT-04, FEAT-07, FEAT-24, FEAT-25, FEAT-45, FEAT-46.\n[Notion HQ](https://www.notion.so/40cf53c2a11d80c493fede8991643fea) — product intent/decisions; individual feature pages are not verified.\n\n## Verification\nReview prior phase acceptance and evidence, define target-build verification when work is authorized.\n\n## Unresolved decisions / readiness\nDemand, capacity, spending, sequencing and phase gate unresolved; phase epic stays Backlog.\nInitial engineering status: Backlog. Project status is authoritative; dependencies and decisions must be satisfied before Ready.\n\nLead engineer: @saeed-alorm. Rabeeh/Rabih Bou Diab is a partner; no product role or GitHub account has been assigned.\n"
+  },
+  {
+    "key": "EPIC-P5",
+    "title": "[EPIC-P5] Payments and commerce",
+    "repository": "saeed-alorm/mawid-pro",
+    "phase": "P5",
+    "type": "epic",
+    "priority": "normal",
+    "feature_ids": [
+      "FEAT-22",
+      "FEAT-37",
+      "FEAT-39",
+      "FEAT-40",
+      "FEAT-41",
+      "FEAT-42",
+      "FEAT-43",
+      "FEAT-44"
+    ],
+    "dependencies": [
+      "EPIC-P4"
+    ],
+    "scope": "Phase envelope only. Validated local payments, deposits, memberships, POS, and product/stock handling.\n\n- FEAT-22 — Mobile barber and house calls: P5 or separate vertical: add only after demand; model travel time and service areas.\n- FEAT-37 — Shop memberships: P5: launch after billing and service-credit accounting; distinguish salon memberships from Mawid subscriptions.\n- FEAT-39 — Online payments and deposits: P5: one locally viable provider and complete refund/reconciliation flow.\n- FEAT-40 — Cancellation and no-show fees: P5: clear customer policy, reviewable charge, and refund/dispute handling.\n- FEAT-41 — POS and card terminals: P5: validate hardware/support economics before a counter checkout product.\n- FEAT-42 — Individual staff payment accounts: P5: clarify merchant responsibility and independent-professional demand before implementing.\n- FEAT-43 — Product catalog and commerce: P5: small catalog and collection first; add after checkout proves useful.\n- FEAT-44 — Inventory and fulfilment: P5: stock movements, returns, and fulfilment; do not infer warehouse/accounting depth.",
+    "acceptance": [
+      "Phase entry/exit criteria and business evidence approved before decomposition.",
+      "Create independently deliverable engineering issues only when prerequisites and decisions exist.",
+      "No delivery date, automatic member eligibility, iOS timing, mass publishing or payment commitment implied."
+    ],
+    "verification": "Review prior phase acceptance and evidence, define target-build verification when work is authorized.",
+    "decisions": "Demand, capacity, spending, sequencing and phase gate unresolved; phase epic stays Backlog.",
+    "status": "Backlog",
+    "body": "<!-- maw-id:EPIC-P5 -->\n## Outcome and scope\nPhase envelope only. Validated local payments, deposits, memberships, POS, and product/stock handling.\n\n- FEAT-22 — Mobile barber and house calls: P5 or separate vertical: add only after demand; model travel time and service areas.\n- FEAT-37 — Shop memberships: P5: launch after billing and service-credit accounting; distinguish salon memberships from Mawid subscriptions.\n- FEAT-39 — Online payments and deposits: P5: one locally viable provider and complete refund/reconciliation flow.\n- FEAT-40 — Cancellation and no-show fees: P5: clear customer policy, reviewable charge, and refund/dispute handling.\n- FEAT-41 — POS and card terminals: P5: validate hardware/support economics before a counter checkout product.\n- FEAT-42 — Individual staff payment accounts: P5: clarify merchant responsibility and independent-professional demand before implementing.\n- FEAT-43 — Product catalog and commerce: P5: small catalog and collection first; add after checkout proves useful.\n- FEAT-44 — Inventory and fulfilment: P5: stock movements, returns, and fulfilment; do not infer warehouse/accounting depth.\n\n## Acceptance criteria\n- [ ] Phase entry/exit criteria and business evidence approved before decomposition.\n- [ ] Create independently deliverable engineering issues only when prerequisites and decisions exist.\n- [ ] No delivery date, automatic member eligibility, iOS timing, mass publishing or payment commitment implied.\n\n## Dependencies\nEPIC-P4\n\n## Source\nFeatures: FEAT-22, FEAT-37, FEAT-39, FEAT-40, FEAT-41, FEAT-42, FEAT-43, FEAT-44.\n[Notion HQ](https://www.notion.so/40cf53c2a11d80c493fede8991643fea) — product intent/decisions; individual feature pages are not verified.\n\n## Verification\nReview prior phase acceptance and evidence, define target-build verification when work is authorized.\n\n## Unresolved decisions / readiness\nDemand, capacity, spending, sequencing and phase gate unresolved; phase epic stays Backlog.\nInitial engineering status: Backlog. Project status is authoritative; dependencies and decisions must be satisfied before Ready.\n\nLead engineer: @saeed-alorm. Rabeeh/Rabih Bou Diab is a partner; no product role or GitHub account has been assigned.\n"
+  }
+]

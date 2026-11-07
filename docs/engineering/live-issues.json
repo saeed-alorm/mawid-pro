@@ -1,0 +1,72 @@
+[
+  {
+    "key": "ENG-SETUP",
+    "number": 3,
+    "url": "https://github.com/saeed-alorm/mawid-pro/issues/3"
+  },
+  {
+    "key": "P1-ARCH",
+    "number": 4,
+    "url": "https://github.com/saeed-alorm/mawid-pro/issues/4"
+  },
+  {
+    "key": "P1-IDENTITY",
+    "number": 5,
+    "url": "https://github.com/saeed-alorm/mawid-pro/issues/5"
+  },
+  {
+    "key": "P1-DATA",
+    "number": 6,
+    "url": "https://github.com/saeed-alorm/mawid-pro/issues/6"
+  },
+  {
+    "key": "P1-BOOKING",
+    "number": 7,
+    "url": "https://github.com/saeed-alorm/mawid-pro/issues/7"
+  },
+  {
+    "key": "P1-NOTIFY",
+    "number": 8,
+    "url": "https://github.com/saeed-alorm/mawid-pro/issues/8"
+  },
+  {
+    "key": "P1-WEB",
+    "number": 9,
+    "url": "https://github.com/saeed-alorm/mawid-pro/issues/9"
+  },
+  {
+    "key": "P1-BRAND",
+    "number": 10,
+    "url": "https://github.com/saeed-alorm/mawid-pro/issues/10"
+  },
+  {
+    "key": "P1-OPS",
+    "number": 11,
+    "url": "https://github.com/saeed-alorm/mawid-pro/issues/11"
+  },
+  {
+    "key": "P1-ACCEPT",
+    "number": 12,
+    "url": "https://github.com/saeed-alorm/mawid-pro/issues/12"
+  },
+  {
+    "key": "EPIC-P2",
+    "number": 13,
+    "url": "https://github.com/saeed-alorm/mawid-pro/issues/13"
+  },
+  {
+    "key": "EPIC-P3",
+    "number": 14,
+    "url": "https://github.com/saeed-alorm/mawid-pro/issues/14"
+  },
+  {
+    "key": "EPIC-P4",
+    "number": 15,
+    "url": "https://github.com/saeed-alorm/mawid-pro/issues/15"
+  },
+  {
+    "key": "EPIC-P5",
+    "number": 16,
+    "url": "https://github.com/saeed-alorm/mawid-pro/issues/16"
+  }
+]

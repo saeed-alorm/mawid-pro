@@ -30,3 +30,18 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Local verification and secrets
+playwright-report/
+test-results/
+.env
+.env.*
+!.env.example
+*.jks
+*.keystore
+*.p12
+*.apk
+*.aab
+
+__pycache__/
+*.pyc

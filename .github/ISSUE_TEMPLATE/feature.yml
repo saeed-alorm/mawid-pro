@@ -1,0 +1,39 @@
+name: Engineering feature
+description: A deliverable scoped from a product feature or approved technical decision
+title: "[ENG] "
+body:
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Outcome and scope
+      description: Observable result, boundaries and relevant source locations
+    validations:
+      required: true
+  - type: input
+    id: source
+    attributes:
+      label: Product source and feature IDs
+      description: Use confirmed links and unchanged FEAT IDs; HQ is valid if no feature page exists
+      value: https://www.notion.so/40cf53c2a11d80c493fede8991643fea
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+    validations:
+      required: true
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencies and unresolved decisions
+      description: Link actual issues; explain what must be decided before Ready
+    validations:
+      required: true
+  - type: textarea
+    id: verification
+    attributes:
+      label: Verification and release evidence
+      description: Tests, exact build/platform, bilingual checks and acceptance owner; a merge is not a release
+    validations:
+      required: true

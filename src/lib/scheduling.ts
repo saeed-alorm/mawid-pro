@@ -4,7 +4,7 @@ import { beirutDate, beirutMinutes, iso } from "./demo-data";
 export const BLOCKING_STATUSES = ["pending", "approved", "completed", "proposed"];
 
 export function toMinutes(t: string) {
-  const [h, m] = t.split(":").map(Number);
+  const [h = Number.NaN, m = Number.NaN] = t.split(":").map(Number);
   return h * 60 + m;
 }
 

@@ -1,0 +1,30 @@
+name: Engineering defect
+description: A reproducible technical defect with sanitized evidence
+title: "[BUG] "
+body:
+  - type: input
+    id: build
+    attributes:
+      label: Exact version, commit and platform
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Reproduction, expected and actual behavior
+      description: Include language/direction, tenant scenario and sanitized evidence; never customer data or tokens
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Fix acceptance and verification
+      description: Regression check, target-build evidence and linked support ticket if one exists
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Feature IDs, dependencies and unresolved decisions
+    validations:
+      required: true
