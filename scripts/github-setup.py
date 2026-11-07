@@ -87,7 +87,11 @@ def metadata():
     items=json.loads((ROOT/'docs/engineering/issues.json').read_text())
     # Private repository may be unavailable: web metadata still completes.
     repos=[WEB]
-    mobile=api(f'repos/{MOBILE}',allow_missing=True)
+    try:
+        mobile=api(f'repos/{MOBILE}',allow_missing=True)
+    except RuntimeError:
+        mobile=None
+        print('PENDING mobile metadata: private repository access is unavailable; continuing web setup')
     if mobile:
         if not mobile['private']: raise RuntimeError('Refusing mobile source/tracking in a public repository')
         repos.append(MOBILE)
@@ -205,7 +209,7 @@ def mobile_import(bundle):
     else:
         api('user/repos','POST',{'name':'mawid-mobile','private':True,'description':'Private MAWID Android engineering source; fictional demo, not production','auto_init':False})
     temp=ROOT.parent/'mawid-mobile-import'
-    if not (temp/'.git').exists():run(['git','clone',str(bundle),str(temp)])
+    if not (temp/'.git').exists():run(['git','clone','--branch','main',str(bundle),str(temp)])
     # Remote visibility was checked before any source push. Never force push.
     remotes=run(['git','remote'],cwd=temp).stdout.split()
     if 'github' not in remotes:run(['git','remote','add','github',f'https://github.com/{MOBILE}.git'],cwd=temp)

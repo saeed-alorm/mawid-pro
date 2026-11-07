@@ -1,7 +1,7 @@
 # GitHub engineering readiness — 7 November 2026 (Asia/Beirut)
 
 **Verdict: partially prepared; not yet ready for plan execution.** Web source changes
-are on `codex/github-readiness-2026-11-07` for review. Private mobile import/PR,
+are in [PR #17](https://github.com/saeed-alorm/mawid-pro/pull/17) for review. Private mobile import/PR,
 source provenance, account metadata/settings and final CI/merges remain gates.
 No P1 product capability, backend, production release, app publishing or paid service
 was implemented or provisioned.
@@ -53,6 +53,13 @@ Checks were run **before editing** at the default-branch commit, on Node 24.22.1
 - [x] Created 14 real, deduplicated engineering issues, assigned to eligible `saeed-alorm`.
   Dependencies link actual issues; private mobile issue remains prepared, not created.
 
+## PR and remote verification
+
+- PR: https://github.com/saeed-alorm/mawid-pro/pull/17 (open; not merged).
+- Verified implementation commit: `a27b11a418e57d1060a8a608ab49f1acde1d7a53`.
+- Remote CI: https://github.com/saeed-alorm/mawid-pro/actions/runs/42369169261 — completed successfully, including `web-checks` and all browser checks.
+- The remote tree matches the locally tested implementation. This evidence-only follow-up records the links/results and small continuation-script recovery improvements; its own exact commit/check is visible in the PR.
+
 ## Final local verification
 
 | Check | Result |
@@ -69,7 +76,7 @@ Checks were run **before editing** at the default-branch commit, on Node 24.22.1
 | Flutter analysis | Passed, no issues |
 | Existing Flutter unit/widget tests | 5 passed |
 | Private bundle hash/variant/bridge/runtime check | Passed |
-| Android APK compile | Attempted; final outcome recorded below when available |
+| Android APK compile | Failed during Gradle distribution download: Java `Network is unreachable`; no APK produced |
 | Emulator / physical Android / two-device live-service checks | Not run; no usable emulator/KVM or live shared service |
 | Account setup continuation | Python/shell/JS syntax checked; not live account mutation tested |
 
