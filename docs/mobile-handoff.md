@@ -2,6 +2,8 @@
 
 This section records the original handoff assessment; see the continuation below for recovered working source and new build evidence.
 
+This first section records the original handoff assessment; see the continuation below for the recovered source/build.
+
 The supplied 7 November 2026 handoff contains 90 mobile source/assets files and no
 Git history. Its archive SHA-256 is
 `b8154953c3ae6f0e9d36ce0af08a630c0c36d315c766e78deb27f9e161b9147a`.
@@ -39,7 +41,7 @@ APKs are test artifacts only, with optional one-day CI retention.
 
 The original missing-source gate above is historical. The new 195-file working
 snapshot was hash-verified and ported privately as a documented delta against PR17
-commit 16ca565831a67588dc1df9967b6740f44b757f99. New private source at aa04d1a…
+commit 16ca565831a67588dc1df9967b6740f44b757f99. New private source at 050cc1dd…
 was committed before build; bundle commit 67d5af0… records exact generating inputs
 and output hashes. The historical generator stays unknown. See current readiness
 for test/compile results; private GitHub import remains pending account capability.

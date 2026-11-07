@@ -16,7 +16,8 @@ Evidence for the reviewed implementation:
 https://github.com/saeed-alorm/mawid-pro/actions/runs/42369439217 — successful
 `web-checks`, 22 existing tests, lint/types, normal/Pages builds, artifact/toolchain
 checks and two Chromium route/RTL tests. Tests/types/lint were rerun in this continuation.
-The remaining 11 fast-refresh warnings are nonblocking and remain visible.
+The remaining 11 fast-refresh warnings are nonblocking and remain visible. Dependency installation also reports deprecated ESLint9/Recharts2, unmaintained tsconfck and deprecated whatwg-encoding. These maintenance items remain visible; no major migration was attempted as part of readiness. Current checks still pass.
+Continuation af8e40514893bb395d27274139e274035638ceca also passed every web-checks step: https://github.com/saeed-alorm/mawid-pro/actions/runs/42376320950. Final checklist/script-mode follow-up validation is linked in the PR comment.
 
 The standard Vite plugin composition preserves the normal Nitro target and static
 Pages `/mawid-pro/` routing/fallback; no hosting decision or deployment is inferred.
