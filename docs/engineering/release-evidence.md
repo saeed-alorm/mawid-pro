@@ -28,3 +28,8 @@ actual versioned target artifact. Done requires the issue's acceptance/release
 criteria, not merely a merged PR. A released defect fix does not resolve a Notion
 customer ticket until its customer outcome is confirmed. Readiness does not authorize
 production deployment, data provisioning, a store release or paid services.
+
+## Distribution evidence required — 8 November 2026
+
+Follow [Android distribution design and validation](android-distribution.md) for FEAT-01/FEAT-24: brand-to-package/account mapping, separate management identity, signing/upload public fingerprints and custody/recovery, per-package versionCode/versionName, source/manifest/asset/lock/tool hashes and artifact SHA-256, read-only PR versus protected release credentials, approval and actual review/rollout outcomes. Two brand apps must co-install from one source commit, pass EN/AR/tenant/notification isolation, and receive one shared fix rebuilt for both. Include shared management Android plus web portal from pilot one. All remain acceptance requirements; no store upload/approval or device validation occurred in this documentation update. Keep secret custody and real assets/source private. Central-account consequences, maintenance time and support capacity must be measured; iOS remains future feasibility in #15.
+

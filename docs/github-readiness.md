@@ -1,5 +1,7 @@
 # MAWID readiness — 7 November 2026, Asia/Beirut
 
+**Distribution update — 8 November 2026:** [Saeed confirmed the product model](decisions/2026-11-08-product-distribution.md); [P1 architecture/estimates](engineering/p1-architecture-analysis.md), [Android acceptance](engineering/android-distribution.md), FEAT-01/24 and existing issues are updated. Dedicated customer brand Android apps, MAWID publishing/zero salon accounts, and shared management Android plus portal are required in P1. Stack, eligibility/policy, budget and actual releases remain unverified. Notion HQ still returns 404; the [pending update](engineering/notion-distribution-update-pending.md) is not saved there.
+
 **Overall: not fully ready for plan execution.** PR17 remains open for Saeed's merge
 review. Private source and a regenerated bundle are prepared and verified locally;
 private GitHub import/PR, its checks and merge remain separate gates. Android debug compilation now passes locally.
@@ -12,7 +14,7 @@ No P1 production service, database, app-store release or paid infrastructure was
 | Private web source/build | Working-source supplement ported as a 34-path delta against public commit `16ca565831a67588dc1df9967b6740f44b757f99`; actual generating source now committed | Maintain/review the private delta and merge its import PR; historical generating commit stays unknown |
 | Android build reproducibility | Flutter analysis/tests and private bundle checks pass; full compile status recorded in the continuation evidence below | Local debug compile passed; private remote CI/import review remain pending; emulator/physical acceptance is later and unrun |
 | Optional account enforcement | Current main reports unprotected; rulesets `[]`; connector cannot administer settings/Projects or report plan; browser signed out | Apply available controls with existing authority; no paid plan or broad token request |
-| Product decisions | [P1-ARCH #4](https://github.com/saeed-alorm/mawid-pro/issues/4) analysis started; [alternatives/cost/capacity/effort draft](engineering/p1-architecture-analysis.md) | Saeed/Rabeeh review decision requests; no architecture, provider, budget or date is approved |
+| Product decisions | Distribution confirmed 8 November; [P1-ARCH #4](https://github.com/saeed-alorm/mawid-pro/issues/4) and [revised analysis/estimate](engineering/p1-architecture-analysis.md) distinguish it from open technical decisions | Resolve MAWID-owned publishing feasibility, stack/provider, capacity policies and budget; no store outcome/date approved |
 | Later pilot acceptance | No usable emulator/KVM, physical-device rehearsal or live two-device service evidence | Saeed and eventual pilot participants verify exact target builds; three shops/two paid discussions remain targets |
 
 ## Audit and preservation
@@ -146,3 +148,4 @@ review #4's decision requests in parallel. Product intent/decisions remain in
 [Notion HQ](https://www.notion.so/40cf53c2a11d80c493fede8991643fea), whose feature/database
 pages remain unverified. A merged PR, compiled test APK, released fix and resolved
 customer ticket are distinct. Follow [release evidence](engineering/release-evidence.md).
+

@@ -7,7 +7,7 @@
       "name": "Branded customer mobile app",
       "first_phase": "P1",
       "expansion_phase": "P4",
-      "adoption_note": "P1: prioritize the initial mobile app using the Android candidate; P4: scale branded releases after live usage and publishing review."
+      "adoption_note": "Confirmed 2026-11-08: P1 dedicated salon-branded customer Android app, MAWID-owned/operated publishing with zero salon store-account work; shared source/manifests, one app per brand assumption, two-brand validation. Central eligibility/policy and first repeatable release path are P1. P4 scales fleet automation. iOS not committed."
     },
     {
       "id": "FEAT-02",
@@ -168,7 +168,7 @@
       "name": "Staff business workspace",
       "first_phase": "P1",
       "expansion_phase": "P4",
-      "adoption_note": "P1: responsive staff workspace alongside the prioritized customer mobile app; P4: expand staff app coverage if justified."
+      "adoption_note": "Confirmed 2026-11-08: P1 one shared MAWID management Android app plus web management portal from the first pilot, distinct management application identity and server-authorized workspace/role access. P4 only later expansion; both initial surfaces are required."
     },
     {
       "id": "FEAT-25",
@@ -352,5 +352,12 @@
       "expansion_phase": null,
       "adoption_note": "After retention: start with shop-to-shop referrals; model commissions before promising them."
     }
-  ]
+  ],
+  "distribution_decision": {
+    "confirmed_on": "2026-11-08",
+    "source": "Saeed's direct instruction in MAWID engineering-plan update conversation",
+    "record": "docs/decisions/2026-11-08-product-distribution.md",
+    "status": "product direction confirmed; technical feasibility/store outcomes unverified"
+  }
 }
+

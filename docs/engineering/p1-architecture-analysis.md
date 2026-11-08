@@ -1,6 +1,6 @@
-# P1 architecture and feasibility analysis — draft for decisions
+# P1 architecture and feasibility analysis — confirmed distribution, open technical decisions
 
-Prepared 7 November 2026, Asia/Beirut. Analysis started for [P1-ARCH #4](https://github.com/saeed-alorm/mawid-pro/issues/4); this is not an approved ADR, implementation commitment, spending authorization or deployment plan.
+Prepared 7 November 2026; revised 8 November 2026, Asia/Beirut. Distribution is confirmed in [PRODUCT.md](../../PRODUCT.md) and the [dated decision](../decisions/2026-11-08-product-distribution.md). Technical/provider, budget and execution decisions remain open. Analysis started for [P1-ARCH #4](https://github.com/saeed-alorm/mawid-pro/issues/4); this is not an approved ADR, implementation commitment, spending authorization or deployment plan.
 
 Saeed (`saeed-alorm`) leads engineering. Rabeeh/Rabih Bou Diab is a partner: this document requests his input without assigning him a product role or GitHub identity. Product intent/decisions belong in [Notion HQ](https://www.notion.so/40cf53c2a11d80c493fede8991643fea); engineering evidence remains in GitHub. No feature-level Notion link has been verified.
 
@@ -8,7 +8,37 @@ The existing dependency on [ENG-SETUP #3](https://github.com/saeed-alorm/mawid-p
 
 ## Confirmed scope and open assumptions
 
-Android is prioritized, retaining branded mobile web, stable shop/professional links and QR, and the staff workspace. All channels must ultimately use one booking core. Initial approval is manual. The present demos use local data and simulated identity; their bridge is not a production API. Three pilot shops and two paid discussions are targets, not customers or revenue evidence. iOS timing, member/regular auto-approval eligibility, mass publishing, payments/POS/commerce and inventory are outside initial commitments.
+Saeed confirmed on **8 November 2026**: dedicated salon-branded customer Android
+apps with separate names/icons/listings/application identities; **MAWID-owned and
+operated publishing, with zero salon developer/store-account work**; one shared
+MAWID management Android app **and** web management portal from the first pilot.
+Use shared source/configuration and one booking service, with no per-salon code
+fork. The working assumption is one customer app per brand; branches can share it,
+without moving full multi-branch operations into P1. Branded mobile web, stable
+shop/professional links and QR, manual approval, EN/LTR and AR/RTL remain required.
+The shared-customer-app and salon-owned-publishing recommendations were not adopted.
+
+| P1 deliverable | Existing tracking |
+|---|---|
+| Central Android account eligibility, repetitive-content/utility policy dossier and first repeatable pilot release design | #4, #11; implementation/release authorization remains separate |
+| Dedicated pilot customer Android app from shared brand manifests; two-brand proof | #10 (FEAT-01), #3 private import gate |
+| Shared MAWID management Android app plus web portal; real workspace sign-in | #9 (FEAT-24), #3 private import gate |
+| Shared booking/identity/data/notification core and isolation | #5–#8 |
+| Exact-build Android/web/portal EN/AR and release acceptance | #12 |
+
+See [Android distribution design, dependencies and acceptance](android-distribution.md).
+#9 already covers the staff workspace, so expand its scope instead of creating a
+duplicate management issue. #10 owns pilot customer integration/packaging; the old
+P1-MOBILE private implementation template is preserved under #3 and coordinated
+by #10; no remote issue URL is verified and its work is not estimated twice. The 14 issue identities and previous work
+remain intact. P4 #15 retains fleet automation and future iOS feasibility. Initial
+MAWID-owned Android publishing feasibility and a repeatable pilot release path are P1.
+
+Present demos use local data and simulated identity; the bridge is not a production
+API. Three pilot shops and two paid discussions remain targets. iOS is not a committed
+release; Apple's template rules leave central zero-salon-account publishing unresolved.
+Automatic member/regular eligibility and payments/POS/commerce/inventory remain later.
+Technical implementation and store outcomes are not proven by the product decision.
 
 For sizing only, use the following deliberately revisable workload. None is observed demand:
 
@@ -26,7 +56,14 @@ Polling can dominate even a small pilot. Compare bounded polling with event-driv
 
 ## Alternatives to evaluate
 
-The client decision and service/storage decision are separate. Retaining Flutter native customer screens plus an embedded staff web view may reduce initial rewrite, but creates session, lifecycle and bridge compatibility work. Flutter-native customer plus independently hosted responsive React staff/customer web keeps the channels explicit, but requires maintaining equivalent behavior in both clients. Both can meet Android priority with one service contract. Do not use client architecture to duplicate booking rules or assume the existing WebView bridge is a trusted authorization boundary.
+Distribution surfaces are settled; implementation layout and service/storage are still
+ADR choices. Evaluate native customer UI plus a separate management Android shell
+(native or securely hosted management web) and responsive branded customer/management
+web. The management app always has its own application identity; an embedded staff
+view inside a customer app alone cannot satisfy FEAT-24. Compare reuse, lifecycle,
+session, bridge/deep-link and notification work. Use the same booking contract and
+server permissions throughout. App configuration is not an authorization boundary.
+Actual native source/assets stay private; this public analysis is not a client port.
 
 | Service/storage route | Value to test | Cost/operating trade-off | Approval experiment |
 |---|---|---|---|
@@ -36,7 +73,7 @@ The client decision and service/storage decision are separate. Retaining Flutter
 
 **Working recommendation, awaiting decision:** evaluate A and B first against one common contract and race suite; compare C only if its lower fixed bill justifies the extra correctness/portability investigation. This is engineering judgment, not approval of Flutter + React, Postgres, managed hosting, a provider, or any infrastructure creation. The retained Nitro build target in PR17 is compatibility evidence only.
 
-## Hosting cost model — USD/month, before tax
+## Historical hosting cost inputs — 7 November 2026, USD/month before tax
 
 Official list prices were retrieved on 7 November 2026. These are planning inputs, not quotes or approved purchases. Account eligibility, actual billing setup, regional availability and provider terms must be checked at selection. Do not add paid plans merely to satisfy a checklist.
 
@@ -92,26 +129,59 @@ Specify tenant/location identifiers, customer/staff role/session semantics, serv
 
 The architecture decision should attach evidence from synthetic concurrent-request tests, tenant-isolation tests, Beirut-time fixtures, API-client contract tests, notification timeout/retry simulations, backup/export/restore and a cost worksheet. Benchmarks need representative durations/resources and approved policy; 2,700 bookings/month alone cannot validate correctness or capacity. A physical/emulator rehearsal is later target-build evidence and does not prevent drafting these alternatives now.
 
-## Effort ranges for estimation discussion
+## Revised effort and cost estimate — 8 November 2026
 
-Engineer-day means **6 focused engineering hours**, excluding meetings, blocked approvals and recurring support. Ranges assume one shared service, one transactional notification channel, synthetic fixtures, existing demo/client reuse, no payment/iOS/store publishing, and an approved scope. These are preliminary engineering estimates, not dates, commitments or a statement of Saeed's available capacity.
+Preliminary engineering estimate prepared in this update; **not** a capacity commitment,
+cash budget, delivery date or lead-engineer sign-off. One engineer-day is 6 focused
+hours. Assumes maintained private source becomes available through #3, reuse of
+current clients, one booking service and transactional channel, both management
+surfaces from pilot one, two synthetic customer brand variants, bounded policy
+research and a manual repeatable pilot release rehearsal. Excludes iOS, fleet
+automation, full native redesign, paid enrollments/submissions in this task,
+unbounded policy rework, legal incorporation and external review waiting.
 
 | Existing work package | Focused engineer-days |
 |---|---:|
-| [#4 Architecture, cost/policy ADR and targeted feasibility](https://github.com/saeed-alorm/mawid-pro/issues/4) | 2–4 |
-| [#5 Real identity and permission matrix](https://github.com/saeed-alorm/mawid-pro/issues/5) | 4–7 |
-| [#6 Persistent data, isolation, migration/import](https://github.com/saeed-alorm/mawid-pro/issues/6) | 4–7 |
-| [#7 Availability, transitions, concurrency/idempotency](https://github.com/saeed-alorm/mawid-pro/issues/7) | 7–12 |
-| [#8 Notification channel, outbox/failures](https://github.com/saeed-alorm/mawid-pro/issues/8) | 4–7 |
-| P1-MOBILE shared-service integration (private issue pending import) | 6–10 |
-| [#9 Mobile web/staff integration](https://github.com/saeed-alorm/mawid-pro/issues/9) | 5–8 |
-| [#10 Controlled branding/stable links/QR](https://github.com/saeed-alorm/mawid-pro/issues/10) | 3–5 |
-| [#11 Deployment, monitoring, restore/rollback preparation](https://github.com/saeed-alorm/mawid-pro/issues/11) | 4–7 |
-| [#12 Bilingual cross-channel acceptance/defect correction](https://github.com/saeed-alorm/mawid-pro/issues/12) | 5–9 |
-| **Baseline effort sum** | **44–76 days / 264–456 hours** |
-| **Planning envelope with 25–35% uncertainty** | **55–103 days / approximately 330–618 hours** |
+| #4 Architecture, central Android eligibility/policy, contract/capacity ADR | 4–7 |
+| #5 Real identity and server workspace/role permissions | 4–7 |
+| #6 Persistent data, isolation, migrations/import/export | 4–7 |
+| #7 Availability, transitions and concurrency/idempotency | 7–12 |
+| #8 Notifications including app/workspace destination isolation | 5–8 |
+| #9 Shared management Android + web portal + customer web integration | 8–13 |
+| #10 Customer Android shared-service integration, brand manifests, packaging and links/QR | 9–15 |
+| #11 Operations, signing/recovery and repeatable pilot release preparation/rehearsal | 6–10 |
+| #12 Two-brand/shared-fix, bilingual cross-channel/device acceptance and corrections | 8–13 |
+| **Revised baseline** | **55–92 days / 330–552 hours** |
+| **Envelope with 25–35% uncertainty, rounded outward** | **69–125 days / 414–750 hours** |
 
-Do not add contingency twice when refining work packages. Available focused hours/week `H` would turn the envelope into roughly `330/H` to `618/H` weeks, **plus external waiting and support**; `H` is presently unknown. The total is not a delivery date. Baseline work is not fully parallelizable: identity/data/booking contract decisions constrain client/notification acceptance. Re-estimate after the feasibility spike and pilot workflow discovery; explicit native redesign or source repair can widen the range.
+The [7 November estimate](https://github.com/saeed-alorm/mawid-pro/blob/9e2a6a89744eae33a54eb6c0738b0b40692b48ad/docs/engineering/p1-architecture-analysis.md)
+was 44–76 days (55–103 with uncertainty) and explicitly excluded store publishing.
+It is superseded for current scope. The revised baseline adds 11–16 days, folds the
+former unlinked P1-MOBILE 6–10 days into #10 with branding, and expands #9/#11/#12.
+Do not count the old mobile row again. A/B customer build validation does not mean
+two salons have agreed to pilot. Re-estimate after legal/account/policy and stack
+spikes; source gaps or significant compliance rework can exceed this envelope.
+
+Cash remains **unapproved and incompletely priced**. The historical hosting and
+messaging scenarios above are dated inputs, not a budget. Google currently lists a
+[US$25 one-time Play registration fee](https://support.google.com/googleplay/android-developer/answer/6112435?hl=en);
+an already eligible account may change the incremental cost. No account purchase
+is authorized. Add verified account/identity requirements, CI/build minutes/artifact
+storage per package and shared fix, signing vault/recovery, real asset rights, actual
+messaging/hosting/backup/monitoring and support effort. Do not invent per-app store
+fees or reuse a competitor's “included fees” claim as MAWID cost evidence.
+
+`One-time cash = verified registration if needed + required setup/asset/legal costs.`
+
+`Recurring cash = shared service/identity/messages + domains/backups/monitoring + measured build/artifact usage + applicable taxes/FX.`
+
+`Labor cost = 330–552 baseline hours × an agreed rate; recurring support/release hours priced separately.`
+
+No rate, total cash ceiling, reserve or available hours/week is approved. Benchmark
+hands-on time per new brand/shared fix and support capacity before quoting scale.
+#4 must have Saeed validate/refine this estimate and identify budget authority;
+no outreach or request to another person was sent. Dependencies prevent treating the
+sum as parallel capacity, and external verification/review time remains unknown.
 
 ## Decision requests for Saeed and Rabeeh
 
@@ -119,9 +189,11 @@ Do not add contingency twice when refining work packages. Available focused hour
 |---|---|---|
 | Budget and capacity | Cash ceiling, reserve, available focused hours/week and review trigger; no new date inferred from 6 November | Saeed/Rabeeh discussion; name the person authorized to approve spending |
 | Approval/capacity policy | Pending/Any/proposed holds, expiry, assignment, cutoffs and override rules, tested against a representative shop day | Saeed/Rabeeh with actual shop workflow input; product acceptance owner remains to be named |
+| Selected distribution feasibility | MAWID legal/account eligibility, honest per-brand utility/differentiation evidence, central-account blast radius and bounded first release procedure; no renewed shared-versus-branded choice | Saeed with named legal/publishing authority; approvals/outcomes remain unverified |
 | Architecture shortlist | Authorize A/B comparison and whether C merits a bounded feasibility investigation; choose after evidence | Saeed engineering recommendation; agreed decision authority to be recorded |
 | Identity/notification | Real customer verification method, staff onboarding/recovery, one Lebanon-capable channel/fallback, provider quote and consent/retention requirements | Named commercial/product decision owner plus Saeed technical evaluation; do not infer Rabeeh's role |
 | Operating responsibility | Alert/backup/restore/support owner, realistic support hours, recovery objective and release/rollback authority | Explicitly assign before a live trial; not automatically Saeed's unlimited on-call responsibility |
 | Pilot gate | Confirm whether any shop has actually committed, asset permissions, two-device acceptance owner and paid-discussion evidence | Business/pilot owner to be assigned in Notion |
 
-Next step for #4: review the planning assumptions and the five most consequential policy choices (pending capacity, Any assignment, proposal holds, expiry, cancellation cutoffs), record decisions/owners, then approve a bounded feasibility experiment and cost ceiling. No deployment, schema provisioning, provider subscription or production identity switch is authorized by this draft.
+Immediate next engineering task in #4: produce the MAWID-owned Android eligibility/policy dossier and a brand/package/authorization contract using synthetic A/B fixtures; record concrete blockers and validate the revised effort with Saeed. In parallel resolve pending/Any/proposal holds, expiry and cancellation policies for the common booking contract. Only then authorize bounded implementation experiments under an approved ceiling. No deployment, enrollment, schema provisioning, paid service or store submission is authorized by this update. If policy evidence blocks the chosen model, present the smallest specific decision; do not silently substitute a shared customer app or salon-owned accounts.
+

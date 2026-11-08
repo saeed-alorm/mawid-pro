@@ -47,14 +47,17 @@ Do not substitute this public Pages output for its private branded bundle. See
 
 ## Product direction
 
+**Confirmed distribution — 8 November 2026** is recorded in [PRODUCT.md](PRODUCT.md): dedicated salon-branded customer Android apps, MAWID-operated publishing with zero salon store-account work, and one shared MAWID management Android app plus web portal from the first pilot. Shared source/configuration and one booking service; one customer app per brand is the working assumption. Publishing eligibility/policy and store outcomes remain unverified. See [architecture](docs/engineering/p1-architecture-analysis.md) and [distribution acceptance](docs/engineering/android-distribution.md).
+
 Android first, retaining branded mobile web, stable booking links/QR and staff
 workspace. All channels eventually share one booking core. Manual approval is initial.
 P0 prepares pilots; P1 establishes the dependable mobile/shared core; P2 adds daily
 operations/queues; P3 retention; P4 repeatable branded distribution/integrations;
 P5 payments/POS/commerce/inventory. None of those future capabilities is implied
 by the current prototype. Three pilot shops and two paid discussions are targets.
-Architecture, spending cap, capacity, delivery dates and post-pilot pricing remain open.
+Implementation stack, publishing feasibility, spending cap, capacity, delivery dates and post-pilot pricing remain open. The distribution model is confirmed.
 
 Saeed (`saeed-alorm`) is lead engineer. Rabeeh/Rabih Bou Diab is a partner; no product
 role or GitHub username is inferred. Follow [CONTRIBUTING](CONTRIBUTING.md) for branches,
 review, acceptance and releases. No paid sync is required.
+
