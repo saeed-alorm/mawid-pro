@@ -17,7 +17,7 @@ TITLE = 'MAWID Engineering'
 STATUSES = ['Backlog','Ready','In progress','Review','Ready to release','Done']
 
 def run(args, *, stdin=None, check=True, cwd=None):
-    result = subprocess.run(args, input=stdin, text=True, capture_output=True, cwd=cwd)
+    result = subprocess.run(args, input=stdin, text=True, encoding='utf-8', capture_output=True, cwd=cwd)
     if check and result.returncode:
         # gh errors can contain private record data; keep diagnostics to stderr, no tokens.
         raise RuntimeError(f'{args[0]} operation failed (exit {result.returncode}); verify permissions/account in gh')
@@ -84,7 +84,7 @@ def project_lookup(print_only=False):
 
 def metadata():
     identify()
-    items=json.loads((ROOT/'docs/engineering/issues.json').read_text())
+    items=json.loads((ROOT/'docs/engineering/issues.json').read_text(encoding='utf-8'))
     # Private repository may be unavailable: web metadata still completes.
     repos=[WEB]
     try:
@@ -215,10 +215,11 @@ def mobile_import(bundle):
         refs=run(['git','-c','credential.helper=','-c','credential.helper=!gh auth git-credential','ls-remote',f'https://github.com/{MOBILE}.git'],check=False)
         # Reuse history rather than importing over an existing authoritative repository.
         if refs.returncode:raise RuntimeError('Cannot inspect existing mobile refs')
-        allowed='refs/heads/codex/github-readiness-2026-11-07'
         for line in refs.stdout.splitlines():
             remote_sha,remote_ref=line.split()
-            if remote_ref=='HEAD':continue
+            # GitHub advertises generated PR refs once the import PR exists.
+            # They are not branches or tags maintained by the source import.
+            if remote_ref=='HEAD' or remote_ref.startswith('refs/pull/'):continue
             if remote_ref not in bundle_refs:
                 raise RuntimeError('Existing mobile history has unrelated refs; reconcile before snapshot import')
             if remote_sha!=bundle_refs[remote_ref] and remote_ref!='refs/heads/codex/github-readiness-2026-11-07':

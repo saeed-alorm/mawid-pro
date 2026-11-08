@@ -14,6 +14,13 @@ branch controls alone, and refuses public mobile imports. Inspect existing mobil
 history before import. It never merges, force-pushes, changes visibility, buys
 services or configures billing.
 
+Run the offline regression checks for import retries, conflicting history and UTF-8
+issue text with:
+
+```sh
+python3 -m unittest discover -s tests -p test_github_setup.py
+```
+
 On a machine with GitHub CLI already authenticated as `saeed-alorm` and authorized
 repository/Projects administration, from the reviewed web checkout:
 

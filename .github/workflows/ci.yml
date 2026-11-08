@@ -20,6 +20,7 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: python3 -m py_compile scripts/github-setup.py
+      - run: python3 -m unittest discover -s tests -p test_github_setup.py
       - run: npm ci
       - run: npm test
       - run: npm run lint
