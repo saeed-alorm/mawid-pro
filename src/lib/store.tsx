@@ -52,7 +52,7 @@ export type DemoState = {
 function initialState(): DemoState {
   return {
     schemaVersion: DEMO_SCHEMA_VERSION,
-    tenantId: baseSalons[0].id,
+    tenantId: baseSalons[0]!.id,
     employees: JSON.parse(JSON.stringify(baseEmployees)) as Employee[],
     appointments: buildAppointments(),
     salons: JSON.parse(JSON.stringify(baseSalons)) as Salon[],
@@ -164,7 +164,8 @@ export function DemoProvider({ children }: { children: ReactNode }) {
   );
 
   const value = useMemo<Ctx>(() => {
-    const salon = state.salons.find((s) => s.id === state.tenantId) ?? state.salons[0];
+    const salon =
+      state.salons.find((s) => s.id === state.tenantId) ?? state.salons[0] ?? baseSalons[0]!;
     return {
       ready,
       state,

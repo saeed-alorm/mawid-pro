@@ -317,9 +317,9 @@ function PageHeading({
   description,
   action,
 }: {
-  eyebrow?: string;
+  eyebrow?: string | undefined;
   title: string;
-  description?: string;
+  description?: string | undefined;
   action?: ReactNode;
 }) {
   return (
@@ -346,7 +346,7 @@ function ChartFrame({
   children,
 }: {
   title: string;
-  description?: string;
+  description?: string | undefined;
   children: ReactNode;
 }) {
   return (
@@ -639,8 +639,8 @@ function BookingDetails({
   onClose,
 }: {
   booking: Appointment | null;
-  employee?: Employee;
-  service?: Service;
+  employee?: Employee | undefined;
+  service?: Service | undefined;
   onClose: () => void;
 }) {
   const { t, tv, lang } = useI18n();
@@ -696,7 +696,7 @@ function BookingsPage({ tenantId }: { tenantId: string }) {
   const [acting, setActing] = useState<Appointment | null>(null);
   const [actionType, setActionType] = useState<"approve" | "propose">("approve");
   const [employeeId, setEmployeeId] = useState("");
-  const [date, setDate] = useState(nextDays(2)[1]);
+  const [date, setDate] = useState(nextDays(2)[1]!);
   const [time, setTime] = useState("");
   const filtered = appointments
     .filter(
@@ -718,14 +718,14 @@ function BookingsPage({ tenantId }: { tenantId: string }) {
     setActing(booking);
     setActionType(type);
     setEmployeeId(booking.employeeId === "any" ? "" : booking.employeeId);
-    setDate(type === "propose" ? nextDays(2)[1] : booking.date);
+    setDate(type === "propose" ? nextDays(2)[1]! : booking.date);
     setTime(type === "approve" ? booking.time : "");
   };
   const submitAction = () => {
     if (!acting) return;
     const result =
       actionType === "approve"
-        ? decideBooking(acting.id, { type: "approve", employeeId: employeeId || undefined })
+        ? decideBooking(acting.id, { type: "approve", ...(employeeId ? { employeeId } : {}) })
         : decideBooking(acting.id, {
             type: "propose",
             employeeId: employeeId || undefined,
@@ -1062,7 +1062,7 @@ function CalendarPage({ tenantId }: { tenantId: string }) {
           >
             {view === "day"
               ? formatLongDate(date, lang)
-              : `${formatDate(dateList[0], lang)} — ${formatDate(dateList[6], lang)}`}
+              : `${formatDate(dateList[0]!, lang)} — ${formatDate(dateList[6]!, lang)}`}
           </button>
           <Button size="icon" variant="outline" onClick={() => move(1)} aria-label={t("next")}>
             <ChevronRight className="flip-rtl" />
@@ -1294,13 +1294,13 @@ function ScheduleEditor({
         <div key={DAY_KEYS[index]} className="rounded-xl border bg-card p-4">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <p className="font-medium">{t(DAY_KEYS[index])}</p>
+              <p className="font-medium">{t(DAY_KEYS[index]!)}</p>
               <p className="text-xs text-muted-foreground">{shift ? t("working") : t("day_off")}</p>
             </div>
             <Switch
               checked={Boolean(shift)}
               onCheckedChange={(active) => toggleDay(index, active)}
-              aria-label={`${t(DAY_KEYS[index])} ${t("working")}`}
+              aria-label={`${t(DAY_KEYS[index]!)} ${t("working")}`}
             />
           </div>
           {shift && (
@@ -1399,7 +1399,7 @@ export function EmployeeDetailPage({
         />
       </ManagementShell>
     );
-  const stats = teamStats([employee], appointments, services, tv)[0];
+  const stats = teamStats([employee], appointments, services, tv)[0]!;
   const employeeAppointments = appointments.filter((item) => item.employeeId === employee.id);
   const repeatCustomers = Object.values(
     employeeAppointments.reduce<Record<string, number>>((result, item) => {
@@ -1602,7 +1602,7 @@ function CustomersPage({ tenantId }: { tenantId: string }) {
       Record<string, { name: string; phone: string; appointments: Appointment[] }>
     >((result, item) => {
       result[item.phone] ??= { name: item.customerName, phone: item.phone, appointments: [] };
-      result[item.phone].appointments.push(item);
+      result[item.phone]!.appointments.push(item);
       return result;
     }, {}),
   )
@@ -1610,7 +1610,7 @@ function CustomersPage({ tenantId }: { tenantId: string }) {
       ...customer,
       last: [...customer.appointments].sort((a, b) =>
         `${b.date}${b.time}`.localeCompare(`${a.date}${a.time}`),
-      )[0],
+      )[0]!,
     }))
     .filter((customer) =>
       `${customer.name} ${customer.phone}`.toLowerCase().includes(query.toLowerCase()),

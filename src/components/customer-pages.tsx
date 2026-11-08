@@ -105,7 +105,7 @@ function WorkingDays({ employee }: { employee: Employee }) {
   return (
     <span>
       {employee.schedule
-        .map((shift, index) => (shift ? t(DAY_KEYS[index]) : null))
+        .map((shift, index) => (shift ? t(DAY_KEYS[index]!) : null))
         .filter(Boolean)
         .join(" · ")}
     </span>
@@ -397,8 +397,8 @@ export function BookingPage({
   initialEmployee,
 }: {
   tenantId: string;
-  initialService?: string;
-  initialEmployee?: string;
+  initialService?: string | undefined;
+  initialEmployee?: string | undefined;
 }) {
   const { t, tv, lang, dir } = useI18n();
   const { ready, salon, employees, services, appointments, createBooking, signIn } =
@@ -514,7 +514,7 @@ export function BookingPage({
                 {t("request_sent_desc")}
               </p>
               <div className="mt-6 rounded-2xl bg-muted/60 p-5 text-start text-sm">
-                <p className="font-semibold">{tv(selectedService.name)}</p>
+                <p className="font-semibold">{tv(selectedService?.name ?? { en: "", ar: "" })}</p>
                 <p className="mt-2 text-muted-foreground">
                   {formatLongDate(draft.date, lang)} · {formatTime(draft.time, lang)}
                 </p>
@@ -755,7 +755,7 @@ export function BookingPage({
                 <h2 className="text-xl font-semibold">{t("review_appointment")}</h2>
                 <div className="mt-5 grid gap-3 sm:grid-cols-2">
                   {[
-                    [t("service"), tv(selectedService.name)],
+                    [t("service"), tv(selectedService?.name ?? { en: "", ar: "" })],
                     [
                       t("professional"),
                       selectedEmployee ? tv(selectedEmployee.name) : t("any_professional"),
@@ -895,8 +895,8 @@ function AppointmentCard({
   onAccept,
 }: {
   appointment: Appointment;
-  employee?: Employee;
-  service?: Service;
+  employee?: Employee | undefined;
+  service?: Service | undefined;
   onCancel: () => void;
   onAccept: () => void;
 }) {

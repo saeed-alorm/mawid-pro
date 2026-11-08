@@ -127,7 +127,7 @@ export function EmptyState({
 }: {
   icon?: ReactNode;
   title: string;
-  description?: string;
+  description?: string | undefined;
   action?: ReactNode;
 }) {
   return (

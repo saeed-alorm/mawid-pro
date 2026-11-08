@@ -1,0 +1,33 @@
+name: Web PR validation
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: web-pr-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  web-checks:
+    name: web-checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: python3 -m py_compile scripts/github-setup.py
+      - run: python3 -m unittest discover -s tests -p test_github_setup.py
+      - run: npm ci
+      - run: npm test
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run build
+      - run: npm run build:pages
+      - run: npm run verify:pages
+      - run: npm run verify:toolchain
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:browser

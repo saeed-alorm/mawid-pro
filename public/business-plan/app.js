@@ -12,7 +12,9 @@ search?.addEventListener("input", () => {
     if (visible) visibleCount += 1;
   }
   for (const section of sections) {
-    const hasVisibleItem = [...section.querySelectorAll(".searchable")].some((item) => !item.hidden);
+    const hasVisibleItem = [...section.querySelectorAll(".searchable")].some(
+      (item) => !item.hidden,
+    );
     section.hidden = query && !hasVisibleItem;
   }
   empty.hidden = visibleCount !== 0;

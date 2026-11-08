@@ -32,7 +32,7 @@ export type BookingDecision =
   | { type: "approve"; employeeId?: string }
   | { type: "reject" }
   | { type: "cancel" }
-  | { type: "propose"; employeeId?: string; date: string; time: string }
+  | { type: "propose"; employeeId?: string | undefined; date: string; time: string }
   | { type: "accept_proposal" };
 
 export type BookingDecisionResult =

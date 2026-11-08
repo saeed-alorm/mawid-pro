@@ -1,0 +1,364 @@
+{
+  "prepared_on": "2026-11-07",
+  "notion_hq": "https://www.notion.so/40cf53c2a11d80c493fede8991643fea",
+  "features": [
+    {
+      "id": "FEAT-01",
+      "name": "Branded customer mobile app",
+      "first_phase": "P1",
+      "expansion_phase": "P4",
+      "adoption_note": "Confirmed 2026-11-08: P1 dedicated salon-branded customer Android app, MAWID-owned/operated publishing with zero salon store-account work; shared source/manifests, one app per brand assumption, two-brand validation. Central eligibility/policy and first repeatable release path are P1. P4 scales fleet automation. iOS not committed."
+    },
+    {
+      "id": "FEAT-02",
+      "name": "Shop branding configuration",
+      "first_phase": "P1",
+      "expansion_phase": "P4",
+      "adoption_note": "P1: controlled branding fields; P4: reusable builder with preview and versioning."
+    },
+    {
+      "id": "FEAT-03",
+      "name": "Branded booking website",
+      "first_phase": "P1",
+      "expansion_phase": "P4",
+      "adoption_note": "P1: hosted shop page; P4: domain setup and self-service publishing."
+    },
+    {
+      "id": "FEAT-04",
+      "name": "Booking widgets",
+      "first_phase": "P4",
+      "expansion_phase": null,
+      "adoption_note": "P4: begin with a button/link, then an embedded flow using the same booking engine."
+    },
+    {
+      "id": "FEAT-05",
+      "name": "QR booking and posters",
+      "first_phase": "P1",
+      "expansion_phase": null,
+      "adoption_note": "P1: one stable QR/link per shop, with campaign attribution."
+    },
+    {
+      "id": "FEAT-06",
+      "name": "Shop and professional booking links",
+      "first_phase": "P1",
+      "expansion_phase": null,
+      "adoption_note": "P1: shareable shop and professional URLs; retain selection through booking."
+    },
+    {
+      "id": "FEAT-07",
+      "name": "Google booking entry",
+      "first_phase": "P1",
+      "expansion_phase": "P4",
+      "adoption_note": "P1: ordinary booking URL where supported; P4: assess deeper integration separately."
+    },
+    {
+      "id": "FEAT-08",
+      "name": "Professional lookbooks",
+      "first_phase": "P2",
+      "expansion_phase": null,
+      "adoption_note": "P2: small image portfolio with captions and a professional-specific booking action."
+    },
+    {
+      "id": "FEAT-09",
+      "name": "Core booking management",
+      "first_phase": "P1",
+      "expansion_phase": null,
+      "adoption_note": "P1: one authoritative server-side booking service used by every interface."
+    },
+    {
+      "id": "FEAT-10",
+      "name": "Booking approval policies",
+      "first_phase": "P1",
+      "expansion_phase": null,
+      "adoption_note": "P1: manual approval by default. Later: automatic approval for members and regulars, with shop-controlled eligibility rules."
+    },
+    {
+      "id": "FEAT-11",
+      "name": "Staff schedules and availability",
+      "first_phase": "P1",
+      "expansion_phase": null,
+      "adoption_note": "P1: persist them with permission checks and availability revalidation."
+    },
+    {
+      "id": "FEAT-12",
+      "name": "Staff service and duration overrides",
+      "first_phase": "P2",
+      "expansion_phase": null,
+      "adoption_note": "P2: service overrides and explicit price-visibility settings."
+    },
+    {
+      "id": "FEAT-13",
+      "name": "Service add-ons",
+      "first_phase": "P2",
+      "expansion_phase": null,
+      "adoption_note": "P2: select extras and recompute both duration and availability."
+    },
+    {
+      "id": "FEAT-14",
+      "name": "Service combinations and packages",
+      "first_phase": "P2",
+      "expansion_phase": null,
+      "adoption_note": "P2: fixed-duration combinations first. Prepaid visit bundles require separate entitlement work."
+    },
+    {
+      "id": "FEAT-15",
+      "name": "Pricing and schedule gap rules",
+      "first_phase": "P2",
+      "expansion_phase": null,
+      "adoption_note": "P2: configurable increments/buffers; defer complex price rules until demanded."
+    },
+    {
+      "id": "FEAT-16",
+      "name": "Recurring appointments",
+      "first_phase": "P2",
+      "expansion_phase": null,
+      "adoption_note": "P2: preview conflicts for each occurrence and permit per-occurrence changes."
+    },
+    {
+      "id": "FEAT-17",
+      "name": "Staff-entered appointments",
+      "first_phase": "P1",
+      "expansion_phase": null,
+      "adoption_note": "P1: manual booking and status capture, without financial checkout."
+    },
+    {
+      "id": "FEAT-18",
+      "name": "Walk-in queue",
+      "first_phase": "P2",
+      "expansion_phase": null,
+      "adoption_note": "P2: staff-operated queue using the booking capacity model."
+    },
+    {
+      "id": "FEAT-19",
+      "name": "Future appointment waitlist",
+      "first_phase": "P2",
+      "expansion_phase": null,
+      "adoption_note": "P2: service/staff/time preferences and an invitation to claim a slot."
+    },
+    {
+      "id": "FEAT-20",
+      "name": "Self-check-in kiosk",
+      "first_phase": "P2",
+      "expansion_phase": null,
+      "adoption_note": "P2: add after staff-operated queue rules stabilize."
+    },
+    {
+      "id": "FEAT-21",
+      "name": "TV appointment and queue board",
+      "first_phase": "P2",
+      "expansion_phase": null,
+      "adoption_note": "P2: optional read-only display with ticket/initials and expiring display access."
+    },
+    {
+      "id": "FEAT-22",
+      "name": "Mobile barber and house calls",
+      "first_phase": "P5",
+      "expansion_phase": null,
+      "adoption_note": "P5 or separate vertical: add only after demand; model travel time and service areas."
+    },
+    {
+      "id": "FEAT-23",
+      "name": "Owner dashboard",
+      "first_phase": "P1",
+      "expansion_phase": null,
+      "adoption_note": "P1: operational metrics tied to stored events; revenue only after a financial ledger exists."
+    },
+    {
+      "id": "FEAT-24",
+      "name": "Staff business workspace",
+      "first_phase": "P1",
+      "expansion_phase": "P4",
+      "adoption_note": "Confirmed 2026-11-08: P1 one shared MAWID management Android app plus web management portal from the first pilot, distinct management application identity and server-authorized workspace/role access. P4 only later expansion; both initial surfaces are required."
+    },
+    {
+      "id": "FEAT-25",
+      "name": "Multiple business locations",
+      "first_phase": "P1",
+      "expansion_phase": "P4",
+      "adoption_note": "P1: model organization/location separately; P4: operate multiple branches after demand."
+    },
+    {
+      "id": "FEAT-26",
+      "name": "Identity and access permissions",
+      "first_phase": "P1",
+      "expansion_phase": null,
+      "adoption_note": "P1: owner, manager/reception, professional, and customer permissions, enforced by server."
+    },
+    {
+      "id": "FEAT-27",
+      "name": "Customer records and preferences",
+      "first_phase": "P1",
+      "expansion_phase": "P2",
+      "adoption_note": "P1: minimal customer record; P2: structured preferences and consented notes."
+    },
+    {
+      "id": "FEAT-28",
+      "name": "Client insights",
+      "first_phase": "P3",
+      "expansion_phase": null,
+      "adoption_note": "P3: explainable visit/return indicators first; financial insights after reliable payment data."
+    },
+    {
+      "id": "FEAT-29",
+      "name": "Operational reporting and exports",
+      "first_phase": "P1",
+      "expansion_phase": "P2",
+      "adoption_note": "P1: tenant-scoped exports and event history; P2: useful owner reports."
+    },
+    {
+      "id": "FEAT-30",
+      "name": "Assisted data migration",
+      "first_phase": "P1",
+      "expansion_phase": null,
+      "adoption_note": "P1: assisted onboarding with preview, duplicate checks, and rollback for an authorized import."
+    },
+    {
+      "id": "FEAT-31",
+      "name": "Guided shop onboarding",
+      "first_phase": "P1",
+      "expansion_phase": null,
+      "adoption_note": "P1: guided checklist ending in a successful two-device test booking."
+    },
+    {
+      "id": "FEAT-32",
+      "name": "Transactional notifications",
+      "first_phase": "P1",
+      "expansion_phase": null,
+      "adoption_note": "P1: one dependable transactional channel plus a fallback; add channels by measured need."
+    },
+    {
+      "id": "FEAT-33",
+      "name": "Marketing campaigns",
+      "first_phase": "P3",
+      "expansion_phase": null,
+      "adoption_note": "P3: opt-in campaigns to explicit customer segments, with suppression and spend limits."
+    },
+    {
+      "id": "FEAT-34",
+      "name": "Notification templates and delivery",
+      "first_phase": "P1",
+      "expansion_phase": null,
+      "adoption_note": "P1: event templates, provider status, deduplication, retries, and visible failures."
+    },
+    {
+      "id": "FEAT-35",
+      "name": "Loyalty points",
+      "first_phase": "P3",
+      "expansion_phase": null,
+      "adoption_note": "P3: one simple earn/redeem rule, with reversal for corrections."
+    },
+    {
+      "id": "FEAT-36",
+      "name": "Personal rewards and discounts",
+      "first_phase": "P3",
+      "expansion_phase": null,
+      "adoption_note": "P3: add only the reward types pilots understand and can afford."
+    },
+    {
+      "id": "FEAT-37",
+      "name": "Shop memberships",
+      "first_phase": "P5",
+      "expansion_phase": null,
+      "adoption_note": "P5: launch after billing and service-credit accounting; distinguish salon memberships from Mawid subscriptions."
+    },
+    {
+      "id": "FEAT-38",
+      "name": "Pay-in-shop workflow",
+      "first_phase": "P1",
+      "expansion_phase": null,
+      "adoption_note": "P1: support booking without collecting money; optional manual paid/unpaid status once agreed."
+    },
+    {
+      "id": "FEAT-39",
+      "name": "Online payments and deposits",
+      "first_phase": "P5",
+      "expansion_phase": null,
+      "adoption_note": "P5: one locally viable provider and complete refund/reconciliation flow."
+    },
+    {
+      "id": "FEAT-40",
+      "name": "Cancellation and no-show fees",
+      "first_phase": "P5",
+      "expansion_phase": null,
+      "adoption_note": "P5: clear customer policy, reviewable charge, and refund/dispute handling."
+    },
+    {
+      "id": "FEAT-41",
+      "name": "POS and card terminals",
+      "first_phase": "P5",
+      "expansion_phase": null,
+      "adoption_note": "P5: validate hardware/support economics before a counter checkout product."
+    },
+    {
+      "id": "FEAT-42",
+      "name": "Individual staff payment accounts",
+      "first_phase": "P5",
+      "expansion_phase": null,
+      "adoption_note": "P5: clarify merchant responsibility and independent-professional demand before implementing."
+    },
+    {
+      "id": "FEAT-43",
+      "name": "Product catalog and commerce",
+      "first_phase": "P5",
+      "expansion_phase": null,
+      "adoption_note": "P5: small catalog and collection first; add after checkout proves useful."
+    },
+    {
+      "id": "FEAT-44",
+      "name": "Inventory and fulfilment",
+      "first_phase": "P5",
+      "expansion_phase": null,
+      "adoption_note": "P5: stock movements, returns, and fulfilment; do not infer warehouse/accounting depth."
+    },
+    {
+      "id": "FEAT-45",
+      "name": "Booking API",
+      "first_phase": "P1",
+      "expansion_phase": "P4",
+      "adoption_note": "P1: internal service contract; P4: documented external API with scoped access."
+    },
+    {
+      "id": "FEAT-46",
+      "name": "Chatbot and voice booking integrations",
+      "first_phase": "P4",
+      "expansion_phase": null,
+      "adoption_note": "P4: integrate through the same validated booking service. A possible integration is not a turnkey assistant."
+    },
+    {
+      "id": "FEAT-47",
+      "name": "Phone verification and abuse controls",
+      "first_phase": "P1",
+      "expansion_phase": null,
+      "adoption_note": "P1: real identity and rate limits; review abuse controls without relying on IP alone."
+    },
+    {
+      "id": "FEAT-48",
+      "name": "Mawid subscription and pricing",
+      "first_phase": null,
+      "expansion_phase": null,
+      "adoption_note": "After the first pilot: discuss the commercial offer, including subscription and messaging allowances."
+    },
+    {
+      "id": "FEAT-49",
+      "name": "Onboarding and support service",
+      "first_phase": "P1",
+      "expansion_phase": null,
+      "adoption_note": "P1: named onboarding/support owner, realistic response hours, and issue escalation."
+    },
+    {
+      "id": "FEAT-50",
+      "name": "Referral and ambassador programs",
+      "first_phase": null,
+      "expansion_phase": null,
+      "adoption_note": "After retention: start with shop-to-shop referrals; model commissions before promising them."
+    }
+  ],
+  "distribution_decision": {
+    "confirmed_on": "2026-11-08",
+    "source": "Saeed's direct instruction in MAWID engineering-plan update conversation",
+    "record": "docs/decisions/2026-11-08-product-distribution.md",
+    "status": "product direction confirmed; technical feasibility/store outcomes unverified",
+    "notion_decision_url": "https://www.notion.so/412f53c2a11d818cbeb7e4307356bef8",
+    "notion_synced_on": "2026-11-08"
+  }
+}

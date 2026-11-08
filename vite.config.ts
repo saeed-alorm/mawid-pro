@@ -1,38 +1,46 @@
-// @lovable.dev/vite-tanstack-config already includes the following — do NOT add them manually
-// or the app will break with duplicate plugins:
-//   - TanStack devtools (dev-only, first), tanstackStart, viteReact, tailwindcss, tsConfigPaths,
-//     nitro (build-only using cloudflare as a default target), VITE_* env injection, @ path alias,
-//     React/TanStack dedupe, error logger plugins, and sandbox detection (port/host/strictPort).
-// You can pass additional config via defineConfig({ vite: { ... }, etc... }) if needed.
-import { defineConfig } from "@lovable.dev/vite-tanstack-config";
+import { defineConfig } from "vite";
+import { tanstackStart } from "@tanstack/react-start/plugin/vite";
+import react from "@vitejs/plugin-react";
+import tailwindcss from "@tailwindcss/vite";
+import tsconfigPaths from "vite-tsconfig-paths";
+import { nitro } from "nitro/vite";
 
-const isGitHubPages = process.env.npm_lifecycle_event === "build:pages";
-const repositoryBase = "/mawid-pro";
-
-export default defineConfig({
-  ...(isGitHubPages
-    ? {
-        nitro: false,
-        vite: { base: `${repositoryBase}/` },
-      }
-    : {}),
-  tanstackStart: {
-    // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
-    // nitro/vite builds from this
-    server: { entry: "server" },
-    ...(isGitHubPages
-      ? {
-          router: { basepath: repositoryBase },
-          spa: {
-            enabled: true,
-            maskPath: `${repositoryBase}/`,
-            prerender: {
-              outputPath: `${repositoryBase}/index`,
-              crawlLinks: false,
-            },
-          },
-          sitemap: { enabled: false },
-        }
-      : {}),
-  },
+// Standard plugins, exactly once. This preserves the existing SSR build target;
+// it is a build compatibility choice, not approval of production hosting.
+export default defineConfig(({ command, mode }) => {
+  const isPages = mode === "github-pages";
+  const basepath = "/mawid-pro";
+  return {
+    base: isPages ? `${basepath}/` : "/",
+    server: { host: "127.0.0.1", port: 8080 },
+    preview: { host: "127.0.0.1" },
+    css: { transformer: "lightningcss" },
+    resolve: {
+      dedupe: ["react", "react-dom", "@tanstack/react-query", "@tanstack/query-core"],
+    },
+    plugins: [
+      tailwindcss(),
+      tsconfigPaths({ projects: ["./tsconfig.json"] }),
+      tanstackStart({
+        server: { entry: "server" },
+        importProtection: {
+          behavior: "error",
+          client: { files: ["**/server/**"], specifiers: ["server-only"] },
+        },
+        ...(isPages
+          ? {
+              router: { basepath },
+              spa: {
+                enabled: true,
+                maskPath: `${basepath}/`,
+                prerender: { outputPath: `${basepath}/index`, crawlLinks: false },
+              },
+              sitemap: { enabled: false },
+            }
+          : {}),
+      }),
+      ...(command === "build" && !isPages ? [nitro({ preset: "cloudflare-module" })] : []),
+      react(),
+    ],
+  };
 });

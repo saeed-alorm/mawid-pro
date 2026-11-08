@@ -3,8 +3,8 @@ import { BookingPage } from "@/components/customer-pages";
 
 export const Route = createFileRoute("/customer/$tenantId/book")({
   validateSearch: (search: Record<string, unknown>) => ({
-    service: typeof search.service === "string" ? search.service : undefined,
-    employee: typeof search.employee === "string" ? search.employee : undefined,
+    service: typeof search["service"] === "string" ? search["service"] : undefined,
+    employee: typeof search["employee"] === "string" ? search["employee"] : undefined,
   }),
   component: BookingRoute,
 });
