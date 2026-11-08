@@ -1,5 +1,7 @@
 # P1 architecture and feasibility analysis — confirmed distribution, open technical decisions
 
+**Notion synchronization — 8 November 2026:** MAWID HQ access was restored and the [confirmed Notion decision](https://www.notion.so/412f53c2a11d818cbeb7e4307356bef8) was saved under HQ. It records Saeed's actual 8 November confirmation/source, FEAT-01 and FEAT-24 scope, engineering links and unresolved feasibility. No separate feature pages/database were found; no feature-page URLs or parallel engineering tracker are invented. Earlier 404 results remain historical evidence.
+
 Prepared 7 November 2026; revised 8 November 2026, Asia/Beirut. Distribution is confirmed in [PRODUCT.md](../../PRODUCT.md) and the [dated decision](../decisions/2026-11-08-product-distribution.md). Technical/provider, budget and execution decisions remain open. Analysis started for [P1-ARCH #4](https://github.com/saeed-alorm/mawid-pro/issues/4); this is not an approved ADR, implementation commitment, spending authorization or deployment plan.
 
 Saeed (`saeed-alorm`) leads engineering. Rabeeh/Rabih Bou Diab is a partner: this document requests his input without assigning him a product role or GitHub identity. Product intent/decisions belong in [Notion HQ](https://www.notion.so/40cf53c2a11d80c493fede8991643fea); engineering evidence remains in GitHub. No feature-level Notion link has been verified.

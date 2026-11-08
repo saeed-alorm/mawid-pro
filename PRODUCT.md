@@ -1,5 +1,7 @@
 # MAWID product direction
 
+**Notion synchronization — 8 November 2026:** MAWID HQ access was restored and the [confirmed Notion decision](https://www.notion.so/412f53c2a11d818cbeb7e4307356bef8) was saved under HQ. It records Saeed's actual 8 November confirmation/source, FEAT-01 and FEAT-24 scope, engineering links and unresolved feasibility. No separate feature pages/database were found; no feature-page URLs or parallel engineering tracker are invented. Earlier 404 results remain historical evidence.
+
 Distribution decision **confirmed by Saeed on 8 November 2026 (Asia/Beirut)**.
 Source: Saeed's direct instruction in the MAWID engineering-plan update conversation,
 beginning “Update the existing MAWID engineering plan to reflect Saeed's confirmed

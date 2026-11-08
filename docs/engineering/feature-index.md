@@ -1,5 +1,7 @@
 # Feature traceability index
 
+**Notion synchronization — 8 November 2026:** MAWID HQ access was restored and the [confirmed Notion decision](https://www.notion.so/412f53c2a11d818cbeb7e4307356bef8) was saved under HQ. It records Saeed's actual 8 November confirmation/source, FEAT-01 and FEAT-24 scope, engineering links and unresolved feasibility. No separate feature pages/database were found; no feature-page URLs or parallel engineering tracker are invented. Earlier 404 results remain historical evidence.
+
 Source: supplied Plan-Context.json, prepared 7 November 2026. IDs and phase assignments are unchanged. FEAT-01 and FEAT-24 scope was clarified by [Saeed's confirmed 8 November distribution decision](../decisions/2026-11-08-product-distribution.md); implementation and store approval remain unverified. These are planned capabilities, not shipped product claims.
 
 [Product HQ](https://www.notion.so/40cf53c2a11d80c493fede8991643fea) owns intent and decisions; GitHub owns engineering status. Feature-level Notion URLs have not been verified.

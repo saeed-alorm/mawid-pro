@@ -49,8 +49,11 @@ support capacity, cash ceiling and engineering capacity remain open. Commercial
 cancellation/export terms, any conditional listing transfer, source handover/licensing
 require separate agreement; none follows automatically from salon branding.
 
-Notion search returned no MAWID records and the known HQ fetch returned
-`object_not_found` (404) on 8 November 2026. No Notion page was saved or updated.
-The user-supplied direct app.notion.com HQ link was also retried on 8 November and returned the same 404; the connected Notion workspace could not access this target.
-The [exact pending Notion update](../engineering/notion-distribution-update-pending.md)
-contains the decision, changes and reciprocal-link instructions for when access returns.
+Initial Notion attempts returned no records / HQ 404; those failures are historical.
+On 8 November 2026 the MAWID-specific connection restored access. The [confirmed Notion decision](https://www.notion.so/412f53c2a11d818cbeb7e4307356bef8)
+is now saved under [MAWID HQ](https://www.notion.so/40cf53c2a11d80c493fede8991643fea),
+and HQ's current direction and engineering links were updated. No separate
+FEAT-01/FEAT-24 pages or Decisions database were found, so their traceability is
+captured in the decision and HQ without duplicating trackers.
+The [prepared packet](../engineering/notion-distribution-update-pending.md) is now
+marked applied; no account, release or technical acceptance outcome is implied.

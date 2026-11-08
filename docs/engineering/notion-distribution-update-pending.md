@@ -1,4 +1,6 @@
-# Pending Notion update — not saved
+# Notion update packet — applied 8 November 2026
+
+**Applied:** [confirmed Notion decision](https://www.notion.so/412f53c2a11d818cbeb7e4307356bef8) saved under existing HQ after access restoration. HQ current direction/engineering links were updated. FEAT-01/24 are recorded in the decision because separate feature pages were not found. GitHub reciprocal links are supplied in this PR. The packet below is retained as the historical prepared text; its earlier “not saved”/404 language describes the blocked attempt, not current status.
 
 Prepared 8 November 2026, Asia/Beirut. Notion search returned no MAWID records;
 the known [MAWID HQ](https://www.notion.so/40cf53c2a11d80c493fede8991643fea)

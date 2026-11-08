@@ -357,7 +357,8 @@
     "confirmed_on": "2026-11-08",
     "source": "Saeed's direct instruction in MAWID engineering-plan update conversation",
     "record": "docs/decisions/2026-11-08-product-distribution.md",
-    "status": "product direction confirmed; technical feasibility/store outcomes unverified"
+    "status": "product direction confirmed; technical feasibility/store outcomes unverified",
+    "notion_decision_url": "https://www.notion.so/412f53c2a11d818cbeb7e4307356bef8",
+    "notion_synced_on": "2026-11-08"
   }
 }
-
