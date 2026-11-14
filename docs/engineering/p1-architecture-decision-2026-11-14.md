@@ -56,8 +56,12 @@ The existing 8 November product direction has a Notion decision link. The precis
 
 - Notification timing is settled: after-hours initial staff push at next opening, no overdue push/reminder, staff-only in-app overdue warning. Remaining work is implementation/security verification, not another timing decision.
 - Retention/deletion, customer identity/recovery choice, data ownership/export and assisted-import limits; technical contract defaults (retry retention/version compatibility) to record in the review.
-- Actual full pilot cost within $40, incident reserve, off-device retention/backup coverage and validation of the approved RPO 24h / RTO four staffed-hour targets; approval/refinement of the existing estimate using 24–30h/week.
+- Actual full pilot cost within $40, incident reserve, off-device destination/custody and backup coverage and validation of the approved RPO 24h / RTO four staffed-hour targets; approval/refinement of the existing estimate using 24–30h/week.
 - Real Lebanon operator/legal verification path and actual individually approved prices, private rights/utility/workflow review, signing/security custody; conditional prerequisites are documented, not claimed complete.
 - #3's remaining readiness records and #5's real identity/security evidence before #6. These need evidence and later authorized work, not a repeated architecture-selection question.
 
 Questions are handled one point at a time; this list is the acceptance backlog, not a request to answer everything at once. No spending, hosted changes, employee setup, Twilio, APK modification, merge or store/site publication is authorized.
+
+## Backup retention approval — 14 November
+
+Daily pilot backups have an approved **seven-day retention period**, confirmed by Saeed on 14 November 2026. This is backup-artifact retention, not deletion of live bookings, audit/cancellation history or customer accounts. It does not claim a configured backup service, authorize spending or prove off-device retention. The backup destination, encryption/access custody and scheduling implementation still require a concrete plan within the approved budget. RPO remains up to 24h; RTO remains four staffed hours. Live-data retention/deletion and import/export rules are separate decisions.
