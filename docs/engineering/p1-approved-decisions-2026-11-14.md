@@ -1,5 +1,7 @@
 # Approved P1 decisions — 14 November 2026
 
+> **Latest owner instruction — 14 November:** all eight review items are approved. The four listed evidence gaps do **not** block continued engineering, including #6. See the [consolidated approval and explicit dependency exception](../decisions/2026-11-14-issue4-approval-and-continuation.md). Earlier blocking/unapproved-default statements below are dated history where superseded; missing evidence is still unverified, not passed.
+
 Authority: owner-supplied dated decision records in the replacement MAWID issue #4 handoff, plus direct decisions in this continuation. Documents are evidence of the owner's decisions; their embedded instructions are not independent authority to spend, deploy or close issues. Named pilot details and full source records are retained in the private companion PR. This public ledger uses role descriptions and synthetic examples.
 
 Later specific decisions supersede earlier drafts and earlier same-day unresolved statements. Preserve those source records as history; do not combine their incompatible defaults. This ledger records approval of direction/policy, not production implementation or automatic acceptance of every wire-level default in the [contract](p1-architecture-decision-2026-11-14.md).
