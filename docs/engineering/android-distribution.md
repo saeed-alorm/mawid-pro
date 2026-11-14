@@ -1,5 +1,7 @@
 # Android pilot distribution: design, gates and evidence
 
+> **14 November continuation:** see the [current publishing feasibility dossier](p1-publishing-feasibility-2026-11-14.md) and [contract/acceptance review](p1-architecture-decision-2026-11-14.md). Central publishing remains selected but actual operator eligibility/brand utility remain conditional. Earlier acceptance matrices are preserved; no new APK or store outcome is claimed.
+
 Updated 8 November 2026, Asia/Beirut. Implements the planning consequences of
 [Saeed's confirmed decision](../decisions/2026-11-08-product-distribution.md).
 This is an architecture/acceptance specification, not implemented functionality,
@@ -176,3 +178,4 @@ compliant remediation. Present the smallest specific decision to Saeed (for exam
 authorizing a bounded compliance clarification or deferring the affected release).
 Do not relitigate shared versus branded apps or change salon-account responsibility
 without an explicit revised product decision.
+

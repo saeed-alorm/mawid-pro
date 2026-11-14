@@ -1,0 +1,122 @@
+{
+  "rows": 6,
+  "groups": [
+    {
+      "count": 1,
+      "status": "cancelled",
+      "tenant_id": "fictional-a"
+    },
+    {
+      "count": 1,
+      "status": "confirmed",
+      "tenant_id": "fictional-a"
+    },
+    {
+      "count": 1,
+      "status": "pending",
+      "tenant_id": "fictional-a"
+    },
+    {
+      "count": 1,
+      "status": "cancelled",
+      "tenant_id": "fictional-b"
+    },
+    {
+      "count": 1,
+      "status": "confirmed",
+      "tenant_id": "fictional-b"
+    },
+    {
+      "count": 1,
+      "status": "pending",
+      "tenant_id": "fictional-b"
+    }
+  ],
+  "sha256": "ded080396cc81ea3120f4218f2eb1b802a29bafb00d21e70a2e1df4c13ec968c",
+  "indexes": [
+    {
+      "name": "bookings_pkey",
+      "definition": "CREATE UNIQUE INDEX bookings_pkey ON mawid_recovery_rehearsal_4.bookings USING btree (booking_id)"
+    },
+    {
+      "name": "bookings_idempotency_unique",
+      "definition": "CREATE UNIQUE INDEX bookings_idempotency_unique ON mawid_recovery_rehearsal_4.bookings USING btree (tenant_id, idempotency_key)"
+    },
+    {
+      "name": "bookings_tenant_start_idx",
+      "definition": "CREATE INDEX bookings_tenant_start_idx ON mawid_recovery_rehearsal_4.bookings USING btree (tenant_id, starts_at)"
+    }
+  ],
+  "policies": 0,
+  "functions": 0,
+  "constraints": [
+    {
+      "name": "bookings_idempotency_unique",
+      "definition": "UNIQUE (tenant_id, idempotency_key)"
+    },
+    {
+      "name": "bookings_location_check",
+      "definition": "CHECK ((location_id = (tenant_id || '-location'::text)))"
+    },
+    {
+      "name": "bookings_pkey",
+      "definition": "PRIMARY KEY (booking_id)"
+    },
+    {
+      "name": "bookings_status_check",
+      "definition": "CHECK ((status = ANY (ARRAY['pending'::text, 'confirmed'::text, 'cancelled'::text])))"
+    },
+    {
+      "name": "bookings_tenant_id_check",
+      "definition": "CHECK ((tenant_id = ANY (ARRAY['fictional-a'::text, 'fictional-b'::text])))"
+    },
+    {
+      "name": "bookings_time_check",
+      "definition": "CHECK ((ends_at > starts_at))"
+    },
+    {
+      "name": "bookings_version_check",
+      "definition": "CHECK ((version > 0))"
+    }
+  ],
+  "role_access": [
+    {
+      "role": "anon",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "schema_usage": false,
+      "schema_create": false
+    },
+    {
+      "role": "authenticated",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "schema_usage": false,
+      "schema_create": false
+    },
+    {
+      "role": "service_role",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "schema_usage": false,
+      "schema_create": false
+    }
+  ],
+  "foreign_keys": 0,
+  "table_security": [
+    {
+      "acl": "{postgres=arwdDxtm/postgres}",
+      "rls": true,
+      "name": "bookings",
+      "force_rls": true
+    }
+  ],
+  "canonical_payload": "fixture-a-1|fictional-a|fictional-a-location|fictional-pro-a|1795161600|1795163400|confirmed|1|fixture-request-a-1\nfixture-a-2|fictional-a|fictional-a-location|fictional-pro-a|1795165200|1795167900|pending|1|fixture-request-a-2\nfixture-a-3|fictional-a|fictional-a-location|fictional-pro-a|1795168800|1795170600|cancelled|2|fixture-request-a-3\nfixture-b-1|fictional-b|fictional-b-location|fictional-pro-b|1795161600|1795163400|confirmed|1|fixture-request-b-1\nfixture-b-2|fictional-b|fictional-b-location|fictional-pro-b|1795165200|1795167900|pending|1|fixture-request-b-2\nfixture-b-3|fictional-b|fictional-b-location|fictional-pro-b|1795168800|1795170600|cancelled|2|fixture-request-b-3",
+  "default_privileges": null
+}
