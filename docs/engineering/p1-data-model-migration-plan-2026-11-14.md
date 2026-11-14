@@ -8,26 +8,30 @@ Supabase PostgreSQL is approved. Proceed with reviewable engineering and fiction
 
 #4 documentary reconciliation: workload/allowances/cost/exit plan is saved; internal contract and seven-day retries approved; pending/Any/hold/cancellation rules approved; $20–40 monthly planning boundary, 24–30h/week, owners and effort baseline approved; both management surfaces and conditional central Android publishing assessment retained. Documentary approval does not prove legal eligibility, permission enforcement, off-device retention or live recovery targets. #4 may remain open for final tracking/review without blocking this plan on the four waived gaps.
 
+## Review refinement — canonical tenant key
+
+Local review preserves the approved contract name `workspace_id` throughout SQL and operation boundaries; `organizations` is the tenant entity. No second organization/tenant identifier is introduced. Local fictional database principals are only a rehearsal identity adapter, not verified live authentication.
+
 ## Proposed entity model
 
 Technical design defaults below implement the approved policies; they do not create a second booking core or a per-salon fork.
 
-| Entity | Scope and invariant |
-|---|---|
-| organizations | Opaque UUID organization/workspace identity; one salon tenant. Branding/package values never grant access. |
-| locations | UUID and organization_id, IANA timezone; organization/location separation from day one without multi-branch operations in P1. |
-| memberships | Organization/location-scoped actor and explicitly assigned role; active/revoked state. Identity-provider binding is isolated behind the server identity adapter. No employee account provisioning in this work. |
-| customer_profiles | Minimal per-organization customer ID plus server-verified subject binding when available. Keep contact data separate from booking facts; no password/token storage. |
-| professionals / services | Tenant-scoped professional and service IDs, eligibility join, duration/buffers and schedule version. Named professional and Any requests share the same resource model. |
-| opening_intervals / schedule_exceptions | Location weekly opening rules plus closed-day/holiday exceptions; staff availability/breaks/absences separately scoped. Fictional hours only until actual schedule supplied. |
-| bookings | organization_id/location_id/customer_id/service_id, requested and assigned professional, requested/assigned UTC start/end, authoritative state/version, submitted time and response-clock reference. Pending reserves nothing; overdue is derived separately and only exposed to staff. |
-| allocations | Concrete professional UTC interval [start,end), owning booking and kind confirmed/offer, with offer expiry. Tenant/professional overlap prevention; assignment alone creates no allocation. |
-| booking_events / outbox | Immutable event identity, tenant/object/version/actor/action/time plus minimal safe metadata; outbox committed atomically. Delay closed-hours initial staff push until next opening; no overdue push. |
-| idempotency_records | Tenant+actor+operation+retry key, canonical input hash, safe committed outcome and timestamps. Retain seven days; authorize before replay and reject changed payload. |
-| import_jobs / export_jobs | Manager/subject ownership, tenant scope, manifest/hash, preview/validation status, explicit confirmation, audit result, temporary artifact expiry. No credentials or unnecessary raw PII in logs. |
-| deletion_ledger | Minimal protected erasure/anonymization actions needed to reconcile restores; do not retain deleted profile contents in this ledger. Privacy/audit retention requires a documented purpose. |
+| Entity                                  | Scope and invariant                                                                                                                                                                                                                                                                  |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| organizations                           | Opaque UUID organization/workspace identity; one salon tenant. Branding/package values never grant access.                                                                                                                                                                           |
+| locations                               | UUID and workspace_id, IANA timezone; organization/location separation from day one without multi-branch operations in P1.                                                                                                                                                           |
+| memberships                             | Organization/location-scoped actor and explicitly assigned role; active/revoked state. Identity-provider binding is isolated behind the server identity adapter. No employee account provisioning in this work.                                                                      |
+| customer_profiles                       | Minimal per-organization customer ID plus server-verified subject binding when available. Keep contact data separate from booking facts; no password/token storage.                                                                                                                  |
+| professionals / services                | Tenant-scoped professional and service IDs, eligibility join, duration/buffers and schedule version. Named professional and Any requests share the same resource model.                                                                                                              |
+| opening_intervals / schedule_exceptions | Location weekly opening rules plus closed-day/holiday exceptions; staff availability/breaks/absences separately scoped. Fictional hours only until actual schedule supplied.                                                                                                         |
+| bookings                                | workspace_id/location_id/customer_id/service_id, requested and assigned professional, requested/assigned UTC start/end, authoritative state/version, submitted time and response-clock reference. Pending reserves nothing; overdue is derived separately and only exposed to staff. |
+| allocations                             | Concrete professional UTC interval [start,end), owning booking and kind confirmed/offer, with offer expiry. Tenant/professional overlap prevention; assignment alone creates no allocation.                                                                                          |
+| booking_events / outbox                 | Immutable event identity, tenant/object/version/actor/action/time plus minimal safe metadata; outbox committed atomically. Delay closed-hours initial staff push until next opening; no overdue push.                                                                                |
+| idempotency_records                     | Tenant+actor+operation+retry key, canonical input hash, safe committed outcome and timestamps. Retain seven days; authorize before replay and reject changed payload.                                                                                                                |
+| import_jobs / export_jobs               | Manager/subject ownership, tenant scope, manifest/hash, preview/validation status, explicit confirmation, audit result, temporary artifact expiry. No credentials or unnecessary raw PII in logs.                                                                                    |
+| deletion_ledger                         | Minimal protected erasure/anonymization actions needed to reconcile restores; do not retain deleted profile contents in this ledger. Privacy/audit retention requires a documented purpose.                                                                                          |
 
-Use primary/unique constraints and composite foreign keys including organization_id (and location_id where needed) so cross-tenant references fail at the database. Index FK lookup prefixes and tenant/time query paths; avoid broad cascading deletion of booking/audit records. Review actual query plans after implementation rather than claim performance from indexes alone.
+Use primary/unique constraints and composite foreign keys including workspace_id (and location_id where needed) so cross-tenant references fail at the database. Index FK lookup prefixes and tenant/time query paths; avoid broad cascading deletion of booking/audit records. Review actual query plans after implementation rather than claim performance from indexes alone.
 
 ## Authorization and capacity boundary
 
@@ -58,13 +62,13 @@ Customer exports contain only the authenticated customer's own profile/history. 
 
 ## #6 verification matrix — all implementation checks pending
 
-| Acceptance | Required local evidence |
-|---|---|
-| Persistence and authorization | Save/restart/read with synthetic identities; wrong tenant/customer/role and revoked membership denied. |
-| Every read/write/export/import path | Two fictional organizations, guessed IDs, forged scope and cross-tenant FK attempts; test preview, confirmation, job status, download and retry replay separately. |
-| Migrations/import safeguards | Empty and prior-version upgrade, dry-run inventory, duplicate/stale-preview checks, injected failure rollback, successful audit and no credential/PII logs. |
-| Organization/location model | Same professional/time IDs in separate tenants do not conflict; wrong-location links fail; no P1 multi-branch UI commitment. |
-| Approved booking semantics | Non-reserving overdue pending, opening-clock pause/resume, after-hours submit/push scheduling, future proposal after past start, concurrent overlaps/Any/hold races, cutoff/flag scope. Preserve historical proof limits. |
-| Retention/deletion | Boundary fixtures for twelve months, 90-day count, seven-day retry pruning, customer erasure and restoration reconciliation. No real data. |
+| Acceptance                          | Required local evidence                                                                                                                                                                                                   |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Persistence and authorization       | Save/restart/read with synthetic identities; wrong tenant/customer/role and revoked membership denied.                                                                                                                    |
+| Every read/write/export/import path | Two fictional organizations, guessed IDs, forged scope and cross-tenant FK attempts; test preview, confirmation, job status, download and retry replay separately.                                                        |
+| Migrations/import safeguards        | Empty and prior-version upgrade, dry-run inventory, duplicate/stale-preview checks, injected failure rollback, successful audit and no credential/PII logs.                                                               |
+| Organization/location model         | Same professional/time IDs in separate tenants do not conflict; wrong-location links fail; no P1 multi-branch UI commitment.                                                                                              |
+| Approved booking semantics          | Non-reserving overdue pending, opening-clock pause/resume, after-hours submit/push scheduling, future proposal after past start, concurrent overlaps/Any/hold races, cutoff/flag scope. Preserve historical proof limits. |
+| Retention/deletion                  | Boundary fixtures for twelve months, 90-day count, seven-day retry pruning, customer erasure and restoration reconciliation. No real data.                                                                                |
 
 Do not rerun the completed Supabase-source artifact recovery without a changed schema/recovery requirement or conflicting evidence. This plan creates no such artifact and claims no new recovery pass. Implementation, migrations, security tests and target-build evidence remain pending.

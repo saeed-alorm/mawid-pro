@@ -31,3 +31,41 @@ jobs:
       - run: npm run verify:toolchain
       - run: npx playwright install --with-deps chromium
       - run: npm run test:browser
+
+  data-checks:
+    name: data-checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run test:data-csv
+      - run: npm run test:data-api
+      - run: npm run test:data-auth
+      - run: npm run test:data-maintenance
+      - run: npm run test:data-migrations
+      - name: Start isolated schema fixture
+        run: docker run --detach --name mawid-issue6-local-20261114 --network none --env POSTGRES_HOST_AUTH_METHOD=trust postgres:17.12-bookworm@sha256:40865bc877a289da75963d97d72b59633f639fc5af7a4e856bfa3714cae5b536
+      - name: Wait for isolated schema fixture
+        run: |
+          for attempt in {1..30}; do
+            if docker exec mawid-issue6-local-20261114 pg_isready --host=127.0.0.1 --username=postgres --dbname=postgres; then
+              exit 0
+            fi
+            sleep 1
+          done
+          docker logs mawid-issue6-local-20261114
+          exit 1
+      - run: npm run test:data-db
+      - name: Remove isolated schema fixture
+        if: always()
+        run: docker rm --force mawid-issue6-local-20261114 || true
+      - name: Upload fictional-data verification metadata
+        uses: actions/upload-artifact@v4
+        with:
+          name: fictional-data-verification
+          path: database/*verification.json

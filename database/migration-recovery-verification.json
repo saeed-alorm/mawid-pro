@@ -1,0 +1,178 @@
+{
+  "generated_at": "2026-11-14T18:27:55.379Z",
+  "node": "v24.22.1",
+  "postgres": "17.12 (Debian 17.12-1.pgdg12+1)",
+  "image": "postgres:17.12-bookworm@sha256:40865bc877a289da75963d97d72b59633f639fc5af7a4e856bfa3714cae5b536",
+  "source_migrations": [
+    {
+      "name": "20261114162225_tenant_model.sql",
+      "sha256": "95a2013202bf1dfb33687033c9ea009626e96f67c42af0fde327a3776c783459"
+    },
+    {
+      "name": "20261114162232_local_authorization.sql",
+      "sha256": "69532a4d04ea7e0424d19c53fa79f39fa62ae49d9efd5c03927dbdb256a2e579"
+    },
+    {
+      "name": "20261114162239_assisted_transfers.sql",
+      "sha256": "6dde4aea6b72ad483941b814c51db28db08e14bc8a9eb6bda1b08c3d4b39b0a1"
+    },
+    {
+      "name": "20261114162405_retention_and_constraints.sql",
+      "sha256": "62ec6742a1575cc375af18093ad2173c05f2310785787db7762b85213098d89f"
+    },
+    {
+      "name": "20261114172144_authorization_export_scope.sql",
+      "sha256": "44dfd7f6faa56dceb3127f245da8013f80981e71ca63ef3b73b1ffd3d61cb16d"
+    },
+    {
+      "name": "20261114174231_protected_local_maintenance.sql",
+      "sha256": "7030fa3b510c2ab87530000cf27a7e035b1a9f0d8233c66f7be165085a3d522f"
+    }
+  ],
+  "synthetic_scenarios": "In-memory fixture migrations only; not application release migrations.",
+  "files": [
+    {
+      "name": "scripts/database/migrations/runner.mjs",
+      "sha256": "8bd6f2c7bc901f0489b83da487e49aed92d20a3e55266167777e71a3ec14d9e9"
+    },
+    {
+      "name": "scripts/database/migrations/runner.test.mjs",
+      "sha256": "889367ae89ae27cea2db9ce281beaac6441a7194850f538ffca1374cf3d98a76"
+    },
+    {
+      "name": "scripts/database/migrations/verify-recovery.mjs",
+      "sha256": "230ce337a4bc20aafedf76998f745fd5c1244ddfcc7804a19655b659bd8ff347"
+    },
+    {
+      "name": "scripts/database/api/fixture.mjs",
+      "sha256": "4e84c4cb15ceec0c593e5ab11d05e9d45f6d0dc8aef181e52b91a0153702e912"
+    },
+    {
+      "name": "package-lock.json",
+      "sha256": "57d0aeb6bd4f0e37633e1831f32f500234ff442a2b9757f5f392b1937f7f559b"
+    },
+    {
+      "name": "supabase/migrations/20261114162225_tenant_model.sql",
+      "sha256": "95a2013202bf1dfb33687033c9ea009626e96f67c42af0fde327a3776c783459"
+    },
+    {
+      "name": "supabase/migrations/20261114162232_local_authorization.sql",
+      "sha256": "69532a4d04ea7e0424d19c53fa79f39fa62ae49d9efd5c03927dbdb256a2e579"
+    },
+    {
+      "name": "supabase/migrations/20261114162239_assisted_transfers.sql",
+      "sha256": "6dde4aea6b72ad483941b814c51db28db08e14bc8a9eb6bda1b08c3d4b39b0a1"
+    },
+    {
+      "name": "supabase/migrations/20261114162405_retention_and_constraints.sql",
+      "sha256": "62ec6742a1575cc375af18093ad2173c05f2310785787db7762b85213098d89f"
+    },
+    {
+      "name": "supabase/migrations/20261114172144_authorization_export_scope.sql",
+      "sha256": "44dfd7f6faa56dceb3127f245da8013f80981e71ca63ef3b73b1ffd3d61cb16d"
+    },
+    {
+      "name": "supabase/migrations/20261114174231_protected_local_maintenance.sql",
+      "sha256": "7030fa3b510c2ab87530000cf27a7e035b1a9f0d8233c66f7be165085a3d522f"
+    }
+  ],
+  "checks": [
+    {
+      "name": "a previous synthetic schema has one committed migration journal row",
+      "passed": true
+    },
+    {
+      "name": "upgrade from the first real migration preserves both tenants data",
+      "passed": true
+    },
+    {
+      "name": "an already-applied exact manifest is a no-op",
+      "passed": true
+    },
+    {
+      "name": "changed applied migration bytes are refused without database writes",
+      "passed": true
+    },
+    {
+      "name": "missing or renamed applied versions are refused as divergent history",
+      "passed": true
+    },
+    {
+      "name": "API actors cannot inspect or mutate the private migration journal",
+      "passed": true
+    },
+    {
+      "name": "failure commits only earlier files and stops before later files",
+      "passed": true
+    },
+    {
+      "name": "failed migration rolls back DML, RLS, policy, grants and function replacement",
+      "passed": true
+    },
+    {
+      "name": "an unpublished unapplied fixture can be corrected and retried from its exact committed prefix",
+      "passed": true
+    },
+    {
+      "name": "the existing API projection still works across additive schema expansion",
+      "passed": true
+    },
+    {
+      "name": "an appended forward correction repairs a committed behavior bug without rewriting history",
+      "passed": true
+    },
+    {
+      "name": "dry run inventories pending DDL but rolls back data, privileges, schema and journal",
+      "passed": true
+    },
+    {
+      "name": "a failing dry run leaves the committed schema and journal unchanged",
+      "passed": true
+    },
+    {
+      "name": "migration and maintenance executors share the same exclusion lock",
+      "passed": true
+    },
+    {
+      "name": "in-flight migration blocks another maintenance worker",
+      "passed": true
+    },
+    {
+      "name": "terminated connection rolls back pending DDL and leaves no applied record",
+      "passed": true
+    },
+    {
+      "name": "retry after connection loss applies only the uncommitted migration",
+      "passed": true
+    },
+    {
+      "name": "restart preserves journal, data and idempotent migration replay",
+      "passed": true
+    },
+    {
+      "name": "missing extension prerequisite fails atomically from an empty database",
+      "passed": true
+    },
+    {
+      "name": "dry run from empty verifies all real migrations and leaves no schemas behind",
+      "passed": true
+    },
+    {
+      "name": "empty-to-current application commits each real checksum exactly once",
+      "passed": true
+    },
+    {
+      "name": "unrecognized existing migration namespace is preserved and refused",
+      "passed": true
+    },
+    {
+      "name": "database without the explicit local fixture marker is refused before DDL",
+      "passed": true
+    }
+  ],
+  "limits": [
+    "Local PostgreSQL fixtures only; no hosted target, credentials or Supabase migration history changed.",
+    "Session termination tests transaction interruption, not power-loss or provider-outage recovery.",
+    "No automatic destructive down-migration or database restore is performed."
+  ]
+}

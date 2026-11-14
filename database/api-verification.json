@@ -1,0 +1,187 @@
+{
+  "generated_at": "2026-11-14T18:27:52.244Z",
+  "node": "v24.22.1",
+  "postgres": "17.12 (Debian 17.12-1.pgdg12+1)",
+  "image": "postgres:17.12-bookworm@sha256:40865bc877a289da75963d97d72b59633f639fc5af7a4e856bfa3714cae5b536",
+  "files": [
+    {
+      "name": "scripts/database/api/data-service.mjs",
+      "sha256": "e29707130c44c3ceff388e9e6472c48566bc39e29dddf7e2fdb657ddf57ad51c"
+    },
+    {
+      "name": "scripts/database/api/http-server.mjs",
+      "sha256": "bc4475a8fd7b3ab04d8d3e5a9313f82dff5cb3d42d3aeb4544d024f04219b7ba"
+    },
+    {
+      "name": "scripts/database/api/fixture.mjs",
+      "sha256": "4e84c4cb15ceec0c593e5ab11d05e9d45f6d0dc8aef181e52b91a0153702e912"
+    },
+    {
+      "name": "scripts/database/api/verify-api.mjs",
+      "sha256": "2fa90fab40e6842f429fa7452ae274569ad04aabd4bbf2fd0c1387abba3b5335"
+    },
+    {
+      "name": "package-lock.json",
+      "sha256": "57d0aeb6bd4f0e37633e1831f32f500234ff442a2b9757f5f392b1937f7f559b"
+    },
+    {
+      "name": "supabase/migrations/20261114162225_tenant_model.sql",
+      "sha256": "95a2013202bf1dfb33687033c9ea009626e96f67c42af0fde327a3776c783459"
+    },
+    {
+      "name": "supabase/migrations/20261114162232_local_authorization.sql",
+      "sha256": "69532a4d04ea7e0424d19c53fa79f39fa62ae49d9efd5c03927dbdb256a2e579"
+    },
+    {
+      "name": "supabase/migrations/20261114162239_assisted_transfers.sql",
+      "sha256": "6dde4aea6b72ad483941b814c51db28db08e14bc8a9eb6bda1b08c3d4b39b0a1"
+    },
+    {
+      "name": "supabase/migrations/20261114162405_retention_and_constraints.sql",
+      "sha256": "62ec6742a1575cc375af18093ad2173c05f2310785787db7762b85213098d89f"
+    },
+    {
+      "name": "supabase/migrations/20261114172144_authorization_export_scope.sql",
+      "sha256": "44dfd7f6faa56dceb3127f245da8013f80981e71ca63ef3b73b1ffd3d61cb16d"
+    },
+    {
+      "name": "supabase/migrations/20261114174231_protected_local_maintenance.sql",
+      "sha256": "7030fa3b510c2ab87530000cf27a7e035b1a9f0d8233c66f7be165085a3d522f"
+    }
+  ],
+  "checks": [
+    {
+      "name": "unauthenticated requests cannot choose a fictional identity",
+      "passed": true
+    },
+    {
+      "name": "cross-origin requests are rejected",
+      "passed": true
+    },
+    {
+      "name": "DNS-rebinding Host is rejected",
+      "passed": true
+    },
+    {
+      "name": "scoped reads use PostgreSQL identity and omit subject bindings",
+      "passed": true
+    },
+    {
+      "name": "customer reads only their own profile",
+      "passed": true
+    },
+    {
+      "name": "another tenant returns uniform not-found",
+      "passed": true
+    },
+    {
+      "name": "pagination inputs cannot become SQL text",
+      "passed": true
+    },
+    {
+      "name": "unknown and duplicate query fields are rejected",
+      "passed": true
+    },
+    {
+      "name": "HTTP reads services from PostgreSQL",
+      "passed": true
+    },
+    {
+      "name": "HTTP reads professionals from PostgreSQL",
+      "passed": true
+    },
+    {
+      "name": "HTTP reads openings from PostgreSQL",
+      "passed": true
+    },
+    {
+      "name": "HTTP reads bookings from PostgreSQL",
+      "passed": true
+    },
+    {
+      "name": "manager role does not come from a request header",
+      "passed": true
+    },
+    {
+      "name": "admin does not inherit import permission",
+      "passed": true
+    },
+    {
+      "name": "HTTP preview persists metadata without importing profiles",
+      "passed": true
+    },
+    {
+      "name": "confirmation rejects injected actor fields",
+      "passed": true
+    },
+    {
+      "name": "explicit confirmation cannot be omitted",
+      "passed": true
+    },
+    {
+      "name": "manager commits a preview through HTTP",
+      "passed": true
+    },
+    {
+      "name": "HTTP reads the committed record and paginates without duplicates",
+      "passed": true
+    },
+    {
+      "name": "repeated confirmation returns a stable conflict",
+      "passed": true
+    },
+    {
+      "name": "credential columns are rejected at the server boundary",
+      "passed": true
+    },
+    {
+      "name": "oversized CSV is bounded before staging",
+      "passed": true
+    },
+    {
+      "name": "customer export contains only own history",
+      "passed": true
+    },
+    {
+      "name": "manager export delivery is authenticated and formula-safe",
+      "passed": true
+    },
+    {
+      "name": "HTTP failure rolls back every row, audit and job status without leaking database errors",
+      "passed": true
+    },
+    {
+      "name": "retry after transaction rollback commits exactly once",
+      "passed": true
+    },
+    {
+      "name": "membership revocation is enforced again on saved jobs and reads",
+      "passed": true
+    },
+    {
+      "name": "expired server sessions cannot be replayed",
+      "passed": true
+    },
+    {
+      "name": "explicitly revoked server sessions cannot be replayed",
+      "passed": true
+    },
+    {
+      "name": "server restart retains committed PostgreSQL data",
+      "passed": true
+    },
+    {
+      "name": "server restart invalidates old synthetic sessions",
+      "passed": true
+    },
+    {
+      "name": "database restart retains records readable through HTTP",
+      "passed": true
+    }
+  ],
+  "limits": [
+    "Fictional server-issued local sessions only; issue #5 real identity integration remains unverified.",
+    "The public demo remains browser-local. This loopback API is not deployed or imported into the web bundle.",
+    "Booking transitions are issue #7; exhaustive endpoint authorization coverage is the next step."
+  ]
+}
