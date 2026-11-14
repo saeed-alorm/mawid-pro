@@ -1,0 +1,1776 @@
+{
+  "generated_at": "2026-11-14T18:27:32.703Z",
+  "node": "v24.22.1",
+  "postgres": "17.12 (Debian 17.12-1.pgdg12+1)",
+  "image": "postgres:17.12-bookworm@sha256:40865bc877a289da75963d97d72b59633f639fc5af7a4e856bfa3714cae5b536",
+  "operations": [
+    {
+      "operation": "profiles.read",
+      "method": "GET",
+      "path": "/profiles"
+    },
+    {
+      "operation": "services.read",
+      "method": "GET",
+      "path": "/locations/:id/services"
+    },
+    {
+      "operation": "professionals.read",
+      "method": "GET",
+      "path": "/locations/:id/professionals"
+    },
+    {
+      "operation": "openings.read",
+      "method": "GET",
+      "path": "/locations/:id/openings"
+    },
+    {
+      "operation": "bookings.read",
+      "method": "GET",
+      "path": "/locations/:id/bookings"
+    },
+    {
+      "operation": "imports.preview.customers",
+      "method": "POST",
+      "path": "/locations/:id/imports/preview?kind=customers"
+    },
+    {
+      "operation": "imports.preview.professionals",
+      "method": "POST",
+      "path": "/locations/:id/imports/preview?kind=professionals"
+    },
+    {
+      "operation": "imports.preview.services",
+      "method": "POST",
+      "path": "/locations/:id/imports/preview?kind=services"
+    },
+    {
+      "operation": "imports.preview.openings",
+      "method": "POST",
+      "path": "/locations/:id/imports/preview?kind=openings"
+    },
+    {
+      "operation": "imports.confirm.customers",
+      "method": "POST",
+      "path": "/imports/:id/confirm"
+    },
+    {
+      "operation": "imports.confirm.professionals",
+      "method": "POST",
+      "path": "/imports/:id/confirm"
+    },
+    {
+      "operation": "imports.confirm.services",
+      "method": "POST",
+      "path": "/imports/:id/confirm"
+    },
+    {
+      "operation": "imports.confirm.openings",
+      "method": "POST",
+      "path": "/imports/:id/confirm"
+    },
+    {
+      "operation": "imports.status",
+      "method": "GET",
+      "path": "/imports/:id"
+    },
+    {
+      "operation": "exports.create.salon",
+      "method": "POST",
+      "path": "/exports"
+    },
+    {
+      "operation": "exports.create.customer",
+      "method": "POST",
+      "path": "/exports"
+    },
+    {
+      "operation": "exports.status",
+      "method": "GET",
+      "path": "/exports/:id"
+    },
+    {
+      "operation": "exports.download.json",
+      "method": "GET",
+      "path": "/exports/:id/download?format=json"
+    },
+    {
+      "operation": "exports.download.csv",
+      "method": "GET",
+      "path": "/exports/:id/download?format=csv"
+    }
+  ],
+  "files": [
+    {
+      "name": "scripts/database/api/data-service.mjs",
+      "sha256": "e29707130c44c3ceff388e9e6472c48566bc39e29dddf7e2fdb657ddf57ad51c"
+    },
+    {
+      "name": "scripts/database/api/http-server.mjs",
+      "sha256": "bc4475a8fd7b3ab04d8d3e5a9313f82dff5cb3d42d3aeb4544d024f04219b7ba"
+    },
+    {
+      "name": "scripts/database/api/fixture.mjs",
+      "sha256": "4e84c4cb15ceec0c593e5ab11d05e9d45f6d0dc8aef181e52b91a0153702e912"
+    },
+    {
+      "name": "scripts/database/api/verify-authorization.mjs",
+      "sha256": "77bba40ace30ddc7aecf2d402cd9b0416abe7adbad67f4bf63ae40f8eec11457"
+    },
+    {
+      "name": "scripts/database/csv.mjs",
+      "sha256": "f9dc0ffb24b1c5f1cbfd2b6e6e1c98a31c39fe6e0ee5383fb622952be60a8302"
+    },
+    {
+      "name": "package-lock.json",
+      "sha256": "57d0aeb6bd4f0e37633e1831f32f500234ff442a2b9757f5f392b1937f7f559b"
+    },
+    {
+      "name": "supabase/migrations/20261114162225_tenant_model.sql",
+      "sha256": "95a2013202bf1dfb33687033c9ea009626e96f67c42af0fde327a3776c783459"
+    },
+    {
+      "name": "supabase/migrations/20261114162232_local_authorization.sql",
+      "sha256": "69532a4d04ea7e0424d19c53fa79f39fa62ae49d9efd5c03927dbdb256a2e579"
+    },
+    {
+      "name": "supabase/migrations/20261114162239_assisted_transfers.sql",
+      "sha256": "6dde4aea6b72ad483941b814c51db28db08e14bc8a9eb6bda1b08c3d4b39b0a1"
+    },
+    {
+      "name": "supabase/migrations/20261114162405_retention_and_constraints.sql",
+      "sha256": "62ec6742a1575cc375af18093ad2173c05f2310785787db7762b85213098d89f"
+    },
+    {
+      "name": "supabase/migrations/20261114172144_authorization_export_scope.sql",
+      "sha256": "44dfd7f6faa56dceb3127f245da8013f80981e71ca63ef3b73b1ffd3d61cb16d"
+    },
+    {
+      "name": "supabase/migrations/20261114174231_protected_local_maintenance.sql",
+      "sha256": "7030fa3b510c2ab87530000cf27a7e035b1a9f0d8233c66f7be165085a3d522f"
+    }
+  ],
+  "checks": [
+    {
+      "name": "location-scoped staff cannot list tenant-wide profile contacts",
+      "passed": true
+    },
+    {
+      "name": "a location-filtered export excludes profiles from other locations and unbooked profiles",
+      "passed": true
+    },
+    {
+      "name": "profiles.read: missing session",
+      "passed": true,
+      "operation": "profiles.read",
+      "scenario": "missing session"
+    },
+    {
+      "name": "services.read: missing session",
+      "passed": true,
+      "operation": "services.read",
+      "scenario": "missing session"
+    },
+    {
+      "name": "professionals.read: missing session",
+      "passed": true,
+      "operation": "professionals.read",
+      "scenario": "missing session"
+    },
+    {
+      "name": "openings.read: missing session",
+      "passed": true,
+      "operation": "openings.read",
+      "scenario": "missing session"
+    },
+    {
+      "name": "bookings.read: missing session",
+      "passed": true,
+      "operation": "bookings.read",
+      "scenario": "missing session"
+    },
+    {
+      "name": "imports.preview.customers: missing session",
+      "passed": true,
+      "operation": "imports.preview.customers",
+      "scenario": "missing session"
+    },
+    {
+      "name": "imports.preview.professionals: missing session",
+      "passed": true,
+      "operation": "imports.preview.professionals",
+      "scenario": "missing session"
+    },
+    {
+      "name": "imports.preview.services: missing session",
+      "passed": true,
+      "operation": "imports.preview.services",
+      "scenario": "missing session"
+    },
+    {
+      "name": "imports.preview.openings: missing session",
+      "passed": true,
+      "operation": "imports.preview.openings",
+      "scenario": "missing session"
+    },
+    {
+      "name": "imports.confirm.customers: missing session",
+      "passed": true,
+      "operation": "imports.confirm.customers",
+      "scenario": "missing session"
+    },
+    {
+      "name": "imports.confirm.professionals: missing session",
+      "passed": true,
+      "operation": "imports.confirm.professionals",
+      "scenario": "missing session"
+    },
+    {
+      "name": "imports.confirm.services: missing session",
+      "passed": true,
+      "operation": "imports.confirm.services",
+      "scenario": "missing session"
+    },
+    {
+      "name": "imports.confirm.openings: missing session",
+      "passed": true,
+      "operation": "imports.confirm.openings",
+      "scenario": "missing session"
+    },
+    {
+      "name": "imports.status: missing session",
+      "passed": true,
+      "operation": "imports.status",
+      "scenario": "missing session"
+    },
+    {
+      "name": "exports.create.salon: missing session",
+      "passed": true,
+      "operation": "exports.create.salon",
+      "scenario": "missing session"
+    },
+    {
+      "name": "exports.create.customer: missing session",
+      "passed": true,
+      "operation": "exports.create.customer",
+      "scenario": "missing session"
+    },
+    {
+      "name": "exports.status: missing session",
+      "passed": true,
+      "operation": "exports.status",
+      "scenario": "missing session"
+    },
+    {
+      "name": "exports.download.json: missing session",
+      "passed": true,
+      "operation": "exports.download.json",
+      "scenario": "missing session"
+    },
+    {
+      "name": "exports.download.csv: missing session",
+      "passed": true,
+      "operation": "exports.download.csv",
+      "scenario": "missing session"
+    },
+    {
+      "name": "missing session: denied requests produce no data, job or audit writes",
+      "passed": true
+    },
+    {
+      "name": "profiles.read: unknown session with forged actor and role",
+      "passed": true,
+      "operation": "profiles.read",
+      "scenario": "unknown session with forged actor and role"
+    },
+    {
+      "name": "services.read: unknown session with forged actor and role",
+      "passed": true,
+      "operation": "services.read",
+      "scenario": "unknown session with forged actor and role"
+    },
+    {
+      "name": "professionals.read: unknown session with forged actor and role",
+      "passed": true,
+      "operation": "professionals.read",
+      "scenario": "unknown session with forged actor and role"
+    },
+    {
+      "name": "openings.read: unknown session with forged actor and role",
+      "passed": true,
+      "operation": "openings.read",
+      "scenario": "unknown session with forged actor and role"
+    },
+    {
+      "name": "bookings.read: unknown session with forged actor and role",
+      "passed": true,
+      "operation": "bookings.read",
+      "scenario": "unknown session with forged actor and role"
+    },
+    {
+      "name": "imports.preview.customers: unknown session with forged actor and role",
+      "passed": true,
+      "operation": "imports.preview.customers",
+      "scenario": "unknown session with forged actor and role"
+    },
+    {
+      "name": "imports.preview.professionals: unknown session with forged actor and role",
+      "passed": true,
+      "operation": "imports.preview.professionals",
+      "scenario": "unknown session with forged actor and role"
+    },
+    {
+      "name": "imports.preview.services: unknown session with forged actor and role",
+      "passed": true,
+      "operation": "imports.preview.services",
+      "scenario": "unknown session with forged actor and role"
+    },
+    {
+      "name": "imports.preview.openings: unknown session with forged actor and role",
+      "passed": true,
+      "operation": "imports.preview.openings",
+      "scenario": "unknown session with forged actor and role"
+    },
+    {
+      "name": "imports.confirm.customers: unknown session with forged actor and role",
+      "passed": true,
+      "operation": "imports.confirm.customers",
+      "scenario": "unknown session with forged actor and role"
+    },
+    {
+      "name": "imports.confirm.professionals: unknown session with forged actor and role",
+      "passed": true,
+      "operation": "imports.confirm.professionals",
+      "scenario": "unknown session with forged actor and role"
+    },
+    {
+      "name": "imports.confirm.services: unknown session with forged actor and role",
+      "passed": true,
+      "operation": "imports.confirm.services",
+      "scenario": "unknown session with forged actor and role"
+    },
+    {
+      "name": "imports.confirm.openings: unknown session with forged actor and role",
+      "passed": true,
+      "operation": "imports.confirm.openings",
+      "scenario": "unknown session with forged actor and role"
+    },
+    {
+      "name": "imports.status: unknown session with forged actor and role",
+      "passed": true,
+      "operation": "imports.status",
+      "scenario": "unknown session with forged actor and role"
+    },
+    {
+      "name": "exports.create.salon: unknown session with forged actor and role",
+      "passed": true,
+      "operation": "exports.create.salon",
+      "scenario": "unknown session with forged actor and role"
+    },
+    {
+      "name": "exports.create.customer: unknown session with forged actor and role",
+      "passed": true,
+      "operation": "exports.create.customer",
+      "scenario": "unknown session with forged actor and role"
+    },
+    {
+      "name": "exports.status: unknown session with forged actor and role",
+      "passed": true,
+      "operation": "exports.status",
+      "scenario": "unknown session with forged actor and role"
+    },
+    {
+      "name": "exports.download.json: unknown session with forged actor and role",
+      "passed": true,
+      "operation": "exports.download.json",
+      "scenario": "unknown session with forged actor and role"
+    },
+    {
+      "name": "exports.download.csv: unknown session with forged actor and role",
+      "passed": true,
+      "operation": "exports.download.csv",
+      "scenario": "unknown session with forged actor and role"
+    },
+    {
+      "name": "unknown session with forged actor and role: denied requests produce no data, job or audit writes",
+      "passed": true
+    },
+    {
+      "name": "profiles.read: other tenant actor",
+      "passed": true,
+      "operation": "profiles.read",
+      "scenario": "other tenant actor"
+    },
+    {
+      "name": "services.read: other tenant actor",
+      "passed": true,
+      "operation": "services.read",
+      "scenario": "other tenant actor"
+    },
+    {
+      "name": "professionals.read: other tenant actor",
+      "passed": true,
+      "operation": "professionals.read",
+      "scenario": "other tenant actor"
+    },
+    {
+      "name": "openings.read: other tenant actor",
+      "passed": true,
+      "operation": "openings.read",
+      "scenario": "other tenant actor"
+    },
+    {
+      "name": "bookings.read: other tenant actor",
+      "passed": true,
+      "operation": "bookings.read",
+      "scenario": "other tenant actor"
+    },
+    {
+      "name": "imports.preview.customers: other tenant actor",
+      "passed": true,
+      "operation": "imports.preview.customers",
+      "scenario": "other tenant actor"
+    },
+    {
+      "name": "imports.preview.professionals: other tenant actor",
+      "passed": true,
+      "operation": "imports.preview.professionals",
+      "scenario": "other tenant actor"
+    },
+    {
+      "name": "imports.preview.services: other tenant actor",
+      "passed": true,
+      "operation": "imports.preview.services",
+      "scenario": "other tenant actor"
+    },
+    {
+      "name": "imports.preview.openings: other tenant actor",
+      "passed": true,
+      "operation": "imports.preview.openings",
+      "scenario": "other tenant actor"
+    },
+    {
+      "name": "imports.confirm.customers: other tenant actor",
+      "passed": true,
+      "operation": "imports.confirm.customers",
+      "scenario": "other tenant actor"
+    },
+    {
+      "name": "imports.confirm.professionals: other tenant actor",
+      "passed": true,
+      "operation": "imports.confirm.professionals",
+      "scenario": "other tenant actor"
+    },
+    {
+      "name": "imports.confirm.services: other tenant actor",
+      "passed": true,
+      "operation": "imports.confirm.services",
+      "scenario": "other tenant actor"
+    },
+    {
+      "name": "imports.confirm.openings: other tenant actor",
+      "passed": true,
+      "operation": "imports.confirm.openings",
+      "scenario": "other tenant actor"
+    },
+    {
+      "name": "imports.status: other tenant actor",
+      "passed": true,
+      "operation": "imports.status",
+      "scenario": "other tenant actor"
+    },
+    {
+      "name": "exports.create.salon: other tenant actor",
+      "passed": true,
+      "operation": "exports.create.salon",
+      "scenario": "other tenant actor"
+    },
+    {
+      "name": "exports.create.customer: other tenant actor",
+      "passed": true,
+      "operation": "exports.create.customer",
+      "scenario": "other tenant actor"
+    },
+    {
+      "name": "exports.status: other tenant actor",
+      "passed": true,
+      "operation": "exports.status",
+      "scenario": "other tenant actor"
+    },
+    {
+      "name": "exports.download.json: other tenant actor",
+      "passed": true,
+      "operation": "exports.download.json",
+      "scenario": "other tenant actor"
+    },
+    {
+      "name": "exports.download.csv: other tenant actor",
+      "passed": true,
+      "operation": "exports.download.csv",
+      "scenario": "other tenant actor"
+    },
+    {
+      "name": "other tenant actor: denied requests produce no data, job or audit writes",
+      "passed": true
+    },
+    {
+      "name": "profiles.read: forged workspace",
+      "passed": true,
+      "operation": "profiles.read",
+      "scenario": "forged workspace"
+    },
+    {
+      "name": "services.read: forged workspace",
+      "passed": true,
+      "operation": "services.read",
+      "scenario": "forged workspace"
+    },
+    {
+      "name": "professionals.read: forged workspace",
+      "passed": true,
+      "operation": "professionals.read",
+      "scenario": "forged workspace"
+    },
+    {
+      "name": "openings.read: forged workspace",
+      "passed": true,
+      "operation": "openings.read",
+      "scenario": "forged workspace"
+    },
+    {
+      "name": "bookings.read: forged workspace",
+      "passed": true,
+      "operation": "bookings.read",
+      "scenario": "forged workspace"
+    },
+    {
+      "name": "imports.preview.customers: forged workspace",
+      "passed": true,
+      "operation": "imports.preview.customers",
+      "scenario": "forged workspace"
+    },
+    {
+      "name": "imports.preview.professionals: forged workspace",
+      "passed": true,
+      "operation": "imports.preview.professionals",
+      "scenario": "forged workspace"
+    },
+    {
+      "name": "imports.preview.services: forged workspace",
+      "passed": true,
+      "operation": "imports.preview.services",
+      "scenario": "forged workspace"
+    },
+    {
+      "name": "imports.preview.openings: forged workspace",
+      "passed": true,
+      "operation": "imports.preview.openings",
+      "scenario": "forged workspace"
+    },
+    {
+      "name": "imports.confirm.customers: forged workspace",
+      "passed": true,
+      "operation": "imports.confirm.customers",
+      "scenario": "forged workspace"
+    },
+    {
+      "name": "imports.confirm.professionals: forged workspace",
+      "passed": true,
+      "operation": "imports.confirm.professionals",
+      "scenario": "forged workspace"
+    },
+    {
+      "name": "imports.confirm.services: forged workspace",
+      "passed": true,
+      "operation": "imports.confirm.services",
+      "scenario": "forged workspace"
+    },
+    {
+      "name": "imports.confirm.openings: forged workspace",
+      "passed": true,
+      "operation": "imports.confirm.openings",
+      "scenario": "forged workspace"
+    },
+    {
+      "name": "imports.status: forged workspace",
+      "passed": true,
+      "operation": "imports.status",
+      "scenario": "forged workspace"
+    },
+    {
+      "name": "exports.create.salon: forged workspace",
+      "passed": true,
+      "operation": "exports.create.salon",
+      "scenario": "forged workspace"
+    },
+    {
+      "name": "exports.create.customer: forged workspace",
+      "passed": true,
+      "operation": "exports.create.customer",
+      "scenario": "forged workspace"
+    },
+    {
+      "name": "exports.status: forged workspace",
+      "passed": true,
+      "operation": "exports.status",
+      "scenario": "forged workspace"
+    },
+    {
+      "name": "exports.download.json: forged workspace",
+      "passed": true,
+      "operation": "exports.download.json",
+      "scenario": "forged workspace"
+    },
+    {
+      "name": "exports.download.csv: forged workspace",
+      "passed": true,
+      "operation": "exports.download.csv",
+      "scenario": "forged workspace"
+    },
+    {
+      "name": "forged workspace: denied requests produce no data, job or audit writes",
+      "passed": true
+    },
+    {
+      "name": "profiles.read: role customerA",
+      "passed": true,
+      "operation": "profiles.read",
+      "scenario": "role customerA"
+    },
+    {
+      "name": "profiles.read: role adminA",
+      "passed": true,
+      "operation": "profiles.read",
+      "scenario": "role adminA"
+    },
+    {
+      "name": "profiles.read: role professionalA",
+      "passed": true,
+      "operation": "profiles.read",
+      "scenario": "role professionalA"
+    },
+    {
+      "name": "profiles.read: role locationManagerA",
+      "passed": true,
+      "operation": "profiles.read",
+      "scenario": "role locationManagerA"
+    },
+    {
+      "name": "services.read: role customerA",
+      "passed": true,
+      "operation": "services.read",
+      "scenario": "role customerA"
+    },
+    {
+      "name": "services.read: role adminA",
+      "passed": true,
+      "operation": "services.read",
+      "scenario": "role adminA"
+    },
+    {
+      "name": "services.read: role professionalA",
+      "passed": true,
+      "operation": "services.read",
+      "scenario": "role professionalA"
+    },
+    {
+      "name": "services.read: role locationManagerA",
+      "passed": true,
+      "operation": "services.read",
+      "scenario": "role locationManagerA"
+    },
+    {
+      "name": "professionals.read: role customerA",
+      "passed": true,
+      "operation": "professionals.read",
+      "scenario": "role customerA"
+    },
+    {
+      "name": "professionals.read: role adminA",
+      "passed": true,
+      "operation": "professionals.read",
+      "scenario": "role adminA"
+    },
+    {
+      "name": "professionals.read: role professionalA",
+      "passed": true,
+      "operation": "professionals.read",
+      "scenario": "role professionalA"
+    },
+    {
+      "name": "professionals.read: role locationManagerA",
+      "passed": true,
+      "operation": "professionals.read",
+      "scenario": "role locationManagerA"
+    },
+    {
+      "name": "openings.read: role customerA",
+      "passed": true,
+      "operation": "openings.read",
+      "scenario": "role customerA"
+    },
+    {
+      "name": "openings.read: role adminA",
+      "passed": true,
+      "operation": "openings.read",
+      "scenario": "role adminA"
+    },
+    {
+      "name": "openings.read: role professionalA",
+      "passed": true,
+      "operation": "openings.read",
+      "scenario": "role professionalA"
+    },
+    {
+      "name": "openings.read: role locationManagerA",
+      "passed": true,
+      "operation": "openings.read",
+      "scenario": "role locationManagerA"
+    },
+    {
+      "name": "bookings.read: role customerA",
+      "passed": true,
+      "operation": "bookings.read",
+      "scenario": "role customerA"
+    },
+    {
+      "name": "bookings.read: role adminA",
+      "passed": true,
+      "operation": "bookings.read",
+      "scenario": "role adminA"
+    },
+    {
+      "name": "bookings.read: role professionalA",
+      "passed": true,
+      "operation": "bookings.read",
+      "scenario": "role professionalA"
+    },
+    {
+      "name": "bookings.read: role locationManagerA",
+      "passed": true,
+      "operation": "bookings.read",
+      "scenario": "role locationManagerA"
+    },
+    {
+      "name": "imports.preview.customers: role customerA",
+      "passed": true,
+      "operation": "imports.preview.customers",
+      "scenario": "role customerA"
+    },
+    {
+      "name": "imports.preview.customers: role adminA",
+      "passed": true,
+      "operation": "imports.preview.customers",
+      "scenario": "role adminA"
+    },
+    {
+      "name": "imports.preview.customers: role professionalA",
+      "passed": true,
+      "operation": "imports.preview.customers",
+      "scenario": "role professionalA"
+    },
+    {
+      "name": "imports.preview.customers: role locationManagerA",
+      "passed": true,
+      "operation": "imports.preview.customers",
+      "scenario": "role locationManagerA"
+    },
+    {
+      "name": "imports.preview.professionals: role customerA",
+      "passed": true,
+      "operation": "imports.preview.professionals",
+      "scenario": "role customerA"
+    },
+    {
+      "name": "imports.preview.professionals: role adminA",
+      "passed": true,
+      "operation": "imports.preview.professionals",
+      "scenario": "role adminA"
+    },
+    {
+      "name": "imports.preview.professionals: role professionalA",
+      "passed": true,
+      "operation": "imports.preview.professionals",
+      "scenario": "role professionalA"
+    },
+    {
+      "name": "imports.preview.professionals: role locationManagerA",
+      "passed": true,
+      "operation": "imports.preview.professionals",
+      "scenario": "role locationManagerA"
+    },
+    {
+      "name": "imports.preview.services: role customerA",
+      "passed": true,
+      "operation": "imports.preview.services",
+      "scenario": "role customerA"
+    },
+    {
+      "name": "imports.preview.services: role adminA",
+      "passed": true,
+      "operation": "imports.preview.services",
+      "scenario": "role adminA"
+    },
+    {
+      "name": "imports.preview.services: role professionalA",
+      "passed": true,
+      "operation": "imports.preview.services",
+      "scenario": "role professionalA"
+    },
+    {
+      "name": "imports.preview.services: role locationManagerA",
+      "passed": true,
+      "operation": "imports.preview.services",
+      "scenario": "role locationManagerA"
+    },
+    {
+      "name": "imports.preview.openings: role customerA",
+      "passed": true,
+      "operation": "imports.preview.openings",
+      "scenario": "role customerA"
+    },
+    {
+      "name": "imports.preview.openings: role adminA",
+      "passed": true,
+      "operation": "imports.preview.openings",
+      "scenario": "role adminA"
+    },
+    {
+      "name": "imports.preview.openings: role professionalA",
+      "passed": true,
+      "operation": "imports.preview.openings",
+      "scenario": "role professionalA"
+    },
+    {
+      "name": "imports.preview.openings: role locationManagerA",
+      "passed": true,
+      "operation": "imports.preview.openings",
+      "scenario": "role locationManagerA"
+    },
+    {
+      "name": "imports.confirm.customers: role customerA",
+      "passed": true,
+      "operation": "imports.confirm.customers",
+      "scenario": "role customerA"
+    },
+    {
+      "name": "imports.confirm.customers: role adminA",
+      "passed": true,
+      "operation": "imports.confirm.customers",
+      "scenario": "role adminA"
+    },
+    {
+      "name": "imports.confirm.customers: role professionalA",
+      "passed": true,
+      "operation": "imports.confirm.customers",
+      "scenario": "role professionalA"
+    },
+    {
+      "name": "imports.confirm.customers: role locationManagerA",
+      "passed": true,
+      "operation": "imports.confirm.customers",
+      "scenario": "role locationManagerA"
+    },
+    {
+      "name": "imports.confirm.professionals: role customerA",
+      "passed": true,
+      "operation": "imports.confirm.professionals",
+      "scenario": "role customerA"
+    },
+    {
+      "name": "imports.confirm.professionals: role adminA",
+      "passed": true,
+      "operation": "imports.confirm.professionals",
+      "scenario": "role adminA"
+    },
+    {
+      "name": "imports.confirm.professionals: role professionalA",
+      "passed": true,
+      "operation": "imports.confirm.professionals",
+      "scenario": "role professionalA"
+    },
+    {
+      "name": "imports.confirm.professionals: role locationManagerA",
+      "passed": true,
+      "operation": "imports.confirm.professionals",
+      "scenario": "role locationManagerA"
+    },
+    {
+      "name": "imports.confirm.services: role customerA",
+      "passed": true,
+      "operation": "imports.confirm.services",
+      "scenario": "role customerA"
+    },
+    {
+      "name": "imports.confirm.services: role adminA",
+      "passed": true,
+      "operation": "imports.confirm.services",
+      "scenario": "role adminA"
+    },
+    {
+      "name": "imports.confirm.services: role professionalA",
+      "passed": true,
+      "operation": "imports.confirm.services",
+      "scenario": "role professionalA"
+    },
+    {
+      "name": "imports.confirm.services: role locationManagerA",
+      "passed": true,
+      "operation": "imports.confirm.services",
+      "scenario": "role locationManagerA"
+    },
+    {
+      "name": "imports.confirm.openings: role customerA",
+      "passed": true,
+      "operation": "imports.confirm.openings",
+      "scenario": "role customerA"
+    },
+    {
+      "name": "imports.confirm.openings: role adminA",
+      "passed": true,
+      "operation": "imports.confirm.openings",
+      "scenario": "role adminA"
+    },
+    {
+      "name": "imports.confirm.openings: role professionalA",
+      "passed": true,
+      "operation": "imports.confirm.openings",
+      "scenario": "role professionalA"
+    },
+    {
+      "name": "imports.confirm.openings: role locationManagerA",
+      "passed": true,
+      "operation": "imports.confirm.openings",
+      "scenario": "role locationManagerA"
+    },
+    {
+      "name": "imports.status: role customerA",
+      "passed": true,
+      "operation": "imports.status",
+      "scenario": "role customerA"
+    },
+    {
+      "name": "imports.status: role adminA",
+      "passed": true,
+      "operation": "imports.status",
+      "scenario": "role adminA"
+    },
+    {
+      "name": "imports.status: role professionalA",
+      "passed": true,
+      "operation": "imports.status",
+      "scenario": "role professionalA"
+    },
+    {
+      "name": "imports.status: role locationManagerA",
+      "passed": true,
+      "operation": "imports.status",
+      "scenario": "role locationManagerA"
+    },
+    {
+      "name": "exports.create.salon: role customerA",
+      "passed": true,
+      "operation": "exports.create.salon",
+      "scenario": "role customerA"
+    },
+    {
+      "name": "exports.create.salon: role adminA",
+      "passed": true,
+      "operation": "exports.create.salon",
+      "scenario": "role adminA"
+    },
+    {
+      "name": "exports.create.salon: role professionalA",
+      "passed": true,
+      "operation": "exports.create.salon",
+      "scenario": "role professionalA"
+    },
+    {
+      "name": "exports.create.salon: role locationManagerA",
+      "passed": true,
+      "operation": "exports.create.salon",
+      "scenario": "role locationManagerA"
+    },
+    {
+      "name": "exports.create.customer: role customerA",
+      "passed": true,
+      "operation": "exports.create.customer",
+      "scenario": "role customerA"
+    },
+    {
+      "name": "exports.create.customer: role adminA",
+      "passed": true,
+      "operation": "exports.create.customer",
+      "scenario": "role adminA"
+    },
+    {
+      "name": "exports.create.customer: role professionalA",
+      "passed": true,
+      "operation": "exports.create.customer",
+      "scenario": "role professionalA"
+    },
+    {
+      "name": "exports.create.customer: role locationManagerA",
+      "passed": true,
+      "operation": "exports.create.customer",
+      "scenario": "role locationManagerA"
+    },
+    {
+      "name": "exports.status: role customerA",
+      "passed": true,
+      "operation": "exports.status",
+      "scenario": "role customerA"
+    },
+    {
+      "name": "exports.status: role adminA",
+      "passed": true,
+      "operation": "exports.status",
+      "scenario": "role adminA"
+    },
+    {
+      "name": "exports.status: role professionalA",
+      "passed": true,
+      "operation": "exports.status",
+      "scenario": "role professionalA"
+    },
+    {
+      "name": "exports.status: role locationManagerA",
+      "passed": true,
+      "operation": "exports.status",
+      "scenario": "role locationManagerA"
+    },
+    {
+      "name": "exports.download.json: role customerA",
+      "passed": true,
+      "operation": "exports.download.json",
+      "scenario": "role customerA"
+    },
+    {
+      "name": "exports.download.json: role adminA",
+      "passed": true,
+      "operation": "exports.download.json",
+      "scenario": "role adminA"
+    },
+    {
+      "name": "exports.download.json: role professionalA",
+      "passed": true,
+      "operation": "exports.download.json",
+      "scenario": "role professionalA"
+    },
+    {
+      "name": "exports.download.json: role locationManagerA",
+      "passed": true,
+      "operation": "exports.download.json",
+      "scenario": "role locationManagerA"
+    },
+    {
+      "name": "exports.download.csv: role customerA",
+      "passed": true,
+      "operation": "exports.download.csv",
+      "scenario": "role customerA"
+    },
+    {
+      "name": "exports.download.csv: role adminA",
+      "passed": true,
+      "operation": "exports.download.csv",
+      "scenario": "role adminA"
+    },
+    {
+      "name": "exports.download.csv: role professionalA",
+      "passed": true,
+      "operation": "exports.download.csv",
+      "scenario": "role professionalA"
+    },
+    {
+      "name": "exports.download.csv: role locationManagerA",
+      "passed": true,
+      "operation": "exports.download.csv",
+      "scenario": "role locationManagerA"
+    },
+    {
+      "name": "profiles.read: valid customer session cannot escalate through forged headers",
+      "passed": true,
+      "operation": "profiles.read",
+      "scenario": "forged headers on valid session"
+    },
+    {
+      "name": "services.read: valid customer session cannot escalate through forged headers",
+      "passed": true,
+      "operation": "services.read",
+      "scenario": "forged headers on valid session"
+    },
+    {
+      "name": "professionals.read: valid customer session cannot escalate through forged headers",
+      "passed": true,
+      "operation": "professionals.read",
+      "scenario": "forged headers on valid session"
+    },
+    {
+      "name": "openings.read: valid customer session cannot escalate through forged headers",
+      "passed": true,
+      "operation": "openings.read",
+      "scenario": "forged headers on valid session"
+    },
+    {
+      "name": "bookings.read: valid customer session cannot escalate through forged headers",
+      "passed": true,
+      "operation": "bookings.read",
+      "scenario": "forged headers on valid session"
+    },
+    {
+      "name": "imports.preview.customers: valid customer session cannot escalate through forged headers",
+      "passed": true,
+      "operation": "imports.preview.customers",
+      "scenario": "forged headers on valid session"
+    },
+    {
+      "name": "imports.preview.professionals: valid customer session cannot escalate through forged headers",
+      "passed": true,
+      "operation": "imports.preview.professionals",
+      "scenario": "forged headers on valid session"
+    },
+    {
+      "name": "imports.preview.services: valid customer session cannot escalate through forged headers",
+      "passed": true,
+      "operation": "imports.preview.services",
+      "scenario": "forged headers on valid session"
+    },
+    {
+      "name": "imports.preview.openings: valid customer session cannot escalate through forged headers",
+      "passed": true,
+      "operation": "imports.preview.openings",
+      "scenario": "forged headers on valid session"
+    },
+    {
+      "name": "imports.confirm.customers: valid customer session cannot escalate through forged headers",
+      "passed": true,
+      "operation": "imports.confirm.customers",
+      "scenario": "forged headers on valid session"
+    },
+    {
+      "name": "imports.confirm.professionals: valid customer session cannot escalate through forged headers",
+      "passed": true,
+      "operation": "imports.confirm.professionals",
+      "scenario": "forged headers on valid session"
+    },
+    {
+      "name": "imports.confirm.services: valid customer session cannot escalate through forged headers",
+      "passed": true,
+      "operation": "imports.confirm.services",
+      "scenario": "forged headers on valid session"
+    },
+    {
+      "name": "imports.confirm.openings: valid customer session cannot escalate through forged headers",
+      "passed": true,
+      "operation": "imports.confirm.openings",
+      "scenario": "forged headers on valid session"
+    },
+    {
+      "name": "imports.status: valid customer session cannot escalate through forged headers",
+      "passed": true,
+      "operation": "imports.status",
+      "scenario": "forged headers on valid session"
+    },
+    {
+      "name": "exports.create.salon: valid customer session cannot escalate through forged headers",
+      "passed": true,
+      "operation": "exports.create.salon",
+      "scenario": "forged headers on valid session"
+    },
+    {
+      "name": "exports.create.customer: valid customer session cannot escalate through forged headers",
+      "passed": true,
+      "operation": "exports.create.customer",
+      "scenario": "forged headers on valid session"
+    },
+    {
+      "name": "exports.status: valid customer session cannot escalate through forged headers",
+      "passed": true,
+      "operation": "exports.status",
+      "scenario": "forged headers on valid session"
+    },
+    {
+      "name": "exports.download.json: valid customer session cannot escalate through forged headers",
+      "passed": true,
+      "operation": "exports.download.json",
+      "scenario": "forged headers on valid session"
+    },
+    {
+      "name": "exports.download.csv: valid customer session cannot escalate through forged headers",
+      "passed": true,
+      "operation": "exports.download.csv",
+      "scenario": "forged headers on valid session"
+    },
+    {
+      "name": "forged CSV scope fields are rejected for customers",
+      "passed": true
+    },
+    {
+      "name": "forged CSV scope fields are rejected for professionals",
+      "passed": true
+    },
+    {
+      "name": "forged CSV scope fields are rejected for services",
+      "passed": true
+    },
+    {
+      "name": "forged CSV scope fields are rejected for openings",
+      "passed": true
+    },
+    {
+      "name": "confirmation and export bodies cannot override actor or tenant scope",
+      "passed": true
+    },
+    {
+      "name": "imports.confirm.customers: same-tenant other manager cannot take ownership",
+      "passed": true,
+      "operation": "imports.confirm.customers",
+      "scenario": "other owner"
+    },
+    {
+      "name": "imports.confirm.customers: guessed job has the same denial as another owner",
+      "passed": true,
+      "operation": "imports.confirm.customers",
+      "scenario": "guessed job"
+    },
+    {
+      "name": "imports.confirm.professionals: same-tenant other manager cannot take ownership",
+      "passed": true,
+      "operation": "imports.confirm.professionals",
+      "scenario": "other owner"
+    },
+    {
+      "name": "imports.confirm.professionals: guessed job has the same denial as another owner",
+      "passed": true,
+      "operation": "imports.confirm.professionals",
+      "scenario": "guessed job"
+    },
+    {
+      "name": "imports.confirm.services: same-tenant other manager cannot take ownership",
+      "passed": true,
+      "operation": "imports.confirm.services",
+      "scenario": "other owner"
+    },
+    {
+      "name": "imports.confirm.services: guessed job has the same denial as another owner",
+      "passed": true,
+      "operation": "imports.confirm.services",
+      "scenario": "guessed job"
+    },
+    {
+      "name": "imports.confirm.openings: same-tenant other manager cannot take ownership",
+      "passed": true,
+      "operation": "imports.confirm.openings",
+      "scenario": "other owner"
+    },
+    {
+      "name": "imports.confirm.openings: guessed job has the same denial as another owner",
+      "passed": true,
+      "operation": "imports.confirm.openings",
+      "scenario": "guessed job"
+    },
+    {
+      "name": "imports.status: same-tenant other manager cannot take ownership",
+      "passed": true,
+      "operation": "imports.status",
+      "scenario": "other owner"
+    },
+    {
+      "name": "imports.status: guessed job has the same denial as another owner",
+      "passed": true,
+      "operation": "imports.status",
+      "scenario": "guessed job"
+    },
+    {
+      "name": "exports.status: same-tenant other manager cannot take ownership",
+      "passed": true,
+      "operation": "exports.status",
+      "scenario": "other owner"
+    },
+    {
+      "name": "exports.status: guessed job has the same denial as another owner",
+      "passed": true,
+      "operation": "exports.status",
+      "scenario": "guessed job"
+    },
+    {
+      "name": "exports.download.json: same-tenant other manager cannot take ownership",
+      "passed": true,
+      "operation": "exports.download.json",
+      "scenario": "other owner"
+    },
+    {
+      "name": "exports.download.json: guessed job has the same denial as another owner",
+      "passed": true,
+      "operation": "exports.download.json",
+      "scenario": "guessed job"
+    },
+    {
+      "name": "exports.download.csv: same-tenant other manager cannot take ownership",
+      "passed": true,
+      "operation": "exports.download.csv",
+      "scenario": "other owner"
+    },
+    {
+      "name": "exports.download.csv: guessed job has the same denial as another owner",
+      "passed": true,
+      "operation": "exports.download.csv",
+      "scenario": "guessed job"
+    },
+    {
+      "name": "managerA: location B cannot be substituted into catalog reads",
+      "passed": true
+    },
+    {
+      "name": "adminA: location B cannot be substituted into catalog reads",
+      "passed": true
+    },
+    {
+      "name": "professionalA: location B cannot be substituted into catalog reads",
+      "passed": true
+    },
+    {
+      "name": "locationManagerA: location B cannot be substituted into catalog reads",
+      "passed": true
+    },
+    {
+      "name": "customerA: location B cannot be substituted into catalog reads",
+      "passed": true
+    },
+    {
+      "name": "location staff cannot read bookings in an unassigned location",
+      "passed": true
+    },
+    {
+      "name": "customer cannot page into another customer history in the same tenant",
+      "passed": true
+    },
+    {
+      "name": "authorized manager imports customers with an audit record",
+      "passed": true
+    },
+    {
+      "name": "authorized manager imports professionals with an audit record",
+      "passed": true
+    },
+    {
+      "name": "authorized manager imports services with an audit record",
+      "passed": true
+    },
+    {
+      "name": "authorized manager imports openings with an audit record",
+      "passed": true
+    },
+    {
+      "name": "location manager imports own-location professionals only",
+      "passed": true
+    },
+    {
+      "name": "location manager imports own-location services only",
+      "passed": true
+    },
+    {
+      "name": "location manager imports own-location openings only",
+      "passed": true
+    },
+    {
+      "name": "location manager export contains authorized bookings but no global profile contacts",
+      "passed": true
+    },
+    {
+      "name": "location manager cannot broaden an export to the whole tenant or another location",
+      "passed": true
+    },
+    {
+      "name": "customer cannot export another same-tenant customer or a salon dataset",
+      "passed": true
+    },
+    {
+      "name": "customer export status and both delivery formats reject another same-tenant customer",
+      "passed": true
+    },
+    {
+      "name": "customer-supplied location never expands own profile/history export scope",
+      "passed": true
+    },
+    {
+      "name": "concurrent pooled reads cannot mix customer identities or workspaces",
+      "passed": true
+    },
+    {
+      "name": "expired jobs disclose expiry only to their still-authorized owner",
+      "passed": true
+    },
+    {
+      "name": "location revocation invalidates reads, previews, saved confirmations, status and exports",
+      "passed": true
+    },
+    {
+      "name": "profiles.read: revoked tenant membership",
+      "passed": true,
+      "operation": "profiles.read",
+      "scenario": "revoked membership"
+    },
+    {
+      "name": "services.read: revoked tenant membership",
+      "passed": true,
+      "operation": "services.read",
+      "scenario": "revoked membership"
+    },
+    {
+      "name": "professionals.read: revoked tenant membership",
+      "passed": true,
+      "operation": "professionals.read",
+      "scenario": "revoked membership"
+    },
+    {
+      "name": "openings.read: revoked tenant membership",
+      "passed": true,
+      "operation": "openings.read",
+      "scenario": "revoked membership"
+    },
+    {
+      "name": "bookings.read: revoked tenant membership",
+      "passed": true,
+      "operation": "bookings.read",
+      "scenario": "revoked membership"
+    },
+    {
+      "name": "imports.preview.customers: revoked tenant membership",
+      "passed": true,
+      "operation": "imports.preview.customers",
+      "scenario": "revoked membership"
+    },
+    {
+      "name": "imports.preview.professionals: revoked tenant membership",
+      "passed": true,
+      "operation": "imports.preview.professionals",
+      "scenario": "revoked membership"
+    },
+    {
+      "name": "imports.preview.services: revoked tenant membership",
+      "passed": true,
+      "operation": "imports.preview.services",
+      "scenario": "revoked membership"
+    },
+    {
+      "name": "imports.preview.openings: revoked tenant membership",
+      "passed": true,
+      "operation": "imports.preview.openings",
+      "scenario": "revoked membership"
+    },
+    {
+      "name": "imports.confirm.customers: revoked tenant membership",
+      "passed": true,
+      "operation": "imports.confirm.customers",
+      "scenario": "revoked membership"
+    },
+    {
+      "name": "imports.confirm.professionals: revoked tenant membership",
+      "passed": true,
+      "operation": "imports.confirm.professionals",
+      "scenario": "revoked membership"
+    },
+    {
+      "name": "imports.confirm.services: revoked tenant membership",
+      "passed": true,
+      "operation": "imports.confirm.services",
+      "scenario": "revoked membership"
+    },
+    {
+      "name": "imports.confirm.openings: revoked tenant membership",
+      "passed": true,
+      "operation": "imports.confirm.openings",
+      "scenario": "revoked membership"
+    },
+    {
+      "name": "imports.status: revoked tenant membership",
+      "passed": true,
+      "operation": "imports.status",
+      "scenario": "revoked membership"
+    },
+    {
+      "name": "exports.create.salon: revoked tenant membership",
+      "passed": true,
+      "operation": "exports.create.salon",
+      "scenario": "revoked membership"
+    },
+    {
+      "name": "exports.create.customer: revoked tenant membership",
+      "passed": true,
+      "operation": "exports.create.customer",
+      "scenario": "revoked membership"
+    },
+    {
+      "name": "exports.status: revoked tenant membership",
+      "passed": true,
+      "operation": "exports.status",
+      "scenario": "revoked membership"
+    },
+    {
+      "name": "exports.download.json: revoked tenant membership",
+      "passed": true,
+      "operation": "exports.download.json",
+      "scenario": "revoked membership"
+    },
+    {
+      "name": "exports.download.csv: revoked tenant membership",
+      "passed": true,
+      "operation": "exports.download.csv",
+      "scenario": "revoked membership"
+    },
+    {
+      "name": "revoked membership cannot produce a write or audit side effect",
+      "passed": true
+    },
+    {
+      "name": "profiles.read: revoked session",
+      "passed": true,
+      "operation": "profiles.read",
+      "scenario": "revoked session"
+    },
+    {
+      "name": "services.read: revoked session",
+      "passed": true,
+      "operation": "services.read",
+      "scenario": "revoked session"
+    },
+    {
+      "name": "professionals.read: revoked session",
+      "passed": true,
+      "operation": "professionals.read",
+      "scenario": "revoked session"
+    },
+    {
+      "name": "openings.read: revoked session",
+      "passed": true,
+      "operation": "openings.read",
+      "scenario": "revoked session"
+    },
+    {
+      "name": "bookings.read: revoked session",
+      "passed": true,
+      "operation": "bookings.read",
+      "scenario": "revoked session"
+    },
+    {
+      "name": "imports.preview.customers: revoked session",
+      "passed": true,
+      "operation": "imports.preview.customers",
+      "scenario": "revoked session"
+    },
+    {
+      "name": "imports.preview.professionals: revoked session",
+      "passed": true,
+      "operation": "imports.preview.professionals",
+      "scenario": "revoked session"
+    },
+    {
+      "name": "imports.preview.services: revoked session",
+      "passed": true,
+      "operation": "imports.preview.services",
+      "scenario": "revoked session"
+    },
+    {
+      "name": "imports.preview.openings: revoked session",
+      "passed": true,
+      "operation": "imports.preview.openings",
+      "scenario": "revoked session"
+    },
+    {
+      "name": "imports.confirm.customers: revoked session",
+      "passed": true,
+      "operation": "imports.confirm.customers",
+      "scenario": "revoked session"
+    },
+    {
+      "name": "imports.confirm.professionals: revoked session",
+      "passed": true,
+      "operation": "imports.confirm.professionals",
+      "scenario": "revoked session"
+    },
+    {
+      "name": "imports.confirm.services: revoked session",
+      "passed": true,
+      "operation": "imports.confirm.services",
+      "scenario": "revoked session"
+    },
+    {
+      "name": "imports.confirm.openings: revoked session",
+      "passed": true,
+      "operation": "imports.confirm.openings",
+      "scenario": "revoked session"
+    },
+    {
+      "name": "imports.status: revoked session",
+      "passed": true,
+      "operation": "imports.status",
+      "scenario": "revoked session"
+    },
+    {
+      "name": "exports.create.salon: revoked session",
+      "passed": true,
+      "operation": "exports.create.salon",
+      "scenario": "revoked session"
+    },
+    {
+      "name": "exports.create.customer: revoked session",
+      "passed": true,
+      "operation": "exports.create.customer",
+      "scenario": "revoked session"
+    },
+    {
+      "name": "exports.status: revoked session",
+      "passed": true,
+      "operation": "exports.status",
+      "scenario": "revoked session"
+    },
+    {
+      "name": "exports.download.json: revoked session",
+      "passed": true,
+      "operation": "exports.download.json",
+      "scenario": "revoked session"
+    },
+    {
+      "name": "exports.download.csv: revoked session",
+      "passed": true,
+      "operation": "exports.download.csv",
+      "scenario": "revoked session"
+    },
+    {
+      "name": "profiles.read: expired session",
+      "passed": true,
+      "operation": "profiles.read",
+      "scenario": "expired session"
+    },
+    {
+      "name": "services.read: expired session",
+      "passed": true,
+      "operation": "services.read",
+      "scenario": "expired session"
+    },
+    {
+      "name": "professionals.read: expired session",
+      "passed": true,
+      "operation": "professionals.read",
+      "scenario": "expired session"
+    },
+    {
+      "name": "openings.read: expired session",
+      "passed": true,
+      "operation": "openings.read",
+      "scenario": "expired session"
+    },
+    {
+      "name": "bookings.read: expired session",
+      "passed": true,
+      "operation": "bookings.read",
+      "scenario": "expired session"
+    },
+    {
+      "name": "imports.preview.customers: expired session",
+      "passed": true,
+      "operation": "imports.preview.customers",
+      "scenario": "expired session"
+    },
+    {
+      "name": "imports.preview.professionals: expired session",
+      "passed": true,
+      "operation": "imports.preview.professionals",
+      "scenario": "expired session"
+    },
+    {
+      "name": "imports.preview.services: expired session",
+      "passed": true,
+      "operation": "imports.preview.services",
+      "scenario": "expired session"
+    },
+    {
+      "name": "imports.preview.openings: expired session",
+      "passed": true,
+      "operation": "imports.preview.openings",
+      "scenario": "expired session"
+    },
+    {
+      "name": "imports.confirm.customers: expired session",
+      "passed": true,
+      "operation": "imports.confirm.customers",
+      "scenario": "expired session"
+    },
+    {
+      "name": "imports.confirm.professionals: expired session",
+      "passed": true,
+      "operation": "imports.confirm.professionals",
+      "scenario": "expired session"
+    },
+    {
+      "name": "imports.confirm.services: expired session",
+      "passed": true,
+      "operation": "imports.confirm.services",
+      "scenario": "expired session"
+    },
+    {
+      "name": "imports.confirm.openings: expired session",
+      "passed": true,
+      "operation": "imports.confirm.openings",
+      "scenario": "expired session"
+    },
+    {
+      "name": "imports.status: expired session",
+      "passed": true,
+      "operation": "imports.status",
+      "scenario": "expired session"
+    },
+    {
+      "name": "exports.create.salon: expired session",
+      "passed": true,
+      "operation": "exports.create.salon",
+      "scenario": "expired session"
+    },
+    {
+      "name": "exports.create.customer: expired session",
+      "passed": true,
+      "operation": "exports.create.customer",
+      "scenario": "expired session"
+    },
+    {
+      "name": "exports.status: expired session",
+      "passed": true,
+      "operation": "exports.status",
+      "scenario": "expired session"
+    },
+    {
+      "name": "exports.download.json: expired session",
+      "passed": true,
+      "operation": "exports.download.json",
+      "scenario": "expired session"
+    },
+    {
+      "name": "exports.download.csv: expired session",
+      "passed": true,
+      "operation": "exports.download.csv",
+      "scenario": "expired session"
+    },
+    {
+      "name": "narrowed membership loses global profiles, old-location import and whole-salon export",
+      "passed": true
+    },
+    {
+      "name": "removed customer binding invalidates old profile/history and saved exports",
+      "passed": true
+    },
+    {
+      "name": "no generic SQL, booking mutation or profile identity-rebinding endpoints exist",
+      "passed": true
+    },
+    {
+      "name": "authorization-denial responses and logs never contain fixture secrets or profile contacts",
+      "passed": true
+    }
+  ],
+  "limits": [
+    "Covers the current local HTTP data API only, using fictional principals.",
+    "Real identity/session strategy and live security verification remain issue #5.",
+    "No hosted changes, client integration, booking mutation service, cleanup schedule or release proof is implied."
+  ]
+}
