@@ -1,0 +1,52 @@
+# P1 workload, costs, operations and exit plan
+
+14 November 2026, Asia/Beirut. Supporting proposal for [#4](https://github.com/saeed-alorm/mawid-pro/issues/4) and the [decision record](p1-architecture-decision-2026-11-14.md). Only current synthetic rehearsal has an approved $0 ceiling. No upgrade, account purchase or paid messaging is authorized.
+
+## Workload: assumptions, not measured demand
+
+Retain the earlier three-shop sizing scenario for comparison, not as three committed pilots: 12 professionals, 30 bookings/shop/day, 30 days = 2,700 bookings/month; 3 browsing journeys/booking x 20 reads = 162,000 reads/month. Twelve staff sessions x 8 hours x 26 days x 120 polls/hour = 299,520 polls/month; about 500,000 combined calls is a rounded planning case. Burst assumption: 10 writes/minute with simultaneous slot conflicts. Call counts do not measure scanned rows, locks or capacity.
+
+Proposed storage envelope is 1 GB of booking/events and 5 GB transfer; it is not compatible with every Free-plan allowance. At the one-shop reference, bookings would be 900/month and journey reads 54,000/month; staff polling depends on actual simultaneous staff sessions. Measure retained rows/index bytes, active sessions, peak conflicts, query timings/p95 latency from Lebanon, connections, egress, retries, outbox lag and support minutes before sizing a live pilot. Realtime delivery cannot be booking authority. Bound polling, back off hidden tabs and refresh on resume; select actual freshness targets with the owner.
+
+## Source-backed price inputs, not quotes or spending approval
+
+Rechecked 14 November 2026: [Supabase pricing](https://supabase.com/pricing) lists Free with 500 MB database, 1 GB file storage, 50,000 MAU, 5 GB egress plus 5 GB cached egress, two active projects and inactivity pausing after one week. API request allowance is not a throughput guarantee. Pro starts at $25/month, first project included, additional projects from $10; daily backups retained seven days. [Backup scope](https://supabase.com/docs/guides/platform/backups) excludes stored file binaries; free projects should keep independent logical exports. [Spend Cap](https://supabase.com/docs/guides/platform/cost-control) is not a universal cash hard stop: compute/opt-ins and excluded charges must be separately controlled.
+
+| Scenario | Illustrative included subtotal | Exclusions / approval gate |
+|---|---|---|
+| Free private rehearsal | $0 incrementally using existing eligible test project and owned local tools | Synthetic data only; no production reliability claim; local evidence does not establish off-device retention |
+| Modest live pilot | Example $25 hosting + 0–100 billable identity sends at $0.28 = $25–$53/month | Domain, independent backup, tax/FX, support labor, monitoring, extra environments and business/publishing setup excluded; no live budget approved |
+| Normal with separate staging | Example $35 hosting + 300 identity sends at $0.28 = $119/month | Same exclusions; separate staging is not a backup; no spend authorized |
+
+[Identity Platform](https://cloud.google.com/identity-platform/pricing) currently lists Lebanon at $0.28 per phone-auth/MFA SMS. It is a comparison input for a different service, not a Supabase-integrated quote or a selected identity provider. Include resends, abuse controls, networks, geographic support and actual billing eligibility. Verified identity method is still a decision; fake demo codes never count as verification. Twilio integration and account setup remain deferred. Do not reuse an old SMS segment quote as a current contracted price.
+
+[FCM](https://firebase.google.com/pricing) lists Cloud Messaging at no cost. Push plus authoritative app/web status is the proposed notification baseline; implementation, backend/egress, staff visibility and support are not free simply because FCM is. Push does not replace phone identity. If SMS fallback is later approved: variable cost = billed segments x actual routing rate + carrier/sender/verification fees. Arabic encoding, delivery failures and retries can increase segments. No live messages are sent here.
+
+One-time [Play fee](https://support.google.com/googleplay/android-developer/answer/6112435?hl=en) is currently $25, separate from legal/operator setup, assets, domain and tax; no per-brand store fee is assumed. Compare quotes before purchase. Existing included CI and the previously owner-confirmed $0 paid-usage block are dated evidence, not permission to consume unbounded minutes; do not enable or buy anything here.
+
+Total monthly cash = service compute + database/file/transfer overage + identity + notifications + domains/12 + independent backup + monitoring + build/artifact usage + tax/FX. Labor is separate: operating hours x approved rate. Propose recording support hours per week, release minutes per brand and shared fix, onboarding/import hours, restore/review time and incident reserve. No invented rate or unlimited on-call commitment.
+
+## Backup and exit scope
+
+[Completed fixture recovery](../evidence/2026-11-14-recovery/README.md) proves logical schema/data portability for six fictional rows from Supabase to fresh local PostgreSQL 17.12. It does not certify the following live runbook, which requires approved scope, destination, retention, owners and objectives.
+
+| Asset | Exit/backup artifact and security | Independent validation required before live dependence |
+|---|---|---|
+| Booking/core data | Versioned schema/migrations and custom-format logical data archive; constraints/indexes/events/outbox; tenant-scoped customer export where legally permitted | Restore into empty compatible Postgres, compare canonical data and structure, replay conflict/expiry tests and validate tenant grants/RLS; grants/owners explicitly mapped, never assumed from no-ACL dump |
+| Identities/accounts | Separate documented Auth provider/user-ID mapping, allowed identity export, recovery policy and secret/config inventory references in vault | Provider-supported migration and password-hash compatibility assessment; if unsupported, planned re-auth/reset enrollment with consent, not forced reuse of old sessions. Session/JWT/config preservation is separate; do not export live tokens into public evidence |
+| File objects | Independent binary copies plus bucket/path/metadata/content-hash manifest and access policies | Restore binaries and metadata, compare hashes and authorized access. Database backup alone does not recover deleted Storage files |
+| Service/config | Immutable source/lockfiles, migrations, environment names, domains/DNS, callback URLs, scheduled jobs, worker/outbox config, ACL manifest | Redeploy in isolated destination, map secrets through approved vault, verify TLS/callbacks/expiry/job behavior and block real outbound messages during rehearsal |
+| Apps/signing | Private brand/package registry, asset permissions, source/manifests/hashes, public signing fingerprints and vaulted key/account recovery references | Test update continuity and approved recovery process; Play-held signing custody differs from upload key. No private APK/key stored in public repo |
+| Customer/business exit | Scoped machine-readable bookings/catalog/files with dictionary, timestamps/timezone and export cut-off; rights/retention/deletion ledger | Owner-approved entitlement, secure delivery, recipient integrity check, retention and deletion confirmation. Source licensing and listing transfer are separate negotiated terms, never automatic |
+
+Proposed live sequence: authorize scope/restore point and encrypted independent destination; stop or queue new writes with explicit user notice; take a consistent export and file manifest; record version/hash/UTC cut-off; restore to a separate isolated target with outbound messaging blocked; apply reviewed roles/security; verify data/structure/identity/files/API and idempotency/outbox state; assess gap since cut-off and reconcile writes; authorize cutover, DNS/callback routing and client compatibility; retain rollback route and monitor; delete only after signed retention/exit approval. Do not test disaster recovery by deleting source content. Provider outage, cross-host full recovery and credential/signing custody remain distinct evidence.
+
+Proposed targets for discussion, not commitments: nightly independent encrypted booking export (up to 24h data-loss exposure) and a 4 staffed-hour recovery objective, with tighter targets costed if unacceptable. Offer-expiry correctness must not depend on the nightly job. Choose schedule/retention/encryption custodian, off-device location and recovery owner before live use; no destination or recurring job created by this document. The 0.113-second fixture restore excludes setup/download/validation and cannot justify these targets.
+
+## Ownership, capacity and release gates
+
+Owner-confirmed availability is 4–5 focused hours per working day; days/week and live support hours remain unapproved. Saeed is spending authority. Name primary/backup support, incident response, restore verification, data export/privacy, signing/security and release approval owners; no role is assigned to a partner by inference. Approve service denial/queuing behavior at any real budget cap. A billing alert alone does not prevent charges.
+
+The existing full-P1 estimate remains 55–92 six-hour engineer-days (330–552h), envelope 69–125 days (414–750h); #4's original 4–7 days corresponds to 24–42h. At 4–5h/day, #4's full original scope is roughly 5–11 working days, not work remaining or a promised date. At 5 days/week availability would be 20–25h/week; five working days is an example, not confirmed. Approve/revise effort and account for external waits and actual completed work before scheduling.
+
+Architecture approval can specify future verification gates without claiming they passed. Keep #3 open until its actual readiness criteria reconcile. Employee account setup, Twilio, paid services and APK changes remain deferred. Live release still requires real identity/permissions, full approved recovery scope, capacity and target-build acceptance in their dependent issues; none is silently waived by this document.
