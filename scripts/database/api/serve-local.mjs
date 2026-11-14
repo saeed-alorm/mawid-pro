@@ -1,7 +1,7 @@
 import { mkdtemp, writeFile, rm, rmdir } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { createLocalFixture, IDS, USERS } from "./fixture.mjs";
+import { createLocalFixture, IDS, USERS, AUTH_USERS } from "./fixture.mjs";
 import { LocalDataService } from "./data-service.mjs";
 import { LocalMaintenanceWorker } from "../maintenance/worker.mjs";
 import { startMaintainedLocalServer } from "../maintenance/runtime.mjs";
@@ -29,19 +29,33 @@ try {
   const args = process.argv.slice(2);
   if (args.length > 1 || (args.length === 1 && args[0] !== "--check"))
     throw new Error("INVALID_LOCAL_ARGUMENTS");
-  fixture = await createLocalFixture();
+  fixture = await createLocalFixture({ authorizationFixtures: true });
   service = new LocalDataService(fixture.configs);
   maintenance = new LocalMaintenanceWorker(fixture.maintenanceConfig);
   server = await startMaintainedLocalServer(service, maintenance);
   const sessions = Object.fromEntries(
-    Object.entries(USERS).map(([name, user]) => [name, service.issueSession(user)]),
+    Object.entries({ ...USERS, ...AUTH_USERS }).map(([name, user]) => [
+      name,
+      service.issueSession(user),
+    ]),
   );
   if (args[0] === "--check") {
     const response = await fetch(server.origin + "/v1/workspaces/" + IDS.workspaceA + "/profiles", {
       headers: { authorization: "Bearer " + sessions.managerA.token },
     });
     const result = await response.json();
-    if (response.status !== 200 || result.items.length !== 1) throw new Error("LOCAL_SMOKE_FAILED");
+    if (response.status !== 200 || result.items.length !== 3) throw new Error("LOCAL_SMOKE_FAILED");
+    for (const [name, workspace, location, expected] of [
+      ["professionalA", IDS.workspaceA, IDS.locationA, 200],
+      ["locationManagerA", IDS.workspaceB, IDS.locationB, 404],
+      ["customerA", IDS.workspaceA, IDS.locationA, 200],
+    ]) {
+      const check = await fetch(
+        `${server.origin}/v1/workspaces/${workspace}/locations/${location}/bookings`,
+        { headers: { authorization: "Bearer " + sessions[name].token } },
+      );
+      if (check.status !== expected) throw new Error("LOCAL_ROLE_SMOKE_FAILED");
+    }
     console.log("Local API startup, authenticated read and cleanup check passed.");
     await close();
   } else {

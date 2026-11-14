@@ -45,6 +45,36 @@ The fictional local API now connects scoped server operations to this PostgreSQL
 
 ## Step 2: endpoint authorization
 
+### Dummy roles for development
+
+Real accounts are not required for local booking development. `npm run data:local`
+now enables the existing authorization fixtures and writes all nine short-lived
+sessions to the temporary `sessions.json` path printed at startup. Choose a session
+by its name and send its token as `Authorization: Bearer <token>`.
+
+| Session name                  | Server-owned scope                                      |
+| ----------------------------- | ------------------------------------------------------- |
+| `managerA`, `otherManagerA`   | Workspace A manager                                     |
+| `locationManagerA`            | Workspace A, location A manager                         |
+| `professionalA`               | Workspace A, location A professional                    |
+| `adminA`                      | Workspace A admin; does not inherit manager permissions |
+| `customerA`, `otherCustomerA` | Separate customers in workspace A; own records only     |
+| `managerB`, `customerB`       | Workspace B isolation fixtures                          |
+
+The expanded fixture includes a second A location and two additional A customer
+profiles. Use the IDs in the session file for the primary A/B workspaces and
+locations. Restart the runner to obtain fresh sessions after their 15-minute
+expiry; shutdown removes the temporary file and disposable database. Run
+`npm run data:local -- --check` for startup, customer/professional read and
+cross-workspace denial checks.
+
+These names describe fixtures, not client-supplied authorization claims. There is
+no HTTP role-selection endpoint, and selecting a different token cannot change
+that identity's database membership. Keep tokens outside the frontend bundle.
+Use `managerA` for an owner operating the shop; no new all-powerful owner role is
+introduced. This supports local #7 work; #5 remains open for real identity,
+production sessions and verified client integration.
+
 Run `npm run test:data-auth` for the 282-check authorization matrix. The [step 2 report](../docs/engineering/issue6-step2-authorization-2026-11-14.md) records the fixes, exact operation/role scope and remaining limits. Location-filtered exports now include only readable profiles linked to that location's bookings. Location-only staff have no salon-wide profile-list access.
 
 ## Step 3: scheduled protected maintenance
