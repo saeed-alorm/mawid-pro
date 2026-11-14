@@ -1,0 +1,22 @@
+;
+; Archive created at 2026-11-14 10:21:51 EET
+;     dbname: postgres
+;     TOC Entries: 13
+;     Compression: gzip
+;     Dump Version: 1.16-0
+;     Format: CUSTOM
+;     Integer: 4 bytes
+;     Offset: 8 bytes
+;     Dumped from database version: 17.11
+;     Dumped by pg_dump version: 17.12 (Ubuntu 17.12-1.pgdg24.04+1)
+;
+;
+; Selected TOC Entries:
+;
+11; 2615 17723 SCHEMA - mawid_recovery_rehearsal_4 postgres
+317; 1259 17724 TABLE mawid_recovery_rehearsal_4 bookings postgres
+3776; 0 17724 TABLE DATA mawid_recovery_rehearsal_4 bookings postgres
+3622; 2606 17738 CONSTRAINT mawid_recovery_rehearsal_4 bookings bookings_idempotency_unique postgres
+3624; 2606 17736 CONSTRAINT mawid_recovery_rehearsal_4 bookings bookings_pkey postgres
+3625; 1259 17739 INDEX mawid_recovery_rehearsal_4 bookings_tenant_start_idx postgres
+3774; 0 17724 ROW SECURITY mawid_recovery_rehearsal_4 bookings postgres
