@@ -28,6 +28,10 @@ Migration 20261114073424_mawid_issue_4_isolated_recovery_fixture created only ma
 
 No functions exist. Future functions require explicit execution revokes; a schema-level default revoke cannot remove PostgreSQL's global PUBLIC EXECUTE default. Global defaults were left unchanged. The source security advisor's no-policy notice is intentional default-deny; unrelated Auth settings were not changed.
 
+## Latest handoff reconciliation
+
+The replacement ZIP has SHA-256 ddaecc2ca42a7ede2e2ee492512a798cfc8569c4708a5e36b3c498dfa84ea69e. Its source/restored JSON, archive inventory and strict verification SQL are byte-identical to the earlier handoff. No conflicting recovery evidence was found; no repeat was justified. Later booking policy decisions supersede historical pending-expiry/desk-close assertions, not this six-row portability result.
+
 ## Meaning and remaining gaps
 
 This is a passed isolated schema/data portability recovery from an exported artifact. Owners/ACLs were intentionally excluded for portability; restored local role isolation was not reproduced. It does not prove full Auth/session/configuration or Storage binary recovery, managed backups/PITR, off-device encrypted retention, provider-outage recovery, production concurrency, tenant security in the future live API or store approval. A prior reported Neon same-project restore is separate evidence and not a cross-host pass.
