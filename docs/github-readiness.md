@@ -1,5 +1,7 @@
 # MAWID readiness — 7 November 2026, Asia/Beirut
 
+> **GitHub recheck — 14 November 2026:** [PR17](https://github.com/saeed-alorm/mawid-pro/pull/17) merged 8 November at `d159c27a08528caf4ea4f3709288c39127df3f6c`; private [PR1](https://github.com/saeed-alorm/mawid-mobile/pull/1) merged 9 November at `659ffe6d1564bbbd3b4e4b97bffee4e4ffdf4726`. Earlier open/import statements below are dated history. [#3](https://github.com/saeed-alorm/mawid-pro/issues/3) is still open: project/status links, account/integration controls/allowance and source-provenance gate reconciliation are not established by these merges. [#4 review](engineering/p1-architecture-decision-2026-11-14.md) preserves the dependency; no full readiness or dependent implementation is approved.
+
 **Distribution update — 8 November 2026:** [Saeed confirmed the product model](decisions/2026-11-08-product-distribution.md); [P1 architecture/estimates](engineering/p1-architecture-analysis.md), [Android acceptance](engineering/android-distribution.md), FEAT-01/24 and existing issues are updated. Dedicated customer brand Android apps, MAWID publishing/zero salon accounts, and shared management Android plus portal are required in P1. Stack, eligibility/policy, budget and actual releases remain unverified. Initial Notion attempts returned 404; access is now restored and the [confirmed Notion decision](https://www.notion.so/412f53c2a11d818cbeb7e4307356bef8) plus HQ updates are saved. The [prepared packet](engineering/notion-distribution-update-pending.md) is marked applied.
 
 **Overall: not fully ready for plan execution.** PR17 remains open for Saeed's merge
@@ -148,4 +150,5 @@ review #4's decision requests in parallel. Product intent/decisions remain in
 [Notion HQ](https://www.notion.so/40cf53c2a11d80c493fede8991643fea), whose feature/database
 pages remain unverified. A merged PR, compiled test APK, released fix and resolved
 customer ticket are distinct. Follow [release evidence](engineering/release-evidence.md).
+
 

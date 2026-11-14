@@ -1,0 +1,93 @@
+{
+  "result": "passed",
+  "verified_at_utc": "2026-11-14T08:33:46.277535+00:00",
+  "source": "Supabase exported fixture",
+  "destination": "fresh local PostgreSQL in WSL",
+  "postgres_version": "17.12 (Ubuntu 17.12-1.pgdg24.04+1)",
+  "listen_addresses": "",
+  "socket_directory_mode": "0700",
+  "archive_sha256": "ae33a1ac3f8908268d5dc2ae0dd8a3f8c08faa7cc3d22c059cd104b73b840e80",
+  "rows": 6,
+  "data_sha256": "ded080396cc81ea3120f4218f2eb1b802a29bafb00d21e70a2e1df4c13ec968c",
+  "restore_seconds": 0.113,
+  "inventory": {
+    "constraints": [
+      {
+        "name": "bookings_idempotency_unique",
+        "definition": "UNIQUE (tenant_id, idempotency_key)"
+      },
+      {
+        "name": "bookings_location_check",
+        "definition": "CHECK ((location_id = (tenant_id || '-location'::text)))"
+      },
+      {
+        "name": "bookings_pkey",
+        "definition": "PRIMARY KEY (booking_id)"
+      },
+      {
+        "name": "bookings_status_check",
+        "definition": "CHECK ((status = ANY (ARRAY['pending'::text, 'confirmed'::text, 'cancelled'::text])))"
+      },
+      {
+        "name": "bookings_tenant_id_check",
+        "definition": "CHECK ((tenant_id = ANY (ARRAY['fictional-a'::text, 'fictional-b'::text])))"
+      },
+      {
+        "name": "bookings_time_check",
+        "definition": "CHECK ((ends_at > starts_at))"
+      },
+      {
+        "name": "bookings_version_check",
+        "definition": "CHECK ((version > 0))"
+      }
+    ],
+    "indexes": [
+      {
+        "name": "bookings_idempotency_unique",
+        "definition": "CREATE UNIQUE INDEX bookings_idempotency_unique ON mawid_recovery_rehearsal_4.bookings USING btree (tenant_id, idempotency_key)"
+      },
+      {
+        "name": "bookings_pkey",
+        "definition": "CREATE UNIQUE INDEX bookings_pkey ON mawid_recovery_rehearsal_4.bookings USING btree (booking_id)"
+      },
+      {
+        "name": "bookings_tenant_start_idx",
+        "definition": "CREATE INDEX bookings_tenant_start_idx ON mawid_recovery_rehearsal_4.bookings USING btree (tenant_id, starts_at)"
+      }
+    ],
+    "groups": [
+      {
+        "tenant_id": "fictional-a",
+        "status": "cancelled",
+        "count": 1
+      },
+      {
+        "tenant_id": "fictional-a",
+        "status": "confirmed",
+        "count": 1
+      },
+      {
+        "tenant_id": "fictional-a",
+        "status": "pending",
+        "count": 1
+      },
+      {
+        "tenant_id": "fictional-b",
+        "status": "cancelled",
+        "count": 1
+      },
+      {
+        "tenant_id": "fictional-b",
+        "status": "confirmed",
+        "count": 1
+      },
+      {
+        "tenant_id": "fictional-b",
+        "status": "pending",
+        "count": 1
+      }
+    ]
+  },
+  "verification_output": "DO\nPASS: restored checksum, inventory, RLS flags and four constraint rejection checks",
+  "limitations": "Schema/data portability only; original owners/grants excluded. No full Supabase Auth/Storage recovery or real client-role isolation tested."
+}

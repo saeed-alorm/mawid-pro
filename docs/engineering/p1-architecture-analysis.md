@@ -1,5 +1,7 @@
 # P1 architecture and feasibility analysis — confirmed distribution, open technical decisions
 
+> **14 November continuation:** [consolidated decision/acceptance review](p1-architecture-decision-2026-11-14.md), [operations/exit](p1-operations-and-exit-2026-11-14.md), [publishing feasibility](p1-publishing-feasibility-2026-11-14.md) and [actual fixture recovery](../evidence/2026-11-14-recovery/README.md) distinguish confirmed rules, proposals and supplied verified results. This earlier dated analysis is retained; it is not the latest approval state. #4 remains open.
+
 **Notion synchronization — 8 November 2026:** MAWID HQ access was restored and the [confirmed Notion decision](https://www.notion.so/412f53c2a11d818cbeb7e4307356bef8) was saved under HQ. It records Saeed's actual 8 November confirmation/source, FEAT-01 and FEAT-24 scope, engineering links and unresolved feasibility. No separate feature pages/database were found; no feature-page URLs or parallel engineering tracker are invented. Earlier 404 results remain historical evidence.
 
 Prepared 7 November 2026; revised 8 November 2026, Asia/Beirut. Distribution is confirmed in [PRODUCT.md](../../PRODUCT.md) and the [dated decision](../decisions/2026-11-08-product-distribution.md). Technical/provider, budget and execution decisions remain open. Analysis started for [P1-ARCH #4](https://github.com/saeed-alorm/mawid-pro/issues/4); this is not an approved ADR, implementation commitment, spending authorization or deployment plan.
@@ -198,4 +200,5 @@ sum as parallel capacity, and external verification/review time remains unknown.
 | Pilot gate | Confirm whether any shop has actually committed, asset permissions, two-device acceptance owner and paid-discussion evidence | Business/pilot owner to be assigned in Notion |
 
 Immediate next engineering task in #4: produce the MAWID-owned Android eligibility/policy dossier and a brand/package/authorization contract using synthetic A/B fixtures; record concrete blockers and validate the revised effort with Saeed. In parallel resolve pending/Any/proposal holds, expiry and cancellation policies for the common booking contract. Only then authorize bounded implementation experiments under an approved ceiling. No deployment, enrollment, schema provisioning, paid service or store submission is authorized by this update. If policy evidence blocks the chosen model, present the smallest specific decision; do not silently substitute a shared customer app or salon-owned accounts.
+
 
