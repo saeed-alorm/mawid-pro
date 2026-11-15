@@ -1,5 +1,13 @@
 # Local issue #6 database
 
+## Booking development (#7)
+
+`npm run data:local` also starts the fictional booking core with seeded eligibility
+and availability. See the [booking contract and limits](../docs/engineering/issue7-booking-core-2026-11-15.md)
+for routes, explicit roles and versioned retry inputs. Run `npm run test:booking` for
+the PostgreSQL booking regression suite. These endpoints remain separate from the
+browser-local Pages demo and private Android builds.
+
 This is a PostgreSQL 17 data foundation tested with fictional tenants. The public demo remains browser-local. It does not provision hosted Supabase, touch Auth/Storage, create user accounts, change an APK, or publish anything.
 
 ## Run locally

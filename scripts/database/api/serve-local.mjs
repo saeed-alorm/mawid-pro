@@ -3,10 +3,11 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { createLocalFixture, IDS, USERS, AUTH_USERS } from "./fixture.mjs";
 import { LocalDataService } from "./data-service.mjs";
+import { LocalBookingService } from "../booking/service.mjs";
 import { LocalMaintenanceWorker } from "../maintenance/worker.mjs";
 import { startMaintainedLocalServer } from "../maintenance/runtime.mjs";
 
-let fixture, service, server, maintenance, directory;
+let fixture, service, server, maintenance, directory, booking;
 let closing = false;
 async function close() {
   if (closing) return;
@@ -14,7 +15,7 @@ async function close() {
   try {
     await server?.close();
   } finally {
-    await Promise.allSettled([service?.close(), maintenance?.close()]);
+    await Promise.allSettled([service?.close(), maintenance?.close(), booking?.close()]);
     try {
       await fixture?.close();
     } finally {
@@ -29,10 +30,11 @@ try {
   const args = process.argv.slice(2);
   if (args.length > 1 || (args.length === 1 && args[0] !== "--check"))
     throw new Error("INVALID_LOCAL_ARGUMENTS");
-  fixture = await createLocalFixture({ authorizationFixtures: true });
+  fixture = await createLocalFixture({ authorizationFixtures: true, bookingFixtures: true });
   service = new LocalDataService(fixture.configs);
+  booking = new LocalBookingService(service, fixture.bookingConfig);
   maintenance = new LocalMaintenanceWorker(fixture.maintenanceConfig);
-  server = await startMaintainedLocalServer(service, maintenance);
+  server = await startMaintainedLocalServer(service, maintenance, { serverOptions: { booking } });
   const sessions = Object.fromEntries(
     Object.entries({ ...USERS, ...AUTH_USERS }).map(([name, user]) => [
       name,

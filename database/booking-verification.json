@@ -1,0 +1,156 @@
+{
+  "generated_at": "2026-11-15T06:55:01.661Z",
+  "node": "v24.22.1",
+  "postgres": "17.12 (Debian 17.12-1.pgdg12+1)",
+  "files": [
+    {
+      "name": "scripts/database/booking/service.mjs",
+      "sha256": "444535f412fb18a003103f55ceb19a6369123d632d0564d3bc61830a7def123b"
+    },
+    {
+      "name": "scripts/database/booking/time.mjs",
+      "sha256": "ed2f803d7a31d05c88203da5207e805abee1bfb61cdcd65df77f7952e75c408b"
+    },
+    {
+      "name": "scripts/database/booking/verify.mjs",
+      "sha256": "47e3caa3cd28706253ce4f323c30ff0c8668ab1138979c3234e0f804174cd048"
+    },
+    {
+      "name": "scripts/database/api/http-server.mjs",
+      "sha256": "6092019b0d393e3221aea5475f03e760db9d3e95f5bc19aee254e94e0c550e31"
+    },
+    {
+      "name": "scripts/database/api/fixture.mjs",
+      "sha256": "43f9c1418738e75d731f6d0c26bbc6e1f938d8a50a166dac6c7f490f197c752e"
+    },
+    {
+      "name": "scripts/database/api/serve-local.mjs",
+      "sha256": "5c9857eded7111dd2b26ccf0c66dbeae75e05d9c373bdeb2a793ab28de73baee"
+    },
+    {
+      "name": "supabase/migrations/20261114162225_tenant_model.sql",
+      "sha256": "95a2013202bf1dfb33687033c9ea009626e96f67c42af0fde327a3776c783459"
+    },
+    {
+      "name": "supabase/migrations/20261114162232_local_authorization.sql",
+      "sha256": "69532a4d04ea7e0424d19c53fa79f39fa62ae49d9efd5c03927dbdb256a2e579"
+    },
+    {
+      "name": "supabase/migrations/20261114162239_assisted_transfers.sql",
+      "sha256": "6dde4aea6b72ad483941b814c51db28db08e14bc8a9eb6bda1b08c3d4b39b0a1"
+    },
+    {
+      "name": "supabase/migrations/20261114162405_retention_and_constraints.sql",
+      "sha256": "62ec6742a1575cc375af18093ad2173c05f2310785787db7762b85213098d89f"
+    },
+    {
+      "name": "supabase/migrations/20261114172144_authorization_export_scope.sql",
+      "sha256": "44dfd7f6faa56dceb3127f245da8013f80981e71ca63ef3b73b1ffd3d61cb16d"
+    },
+    {
+      "name": "supabase/migrations/20261114174231_protected_local_maintenance.sql",
+      "sha256": "7030fa3b510c2ab87530000cf27a7e035b1a9f0d8233c66f7be165085a3d522f"
+    },
+    {
+      "name": "supabase/migrations/20261115063746_local_booking_worker.sql",
+      "sha256": "e2b0633076f45b382ab191b4739c422d97f9f474b550784f57303f2fa0abe158"
+    }
+  ],
+  "checks": [
+    {
+      "name": "Beirut DST gaps, invalid dates and offset-free input are rejected; fold offsets resolve distinct instants",
+      "passed": true
+    },
+    {
+      "name": "opening-minute clock pauses across close and does not double count closed hours",
+      "passed": true
+    },
+    {
+      "name": "offer hold crosses midnight and self-cancel includes exactly 30 minutes",
+      "passed": true
+    },
+    {
+      "name": "customer availability is advisory and does not reserve capacity",
+      "passed": true
+    },
+    {
+      "name": "two competing pending requests persist without allocating a slot",
+      "passed": true
+    },
+    {
+      "name": "cross-workspace, cross-customer and role-forging writes are denied",
+      "passed": true
+    },
+    {
+      "name": "independent connections racing to confirm produce exactly one winner",
+      "passed": true
+    },
+    {
+      "name": "identical retries replay once; changed payload and stale versions conflict",
+      "passed": true
+    },
+    {
+      "name": "Any assignment requires a manager and reserves nothing until admin confirms",
+      "passed": true
+    },
+    {
+      "name": "proposal holds one concrete interval and customer acceptance confirms atomically",
+      "passed": true
+    },
+    {
+      "name": "expired holds are resolved by server time without waiting for a cleanup job",
+      "passed": true
+    },
+    {
+      "name": "staff walk-ins share the capacity path and require admin permission",
+      "passed": true
+    },
+    {
+      "name": "breaks, absence, eligibility and buffers are revalidated on transitions",
+      "passed": true
+    },
+    {
+      "name": "absence, buffers and holiday exceptions reject unavailable requests",
+      "passed": true
+    },
+    {
+      "name": "failure after booking update rolls back allocation, version, audit, outbox and retry intent",
+      "passed": true
+    },
+    {
+      "name": "withdrawal and decline release proposal holds and terminal transitions cannot repeat",
+      "passed": true
+    },
+    {
+      "name": "overdue stays pending; customer omits the warning; passed start requires a future proposal",
+      "passed": true
+    },
+    {
+      "name": "four confirmed customer cancellations count once each without banning new requests",
+      "passed": true
+    },
+    {
+      "name": "submission push and response target are calculated from actual opening periods",
+      "passed": true
+    },
+    {
+      "name": "pruned outcomes leave stable intent and cannot recreate an old request",
+      "passed": true
+    },
+    {
+      "name": "revocation blocks replay of previously successful requests",
+      "passed": true
+    },
+    {
+      "name": "every committed core version has one audit event and one outbox record",
+      "passed": true
+    },
+    {
+      "name": "worker is not superuser/BYPASSRLS and actor cannot mutate bookings directly",
+      "passed": true
+    }
+  ],
+  "limits": [
+    "Fictional local sessions; no client, device, notification-provider or production acceptance."
+  ]
+}
