@@ -139,11 +139,12 @@ function paginated(rows, limit, idKey) {
 
 export async function startLocalDataServer(
   service,
-  { port = 0, log = (event) => console.error(JSON.stringify(event)), booking } = {},
+  { port = 0, log = (event) => console.error(JSON.stringify(event)), booking, notifications } = {},
 ) {
   // No public listener or login/actor-selection endpoint. Sessions are issued by the fixture owner.
   await service.verifyPrincipals();
   await booking?.verify();
+  await notifications?.verify();
   let origin;
   const server = createServer(
     { maxHeaderSize: 16384, requestTimeout: 15000, headersTimeout: 10000 },
@@ -169,6 +170,53 @@ export async function startLocalDataServer(
         if (!match) throw new ApiError(404, "NOT_FOUND");
         const workspace = validate(uuid, match[1]);
         const tail = match[2];
+        const noticeRoute =
+          /^\/locations\/([^/]+)\/notifications\/(registrations(?:\/([^/]+))?|inbox(?:\/([^/]+)\/open)?)$/.exec(
+            tail,
+          );
+        if (notifications && noticeRoute) {
+          const location = validate(uuid, noticeRoute[1]);
+          params(url, z.object({}).strict());
+          if (req.method === "POST" && noticeRoute[2] === "registrations") {
+            const input = await jsonBody(
+              req,
+              z
+                .object({
+                  installation_id: uuid,
+                  application_id: z.literal("com.mawid.demo"),
+                  environment: z.literal("development"),
+                  locale: z.enum(["en", "ar"]),
+                  token: z
+                    .string()
+                    .min(20)
+                    .max(4096)
+                    .regex(/^[A-Za-z0-9:_\-.]+$/),
+                })
+                .strict(),
+            );
+            return send(200, await notifications.register(user, workspace, location, input));
+          }
+          if (req.method === "DELETE" && noticeRoute[3])
+            return send(
+              200,
+              await notifications.unregister(
+                user,
+                workspace,
+                location,
+                validate(uuid, noticeRoute[3]),
+              ),
+            );
+          if (req.method === "GET" && noticeRoute[2] === "inbox")
+            return send(200, await notifications.inbox(user, workspace, location));
+          if (req.method === "POST" && noticeRoute[4]) {
+            await jsonBody(req, z.object({}).strict());
+            return send(
+              200,
+              await notifications.open(user, workspace, location, validate(uuid, noticeRoute[4])),
+            );
+          }
+          throw new ApiError(404, "NOT_FOUND");
+        }
         const bookingRoute =
           /^\/locations\/([^/]+)\/booking-core\/(availability|requests|walk-ins|bookings\/([^/]+)(?:\/(confirm|propose|assign|accept|decline|withdraw|cancel))?)$/.exec(
             tail,

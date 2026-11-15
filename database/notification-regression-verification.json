@@ -1,0 +1,105 @@
+{
+  "recorded_at": "2026-11-15T12:37:53.097Z",
+  "source_commit": "156cf969a4fa8c3ceb7efd99f271c6550fa7f6a2",
+  "node": "24.22.1",
+  "npm": "11.9.0",
+  "lockfile_sha256": "52d4662e1daabb98ca71c261be81eed52e774ab2a8ac3c788c0dd53117b15d56",
+  "checks": [
+    {
+      "name": "ci",
+      "passed": true
+    },
+    {
+      "name": "test:notifications",
+      "passed": true
+    },
+    {
+      "name": "test:booking",
+      "passed": true
+    },
+    {
+      "name": "test:data-api",
+      "passed": true
+    },
+    {
+      "name": "test:data-auth",
+      "passed": true
+    },
+    {
+      "name": "test:data-maintenance",
+      "passed": true
+    },
+    {
+      "name": "test:data-migrations",
+      "passed": true
+    },
+    {
+      "name": "test:data-csv",
+      "passed": true
+    },
+    {
+      "name": "test",
+      "passed": true
+    },
+    {
+      "name": "lint",
+      "passed": true
+    },
+    {
+      "name": "typecheck",
+      "passed": true
+    },
+    {
+      "name": "build",
+      "passed": true
+    },
+    {
+      "name": "build:pages",
+      "passed": true
+    },
+    {
+      "name": "verify:pages",
+      "passed": true
+    },
+    {
+      "name": "verify:toolchain",
+      "passed": true
+    },
+    {
+      "name": "test:browser",
+      "passed": true
+    }
+  ],
+  "schema_check": {
+    "script": "test:data-db",
+    "passed": true,
+    "checks": 61,
+    "fixture": "temporary local PostgreSQL 17.12, network none, removed after checks"
+  },
+  "python_checks": {
+    "syntax": true,
+    "unit_tests_passed": 5
+  },
+  "counts": {
+    "notification_unit": 9,
+    "notification_postgresql": 13,
+    "booking": 23,
+    "local_api": 32,
+    "authorization": 282,
+    "maintenance_unit": 6,
+    "maintenance_integration": 28,
+    "migration_unit": 8,
+    "migration_recovery": 23,
+    "csv": 14,
+    "web_unit": 22,
+    "browser": 2
+  },
+  "lint": {
+    "errors": 0,
+    "existing_warnings": 11
+  },
+  "limits": [
+    "Local checks only; no remote CI run or merge implied.",
+    "Synthetic identities and simulated notification sender in automated checks; real-device evidence is separate."
+  ]
+}

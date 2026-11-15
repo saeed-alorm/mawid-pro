@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-15T06:51:40.238Z",
+  "generated_at": "2026-11-15T12:32:58.382Z",
   "node": "v24.22.1",
   "postgres": "17.12 (Debian 17.12-1.pgdg12+1)",
   "image": "postgres:17.12-bookworm@sha256:40865bc877a289da75963d97d72b59633f639fc5af7a4e856bfa3714cae5b536",
@@ -31,6 +31,10 @@
     {
       "name": "20261115063746_local_booking_worker.sql",
       "sha256": "e2b0633076f45b382ab191b4739c422d97f9f474b550784f57303f2fa0abe158"
+    },
+    {
+      "name": "20261115101500_local_notifications.sql",
+      "sha256": "e8f16abc8b10c77bb27fa7c68ea6966d283c326d484ad73962371fe1355d7d29"
     }
   ],
   "synthetic_scenarios": "In-memory fixture migrations only; not application release migrations.",
@@ -49,11 +53,11 @@
     },
     {
       "name": "scripts/database/api/fixture.mjs",
-      "sha256": "43f9c1418738e75d731f6d0c26bbc6e1f938d8a50a166dac6c7f490f197c752e"
+      "sha256": "09a42e2582e74dc80bb351f7aff89a448a012535e21d6bc105c419f83766986e"
     },
     {
       "name": "package-lock.json",
-      "sha256": "57d0aeb6bd4f0e37633e1831f32f500234ff442a2b9757f5f392b1937f7f559b"
+      "sha256": "52d4662e1daabb98ca71c261be81eed52e774ab2a8ac3c788c0dd53117b15d56"
     },
     {
       "name": "supabase/migrations/20261114162225_tenant_model.sql",
@@ -82,6 +86,10 @@
     {
       "name": "supabase/migrations/20261115063746_local_booking_worker.sql",
       "sha256": "e2b0633076f45b382ab191b4739c422d97f9f474b550784f57303f2fa0abe158"
+    },
+    {
+      "name": "supabase/migrations/20261115101500_local_notifications.sql",
+      "sha256": "e8f16abc8b10c77bb27fa7c68ea6966d283c326d484ad73962371fe1355d7d29"
     }
   ],
   "checks": [

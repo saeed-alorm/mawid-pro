@@ -1,0 +1,29 @@
+{
+  "date": "2026-11-15",
+  "server_source_commit": "156cf969a4fa8c3ceb7efd99f271c6550fa7f6a2",
+  "mobile_source_commit": "8ac50bae3efde3740905dae159c1aa1a43f3fafe",
+  "apk_sha256": "345897b19362ac0b837433d0c478591d4d7ebadd6ea85082484e2dc7f7ee257d",
+  "device_model": "BBB100_2",
+  "android_api": 27,
+  "background_request": {
+    "provider": "accepted",
+    "attempts": 1,
+    "booking_state": "pending",
+    "booking_version": "1",
+    "device_received": true,
+    "authorized_open_at": "2026-11-15T12:14:32.931Z"
+  },
+  "foreground_confirmation": {
+    "provider": "accepted",
+    "attempts": 1,
+    "booking_state": "confirmed",
+    "booking_version": "2",
+    "device_received": true,
+    "authorized_open_at": "2026-11-15T12:19:31.717011+00:00"
+  },
+  "evidence_kind": "persisted server metadata plus operator-observed device UI",
+  "limits": [
+    "Development synthetic identities only; full client integration and real authentication remain open.",
+    "No Android 13 permission, terminated-process or multi-brand acceptance claimed."
+  ]
+}
