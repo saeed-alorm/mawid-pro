@@ -34,6 +34,12 @@ exact UUID/body/version before transport and offer explicit retry; a different
 intent cannot replace an unresolved one. Refresh/reconnect/revocation fence cached
 records. Tenant/brand/package configuration never grants authority.
 
+Retry journals are isolated by authorized actor/workspace/location. Authorization
+failure or session expiry retains uncertain intent for reauthorization and exact
+replay; it does not create a replacement UUID. The web journal uses sessionStorage;
+the native lab uses app-private cache. Storage eviction, reinstall/upgrade and
+production session reconciliation are not established by these development tests.
+
 Approved timing is unchanged: immediately persist closed-hours requests, delay
 their initial staff notification until the next opening, count 15 opening minutes
 for a staff-only overdue warning, and leave pending non-reserving. No overdue
@@ -41,5 +47,24 @@ push or recurring reminder is introduced.
 
 `npm run test:booking-clients` runs the actual development forms in independent
 headless Playwright clients against disposable PostgreSQL and explicit simulated
-notification transport. This does not prove FCM or device acceptance. Exact
-results and runtime build evidence are recorded only after execution.
+notification transport. All seven scenarios pass, including independent customer,
+manager and admin interfaces, acknowledgement loss, offline retry, stale conflict,
+after-hours deferral and revocation. Source hashes and exact results are in
+`database/booking-client-verification.json`.
+
+The full 16-command local regression suite passed. After the final retry fix,
+the nine affected checks passed, including 26 web tests and a successful rerun of
+the seven connected scenarios after a transient local proxy 502. The separate
+regression record preserves that distinction. Native analysis and 13 Flutter
+tests pass; the final `com.mawid.demo` debug APK is `0.4.1+6`, source
+`2e39276d1e5a0d1095435d3b7bd3770809c3c62f`, SHA-256
+`ce18a65d455254394067a5d6ca2f29afec5e03596943ca3e33b12b1ff519b467`.
+
+The earlier native artifact demonstrated actual customer request → native staff
+approval → customer state/in-app notification opening. The final APK created an
+actual physical Pending v1 request and staff inbox entries. These device records
+are private. New-APK physical FCM delivery/opening and terminated-process acceptance
+remain pending; emulator FCM registration reports `AUTHENTICATION_FAILED` despite
+observed API35 permission denial/restoration. No device delivery is inferred from
+the simulated tests or provider acceptance. #7 remains open, and #5 remains a
+prerequisite before pilot use. No merge or release is included.

@@ -1,0 +1,113 @@
+{
+  "mode": "fictional-local-only",
+  "full_regression": [
+    {
+      "name": "ci",
+      "passed": true
+    },
+    {
+      "name": "test:notifications",
+      "passed": true
+    },
+    {
+      "name": "test:booking",
+      "passed": true
+    },
+    {
+      "name": "test:data-api",
+      "passed": true
+    },
+    {
+      "name": "test:data-auth",
+      "passed": true
+    },
+    {
+      "name": "test:data-maintenance",
+      "passed": true
+    },
+    {
+      "name": "test:data-migrations",
+      "passed": true
+    },
+    {
+      "name": "test:data-csv",
+      "passed": true
+    },
+    {
+      "name": "test",
+      "passed": true
+    },
+    {
+      "name": "lint",
+      "passed": true
+    },
+    {
+      "name": "typecheck",
+      "passed": true
+    },
+    {
+      "name": "build",
+      "passed": true
+    },
+    {
+      "name": "build:pages",
+      "passed": true
+    },
+    {
+      "name": "verify:pages",
+      "passed": true
+    },
+    {
+      "name": "verify:toolchain",
+      "passed": true
+    },
+    {
+      "name": "test:browser",
+      "passed": true
+    }
+  ],
+  "final_affected_checks": [
+    {
+      "name": "test",
+      "passed": true
+    },
+    {
+      "name": "lint",
+      "passed": true
+    },
+    {
+      "name": "typecheck",
+      "passed": true
+    },
+    {
+      "name": "build",
+      "passed": true
+    },
+    {
+      "name": "build:pages",
+      "passed": true
+    },
+    {
+      "name": "verify:pages",
+      "passed": true
+    },
+    {
+      "name": "verify:toolchain",
+      "passed": true
+    },
+    {
+      "name": "test:browser",
+      "passed": true
+    },
+    {
+      "name": "test:booking-clients",
+      "passed": true,
+      "rerun": "initial local proxy 502; separate final rerun passed all 7 scenarios"
+    }
+  ],
+  "web_unit_tests": 26,
+  "flutter_tests": 13,
+  "connected_ui_checks": 7,
+  "remote_issue7_ci": "not run on dependent PR bases; private gate disabled with explicit owner approval",
+  "generated_at": "2026-11-15T19:03:10.572177+00:00"
+}
