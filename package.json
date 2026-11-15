@@ -4,6 +4,7 @@
   "sideEffects": false,
   "type": "module",
   "scripts": {
+    "test:notifications": "node --test scripts/database/notifications/policy.test.mjs scripts/database/notifications/scheduler.test.mjs scripts/database/notifications/fcm.test.mjs && node scripts/database/notifications/verify.mjs",
     "test:booking": "node scripts/database/booking/verify.mjs",
     "dev": "vite dev",
     "build": "vite build",
@@ -99,6 +100,7 @@
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.20",
     "globals": "^15.15.0",
+    "google-auth-library": "11.3.4",
     "jsdom": "^26.1.0",
     "nitro": "3.0.260603-beta",
     "pg": "8.23.1",

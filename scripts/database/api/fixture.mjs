@@ -152,7 +152,7 @@ export async function createLocalFixture({
         "'; GRANT mawid_local_maintenance TO mawid_fixture_maintenance;",
     );
     const maintenanceConfig = { ...base, user: "mawid_fixture_maintenance" };
-    let bookingConfig;
+    let bookingConfig, notificationConfig;
     if (migrationCount === undefined) {
       await admin.query(
         "CREATE ROLE mawid_fixture_booking LOGIN PASSWORD '" +
@@ -160,6 +160,12 @@ export async function createLocalFixture({
           "'; GRANT mawid_local_booking TO mawid_fixture_booking;",
       );
       bookingConfig = { ...base, user: "mawid_fixture_booking" };
+      await admin.query(
+        "CREATE ROLE mawid_fixture_notify LOGIN PASSWORD '" +
+          password +
+          "'; GRANT mawid_local_notify TO mawid_fixture_notify;",
+      );
+      notificationConfig = { ...base, user: "mawid_fixture_notify" };
     }
     const configs = [];
     const actorIds = [101, 102, 103, 104, 105];
@@ -289,6 +295,7 @@ export async function createLocalFixture({
       configs,
       maintenanceConfig,
       bookingConfig,
+      notificationConfig,
       admin,
       async restart() {
         docker("restart", name);

@@ -1,0 +1,61 @@
+{
+  "generated_at": "2026-11-15T09:17:05.699Z",
+  "transport": "simulated",
+  "checks": [
+    {
+      "name": "registration requires an authenticated authorized actor, not a token, package or workspace",
+      "passed": true
+    },
+    {
+      "name": "after-hours outbox waits until deliver_after; booking remains committed and non-reserving",
+      "passed": true
+    },
+    {
+      "name": "duplicate event processing and competing claims do not resend a completed delivery",
+      "passed": true
+    },
+    {
+      "name": "opening fetches authoritative state, rejects another actor and repeats safely",
+      "passed": true
+    },
+    {
+      "name": "transient retry survives database and worker restart; booking never rolls back",
+      "passed": true
+    },
+    {
+      "name": "retry attempts stop at five and in-app fallback exposes truthful failure",
+      "passed": true
+    },
+    {
+      "name": "a sender that never replies times out, persists retry and later recovers",
+      "passed": true
+    },
+    {
+      "name": "expired lease retries are fenced against late completion",
+      "passed": true
+    },
+    {
+      "name": "superseded events do not send stale notifications",
+      "passed": true
+    },
+    {
+      "name": "invalid token is disabled without affecting a refreshed token",
+      "passed": true
+    },
+    {
+      "name": "logout and membership revocation stop dispatch and opening",
+      "passed": true
+    },
+    {
+      "name": "customer sees committed confirmation despite a permanent push failure; overdue metadata stays staff-only",
+      "passed": true
+    },
+    {
+      "name": "another workspace has no notification or destination leakage",
+      "passed": true
+    }
+  ],
+  "limits": [
+    "No real FCM or device delivery asserted by these tests."
+  ]
+}

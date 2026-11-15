@@ -47,6 +47,7 @@ jobs:
       - run: npm run test:data-api
       - run: npm run test:data-auth
       - run: npm run test:booking
+      - run: npm run test:notifications
       - run: npm run test:data-maintenance
       - run: npm run test:data-migrations
       - name: Start isolated schema fixture

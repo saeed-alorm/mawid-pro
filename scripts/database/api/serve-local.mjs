@@ -1,13 +1,18 @@
 import { mkdtemp, writeFile, rm, rmdir } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { randomBytes, randomUUID } from "node:crypto";
 import { createLocalFixture, IDS, USERS, AUTH_USERS } from "./fixture.mjs";
 import { LocalDataService } from "./data-service.mjs";
 import { LocalBookingService } from "../booking/service.mjs";
 import { LocalMaintenanceWorker } from "../maintenance/worker.mjs";
 import { startMaintainedLocalServer } from "../maintenance/runtime.mjs";
+import { LocalNotifications } from "../notifications/service.mjs";
+import { SimulatedSender } from "../notifications/policy.mjs";
+import { FcmSender } from "../notifications/fcm.mjs";
+import { startNotificationLoop } from "../notifications/scheduler.mjs";
 
-let fixture, service, server, maintenance, directory, booking;
+let fixture, service, server, maintenance, directory, booking, notifications, notificationLoop;
 let closing = false;
 async function close() {
   if (closing) return;
@@ -15,16 +20,24 @@ async function close() {
   try {
     await server?.close();
   } finally {
-    await Promise.allSettled([service?.close(), maintenance?.close(), booking?.close()]);
+    await notificationLoop?.stop();
+    await Promise.allSettled([
+      notifications?.close(),
+      service?.close(),
+      maintenance?.close(),
+      booking?.close(),
+    ]);
     try {
       await fixture?.close();
     } finally {
       if (directory) {
         await rm(path.join(directory, "sessions.json"), { force: true });
+        await rm(path.join(directory, "android-notifications.private.json"), { force: true });
         await rmdir(directory);
       }
     }
   }
+  if (process.connected) process.disconnect();
 }
 try {
   const args = process.argv.slice(2);
@@ -33,8 +46,18 @@ try {
   fixture = await createLocalFixture({ authorizationFixtures: true, bookingFixtures: true });
   service = new LocalDataService(fixture.configs);
   booking = new LocalBookingService(service, fixture.bookingConfig);
+  const transport = process.env.MAWID_NOTIFICATION_TRANSPORT ?? "simulated";
+  if (!["simulated", "fcm"].includes(transport)) throw Error("INVALID_NOTIFICATION_TRANSPORT");
+  const sender = transport === "fcm" ? await FcmSender.fromADC() : new SimulatedSender();
+  notifications = new LocalNotifications(service, booking, fixture.notificationConfig, {
+    key: randomBytes(32),
+    sender,
+  });
   maintenance = new LocalMaintenanceWorker(fixture.maintenanceConfig);
-  server = await startMaintainedLocalServer(service, maintenance, { serverOptions: { booking } });
+  server = await startMaintainedLocalServer(service, maintenance, {
+    serverOptions: { booking, notifications },
+  });
+  notificationLoop = startNotificationLoop(notifications);
   const sessions = Object.fromEntries(
     Object.entries({ ...USERS, ...AUTH_USERS }).map(([name, user]) => [
       name,
@@ -67,12 +90,36 @@ try {
     await writeFile(
       sessionFile,
       JSON.stringify(
-        { mode: "fictional-local-only", origin: server.origin, ids: IDS, sessions },
+        {
+          mode: "fictional-local-only",
+          origin: server.origin,
+          ids: IDS,
+          sessions,
+          notification_transport: transport,
+        },
         null,
         2,
       ) + "\n",
       { mode: 0o600, flag: "wx" },
     );
+    const actor = process.env.MAWID_NOTIFICATION_ACTOR ?? "managerA";
+    if (!["managerA", "customerA"].includes(actor)) throw Error("INVALID_NOTIFICATION_ACTOR");
+    const appFile = path.join(directory, "android-notifications.private.json");
+    await writeFile(
+      appFile,
+      JSON.stringify({
+        mode: "fictional-local-only",
+        origin: server.origin,
+        workspace_id: IDS.workspaceA,
+        location_id: IDS.locationA,
+        installation_id: randomUUID(),
+        token: sessions[actor].token,
+        expires_at: sessions[actor].expires_at,
+      }),
+      { mode: 0o600, flag: "wx" },
+    );
+    console.log("Notification transport: " + transport);
+    console.log("Private Android test session: " + appFile);
     console.log("Fictional local data API: " + server.origin);
     console.log("Temporary fictional sessions: " + sessionFile);
     console.log(
@@ -80,6 +127,9 @@ try {
     );
     process.once("SIGINT", () => void close());
     process.once("SIGTERM", () => void close());
+    process.on("message", (message) => {
+      if (message === "mawid-local-shutdown") void close();
+    });
   }
 } catch {
   console.error("LOCAL_DATA_API_START_FAILED");

@@ -42,6 +42,10 @@ test-results/
 *.p12
 *.apk
 *.aab
+google-services.json
+*service-account*.json
+*.private.json
+*.private.txt
 
 __pycache__/
 *.pyc
