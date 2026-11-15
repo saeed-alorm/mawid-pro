@@ -10,9 +10,46 @@ import { nitro } from "nitro/vite";
 export default defineConfig(({ command, mode }) => {
   const isPages = mode === "github-pages";
   const basepath = "/mawid-pro";
+  const localApi =
+    command === "serve" && mode === "development"
+      ? process.env["MAWID_LOCAL_API_ORIGIN"]
+      : undefined;
+  if (localApi) {
+    const url = new URL(localApi);
+    if (
+      url.protocol !== "http:" ||
+      url.hostname !== "127.0.0.1" ||
+      !url.port ||
+      url.username ||
+      url.password ||
+      url.pathname !== "/" ||
+      url.search ||
+      url.hash
+    )
+      throw new Error("INVALID_LOCAL_BOOKING_ORIGIN");
+  }
   return {
     base: isPages ? `${basepath}/` : "/",
-    server: { host: "127.0.0.1", port: 8080 },
+    server: {
+      host: "127.0.0.1",
+      port: 8080,
+      ...(localApi
+        ? {
+            proxy: {
+              "/__booking_api": {
+                target: localApi,
+                changeOrigin: true,
+                rewrite: (p: string) => p.replace(/^\/__booking_api/, ""),
+                configure: (proxy) => {
+                  proxy.on("proxyReq", (req) => {
+                    req.setHeader("origin", localApi);
+                  });
+                },
+              },
+            },
+          }
+        : {}),
+    },
     preview: { host: "127.0.0.1" },
     css: { transformer: "lightningcss" },
     resolve: {

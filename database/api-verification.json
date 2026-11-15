@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-15T12:32:04.368Z",
+  "generated_at": "2026-11-15T14:31:49.795Z",
   "node": "v24.22.1",
   "postgres": "17.12 (Debian 17.12-1.pgdg12+1)",
   "image": "postgres:17.12-bookworm@sha256:40865bc877a289da75963d97d72b59633f639fc5af7a4e856bfa3714cae5b536",
@@ -10,11 +10,11 @@
     },
     {
       "name": "scripts/database/api/http-server.mjs",
-      "sha256": "e302f7ef867daa5368bb26da7559858e7b783859537a4c47e202ea808dfa655d"
+      "sha256": "55492d133cd8ecfc32caad538d73304c3e0ea955e7565ae954903c52f4660570"
     },
     {
       "name": "scripts/database/api/fixture.mjs",
-      "sha256": "09a42e2582e74dc80bb351f7aff89a448a012535e21d6bc105c419f83766986e"
+      "sha256": "2a9cc24d27cac8862995a0604a0da0025af31af72d3fa32dc0ea17dc930ffc03"
     },
     {
       "name": "scripts/database/api/verify-api.mjs",

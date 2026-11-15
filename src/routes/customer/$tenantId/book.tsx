@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { BookingPage } from "@/components/customer-pages";
+import { BookingBoundary } from "@/components/server-booking";
 
 export const Route = createFileRoute("/customer/$tenantId/book")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -12,5 +13,9 @@ export const Route = createFileRoute("/customer/$tenantId/book")({
 function BookingRoute() {
   const { tenantId } = Route.useParams();
   const { service, employee } = Route.useSearch();
-  return <BookingPage tenantId={tenantId} initialService={service} initialEmployee={employee} />;
+  return (
+    <BookingBoundary>
+      <BookingPage tenantId={tenantId} initialService={service} initialEmployee={employee} />
+    </BookingBoundary>
+  );
 }

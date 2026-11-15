@@ -4,6 +4,7 @@
   "sideEffects": false,
   "type": "module",
   "scripts": {
+    "test:booking-clients": "node scripts/database/booking/verify-ui.mjs",
     "test:notifications": "node --test scripts/database/notifications/policy.test.mjs scripts/database/notifications/scheduler.test.mjs scripts/database/notifications/fcm.test.mjs && node scripts/database/notifications/verify.mjs",
     "test:booking": "node scripts/database/booking/verify.mjs",
     "dev": "vite dev",

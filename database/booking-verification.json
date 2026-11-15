@@ -1,11 +1,11 @@
 {
-  "generated_at": "2026-11-15T12:31:52.984Z",
+  "generated_at": "2026-11-15T14:31:34.352Z",
   "node": "v24.22.1",
   "postgres": "17.12 (Debian 17.12-1.pgdg12+1)",
   "files": [
     {
       "name": "scripts/database/booking/service.mjs",
-      "sha256": "444535f412fb18a003103f55ceb19a6369123d632d0564d3bc61830a7def123b"
+      "sha256": "b5edf0237995b9966a07f93b84c98adb09ab21d24a509e5df4401315edbceac8"
     },
     {
       "name": "scripts/database/booking/time.mjs",
@@ -17,11 +17,11 @@
     },
     {
       "name": "scripts/database/api/http-server.mjs",
-      "sha256": "e302f7ef867daa5368bb26da7559858e7b783859537a4c47e202ea808dfa655d"
+      "sha256": "55492d133cd8ecfc32caad538d73304c3e0ea955e7565ae954903c52f4660570"
     },
     {
       "name": "scripts/database/api/fixture.mjs",
-      "sha256": "09a42e2582e74dc80bb351f7aff89a448a012535e21d6bc105c419f83766986e"
+      "sha256": "2a9cc24d27cac8862995a0604a0da0025af31af72d3fa32dc0ea17dc930ffc03"
     },
     {
       "name": "scripts/database/api/serve-local.mjs",
