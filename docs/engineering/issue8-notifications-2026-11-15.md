@@ -128,3 +128,41 @@ rotation/invalidity, logout/revocation and customer-visible failure without losi
 a confirmed booking. No real token, credential or provider message is retained
 in test output. Live transport and exact-build device results are recorded only
 after their actual execution.
+
+### Observed development-device results
+
+On 15 November 2026, server source
+`156cf969a4fa8c3ceb7efd99f271c6550fa7f6a2` dispatched a committed synthetic
+request through real FCM. The operator observed its notification with the private
+Android app in the background, then opened it and saw authoritative Pending
+version 1. The server persisted that authorized open at
+`2026-11-15T12:14:32.931Z`. A subsequent committed confirmation produced a
+foreground in-app update; opening the inbox row fetched Confirmed version 2,
+with the authorized open persisted at `2026-11-15T12:19:31.717011Z`.
+Each provider send was accepted on its first attempt. These device observations
+are separate from provider acceptance and from the earlier Console tests.
+
+The exact private mobile runtime source was
+`8ac50bae3efde3740905dae159c1aa1a43f3fafe`, debug version `0.3.1+4`, APK SHA-256
+`345897b19362ac0b837433d0c478591d4d7ebadd6ea85082484e2dc7f7ee257d`,
+on BBB100_2 / Android API 27. USB forwarding remained connected for the local
+authorized API fetches. See [sanitized live evidence](../../database/notification-live-verification.json).
+The disposable fixture and its synthetic sessions were stopped after evidence
+capture. Android 13+ permission behavior, terminated-process receipt, multi-brand
+acceptance, real authentication and complete booking-client integration remain
+unverified; #5 and #7 remain open.
+
+### Final local regression
+
+All 16 clean-install/regression commands passed with pinned Node 24.22.1 and
+npm 11.9.0. This includes 9 notification unit/contract tests, 13 notification
+PostgreSQL checks, 23 booking checks, 32 local API checks, 282 authorization
+checks, maintenance/migration/CSV suites, 22 web tests, strict types, normal
+and Pages builds, artifact/toolchain verification and 2 browser tests. Lint has
+zero errors and the 11 existing warnings. The independent isolated-schema run
+passed all 61 checks, and all 5 Python setup tests passed. The cold-build baseline
+had transient local database-readiness failures; the final sequential runs all
+passed without changing their assertions. See
+[regression evidence](../../database/notification-regression-verification.json).
+These are local results; no remote CI, merge, release or broad device acceptance
+is implied. Review commits and PR descriptions are prepared locally.

@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-15T06:55:01.661Z",
+  "generated_at": "2026-11-15T12:31:52.984Z",
   "node": "v24.22.1",
   "postgres": "17.12 (Debian 17.12-1.pgdg12+1)",
   "files": [
@@ -17,15 +17,15 @@
     },
     {
       "name": "scripts/database/api/http-server.mjs",
-      "sha256": "6092019b0d393e3221aea5475f03e760db9d3e95f5bc19aee254e94e0c550e31"
+      "sha256": "e302f7ef867daa5368bb26da7559858e7b783859537a4c47e202ea808dfa655d"
     },
     {
       "name": "scripts/database/api/fixture.mjs",
-      "sha256": "43f9c1418738e75d731f6d0c26bbc6e1f938d8a50a166dac6c7f490f197c752e"
+      "sha256": "09a42e2582e74dc80bb351f7aff89a448a012535e21d6bc105c419f83766986e"
     },
     {
       "name": "scripts/database/api/serve-local.mjs",
-      "sha256": "5c9857eded7111dd2b26ccf0c66dbeae75e05d9c373bdeb2a793ab28de73baee"
+      "sha256": "c2b8da52baccba12116b195d59c41ee3540acb4c53563c471f3302674ee949c0"
     },
     {
       "name": "supabase/migrations/20261114162225_tenant_model.sql",
@@ -54,6 +54,10 @@
     {
       "name": "supabase/migrations/20261115063746_local_booking_worker.sql",
       "sha256": "e2b0633076f45b382ab191b4739c422d97f9f474b550784f57303f2fa0abe158"
+    },
+    {
+      "name": "supabase/migrations/20261115101500_local_notifications.sql",
+      "sha256": "e8f16abc8b10c77bb27fa7c68ea6966d283c326d484ad73962371fe1355d7d29"
     }
   ],
   "checks": [
