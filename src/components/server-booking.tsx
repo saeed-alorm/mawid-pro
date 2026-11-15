@@ -44,7 +44,7 @@ export function ServerBookingPage({ staff = false }: { staff?: boolean }) {
     [start, setStart] = useState("");
   const [slots, setSlots] = useState<ServerSlot[]>([]);
   const [selected, setSelected] = useState<ServerBooking | null>(null);
-  const refresh = async () => {
+  const refresh = async (preserveMessage = false) => {
     const c = client.current,
       e = epoch.current,
       r = ++read.current;
@@ -61,7 +61,8 @@ export function ServerBookingPage({ staff = false }: { staff?: boolean }) {
         setInbox([]);
         setSlots([]);
         setSelected(null);
-        setMessage(error instanceof BookingFailure ? error.code : "ACCESS_UNAVAILABLE");
+        if (!preserveMessage)
+          setMessage(error instanceof BookingFailure ? error.code : "ACCESS_UNAVAILABLE");
       }
       return;
     }
@@ -111,7 +112,7 @@ export function ServerBookingPage({ staff = false }: { staff?: boolean }) {
       if (e === epoch.current) {
         setSlots([]);
         setStart("");
-        await refresh();
+        await refresh(true);
         setBusy(false);
       }
     }

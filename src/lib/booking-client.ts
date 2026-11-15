@@ -91,11 +91,14 @@ export class BookingClient {
     const s = this.session;
     return `${s.origin}|${s.workspace_id}|${s.location_id}|${this.actor}`;
   }
+  private get intentKey() {
+    return `${key}:${this.scope}`;
+  }
   get pending(): boolean {
     return this.intent()?.scope === this.scope;
   }
   private intent(): Intent | null {
-    const text = this.storage.getItem(key);
+    const text = this.storage.getItem(this.intentKey);
     return text ? (JSON.parse(text) as Intent) : null;
   }
   async request<T>(
@@ -151,13 +154,14 @@ export class BookingClient {
     if (this.busy) throw new BookingFailure("SUBMISSION_BUSY");
     const old = this.intent();
     if (old?.scope === this.scope) throw new BookingFailure("RETRY_PENDING");
+    if (old) throw new BookingFailure("INTENT_SCOPE_MISMATCH");
     const intent: Intent = {
       scope: this.scope,
       path,
       body: { ...input, operation_id: crypto.randomUUID() },
     };
     // Write BEFORE sending, so an interrupted/uncertain POST retains its key.
-    this.storage.setItem(key, JSON.stringify(intent));
+    this.storage.setItem(this.intentKey, JSON.stringify(intent));
     return this.send(intent);
   }
   async retry() {
@@ -170,16 +174,17 @@ export class BookingClient {
     this.busy = true;
     try {
       const result = await this.request<ServerBooking>(intent.path, intent.body);
-      this.storage.removeItem(key);
+      this.storage.removeItem(`${key}:${intent.scope}`);
       return result;
     } catch (e) {
       if (
         e instanceof BookingFailure &&
         e.status >= 400 &&
         e.status < 500 &&
-        ![408, 429].includes(e.status)
+        ![401, 403, 404, 408, 429].includes(e.status) &&
+        e.code !== "OPERATION_RETIRED"
       )
-        this.storage.removeItem(key);
+        this.storage.removeItem(`${key}:${intent.scope}`);
       throw e;
     } finally {
       this.busy = false;

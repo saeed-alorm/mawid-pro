@@ -33,6 +33,16 @@ const api = async (as, path, input) => {
   });
   return { status: res.status, value: await res.json() };
 };
+async function awaitInbox(as, predicate) {
+  for (let i = 0; i < 20; i++) {
+    await notifications.runOnce();
+    const inbox = await api(as, "notifications/inbox");
+    assert.equal(inbox.status, 200);
+    if (inbox.value.items.some(predicate)) return inbox;
+    await new Promise((resolve) => setTimeout(resolve, 500));
+  }
+  throw new Error("EXPECTED_COMMITTED_NOTIFICATION_NOT_MATERIALIZED");
+}
 try {
   fixture = await createLocalFixture({ authorizationFixtures: true, bookingFixtures: true });
   data = new LocalDataService(fixture.configs);
@@ -153,7 +163,7 @@ try {
       );
       assert.ok(created);
       assert.equal(created.state, "pending");
-      await notifications.runOnce();
+      await awaitInbox("managerA", (i) => i.booking_id === created.booking_id);
       const timing = (
         await fixture.admin.query(
           "SELECT clock_timestamp() AS now,deliver_after,materialized_at FROM mawid_core.outbox o JOIN mawid_core.booking_events e USING(workspace_id,event_id) WHERE e.booking_id=$1",
@@ -213,7 +223,10 @@ try {
         .getByRole("button", { name: "Approve", exact: true })
         .click();
       await admin.getByRole("status").filter({ hasText: "Server accepted" }).waitFor();
-      await notifications.runOnce();
+      await awaitInbox(
+        "customerA",
+        (i) => i.booking_id === created.booking_id && String(i.version) === "3",
+      );
       await customer.getByRole("button", { name: "Refresh server state", exact: true }).click();
       await customer
         .getByRole("region", { name: "Server bookings" })

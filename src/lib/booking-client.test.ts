@@ -10,18 +10,72 @@ const session = () => ({
   expires_at: new Date(Date.now() + 900000).toISOString(),
 });
 const storage = () => {
-  let text: string | null = null;
+  const values = new Map<string, string>();
   return {
-    getItem: () => text,
+    getItem: (key: string) => values.get(key) ?? null,
     setItem: (_k: string, v: string) => {
-      text = v;
+      values.set(_k, v);
     },
-    removeItem: () => {
-      text = null;
+    removeItem: (key: string) => {
+      values.delete(key);
     },
   };
 };
 describe("authoritative booking client", () => {
+  it("keeps an ambiguous intent through denied reauthorization and isolates another actor", async () => {
+    const saved = storage();
+    const s = session();
+    let original: unknown;
+    const view = (actor: string) =>
+      new Response(JSON.stringify({ actor_id: actor, bookings: [], next_after: null }));
+    const first = new BookingClient(
+      s,
+      async (_url, init) => {
+        if (!init?.body) return view("actor-A");
+        original = JSON.parse(init.body as string);
+        throw new TypeError("lost acknowledgement");
+      },
+      saved,
+    );
+    await first.view();
+    await expect(first.mutate("requests", { start: "future" })).rejects.toBeInstanceOf(
+      BookingFailure,
+    );
+    const denied = new BookingClient(
+      s,
+      async (_url, init) =>
+        !init?.body
+          ? view("actor-A")
+          : new Response(JSON.stringify({ error: { code: "NOT_FOUND" } }), { status: 404 }),
+      saved,
+    );
+    await denied.view();
+    await expect(denied.retry()).rejects.toMatchObject({ code: "NOT_FOUND" });
+    expect(denied.pending).toBe(true);
+    const other = new BookingClient(
+      s,
+      async (_url, init) =>
+        !init?.body
+          ? view("actor-B")
+          : new Response(JSON.stringify({ state: "pending", version: "1" })),
+      saved,
+    );
+    await other.view();
+    await other.mutate("requests", { start: "another" });
+    expect(first.pending).toBe(true);
+    const restored = new BookingClient(
+      s,
+      async (_url, init) => {
+        if (!init?.body) return view("actor-A");
+        expect(JSON.parse(init.body as string)).toEqual(original);
+        return new Response(JSON.stringify({ state: "pending", version: "1" }));
+      },
+      saved,
+    );
+    await restored.view();
+    await restored.retry();
+    expect(restored.pending).toBe(false);
+  });
   it("retains the exact operation and version after acknowledgement loss and client restart", async () => {
     const saved = storage();
     let input: unknown;
