@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-14T19:49:42.844Z",
+  "generated_at": "2026-11-15T06:51:11.906Z",
   "node": "v24.22.1",
   "postgres": "17.12 (Debian 17.12-1.pgdg12+1)",
   "image": "postgres:17.12-bookworm@sha256:40865bc877a289da75963d97d72b59633f639fc5af7a4e856bfa3714cae5b536",
@@ -103,51 +103,55 @@
   "files": [
     {
       "name": "scripts/database/api/data-service.mjs",
-      "sha256": "4fca0f24fedff9efc564e056905496a806fa8e47bb58a2e66ab681736c7c1781"
+      "sha256": "e29707130c44c3ceff388e9e6472c48566bc39e29dddf7e2fdb657ddf57ad51c"
     },
     {
       "name": "scripts/database/api/http-server.mjs",
-      "sha256": "a5f876216612be0dec6703a8d7138dcab0021fbaac8d6bb19b35b0ccaec685c4"
+      "sha256": "6092019b0d393e3221aea5475f03e760db9d3e95f5bc19aee254e94e0c550e31"
     },
     {
       "name": "scripts/database/api/fixture.mjs",
-      "sha256": "3038d5dbd96e99115ea7637d253a46f697d8460e768cbb5eb7d52d59b91c9b65"
+      "sha256": "43f9c1418738e75d731f6d0c26bbc6e1f938d8a50a166dac6c7f490f197c752e"
     },
     {
       "name": "scripts/database/api/verify-authorization.mjs",
-      "sha256": "4d6f35120102ba40a0ea2a1209badf9b26973d9f01b5323d1eb8c69b54c71a46"
+      "sha256": "77bba40ace30ddc7aecf2d402cd9b0416abe7adbad67f4bf63ae40f8eec11457"
     },
     {
       "name": "scripts/database/csv.mjs",
-      "sha256": "08c3cb03dbe0519f56f11a046f821765be7fef6b13e0e650137f2795c0fca2b0"
+      "sha256": "f9dc0ffb24b1c5f1cbfd2b6e6e1c98a31c39fe6e0ee5383fb622952be60a8302"
     },
     {
       "name": "package-lock.json",
-      "sha256": "f2a7a8cf53b7b2ddab210b4e70345824c42651899bab86f51aadd90946b681b2"
+      "sha256": "57d0aeb6bd4f0e37633e1831f32f500234ff442a2b9757f5f392b1937f7f559b"
     },
     {
       "name": "supabase/migrations/20261114162225_tenant_model.sql",
-      "sha256": "c6ab840346025fe25fdbf38ca045624a4f87765074b8be55d6e7fffe3dc1cf24"
+      "sha256": "95a2013202bf1dfb33687033c9ea009626e96f67c42af0fde327a3776c783459"
     },
     {
       "name": "supabase/migrations/20261114162232_local_authorization.sql",
-      "sha256": "c559a7a314f33c655c3b3216bb6b1a3befe5670b468763ecd28e039de4e94716"
+      "sha256": "69532a4d04ea7e0424d19c53fa79f39fa62ae49d9efd5c03927dbdb256a2e579"
     },
     {
       "name": "supabase/migrations/20261114162239_assisted_transfers.sql",
-      "sha256": "90abe97da56ceab0212e82b42f99d27653d0589275679036915f9b71b9522e9d"
+      "sha256": "6dde4aea6b72ad483941b814c51db28db08e14bc8a9eb6bda1b08c3d4b39b0a1"
     },
     {
       "name": "supabase/migrations/20261114162405_retention_and_constraints.sql",
-      "sha256": "adfac2d3a215db2a8030c80faf298c4913397ad65c27afe79b3dd91afbb3f0fe"
+      "sha256": "62ec6742a1575cc375af18093ad2173c05f2310785787db7762b85213098d89f"
     },
     {
       "name": "supabase/migrations/20261114172144_authorization_export_scope.sql",
-      "sha256": "9e153e90845b17069421859285dccfe235369db6138412f3380a71a9320da8a2"
+      "sha256": "44dfd7f6faa56dceb3127f245da8013f80981e71ca63ef3b73b1ffd3d61cb16d"
     },
     {
       "name": "supabase/migrations/20261114174231_protected_local_maintenance.sql",
-      "sha256": "d53246f6ff51618f8081fd60d8a153d24742f04b1196b992518e08b595969023"
+      "sha256": "7030fa3b510c2ab87530000cf27a7e035b1a9f0d8233c66f7be165085a3d522f"
+    },
+    {
+      "name": "supabase/migrations/20261115063746_local_booking_worker.sql",
+      "sha256": "e2b0633076f45b382ab191b4739c422d97f9f474b550784f57303f2fa0abe158"
     }
   ],
   "checks": [

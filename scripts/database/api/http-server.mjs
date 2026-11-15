@@ -2,6 +2,7 @@ import { createServer } from "node:http";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { parseImport, exportCsv } from "../csv.mjs";
+import { BookingError } from "../booking/service.mjs";
 
 const uuid = z.string().regex(/^[a-f0-9]{8}(-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i);
 const page = z
@@ -70,6 +71,9 @@ async function jsonBody(req, schema) {
   return validate(schema, value);
 }
 function safeError(error) {
+  if (error instanceof BookingError) return error;
+  if (["INVALID_TIME", "SCHEDULE_UNAVAILABLE"].includes(error.message))
+    return new ApiError(422, error.message);
   if (error instanceof ApiError) return error;
   if (error.code === "P0002" || error.code === "42501" || error.code === "23503")
     return new ApiError(404, "NOT_FOUND");
@@ -135,10 +139,11 @@ function paginated(rows, limit, idKey) {
 
 export async function startLocalDataServer(
   service,
-  { port = 0, log = (event) => console.error(JSON.stringify(event)) } = {},
+  { port = 0, log = (event) => console.error(JSON.stringify(event)), booking } = {},
 ) {
   // No public listener or login/actor-selection endpoint. Sessions are issued by the fixture owner.
   await service.verifyPrincipals();
+  await booking?.verify();
   let origin;
   const server = createServer(
     { maxHeaderSize: 16384, requestTimeout: 15000, headersTimeout: 10000 },
@@ -164,6 +169,62 @@ export async function startLocalDataServer(
         if (!match) throw new ApiError(404, "NOT_FOUND");
         const workspace = validate(uuid, match[1]);
         const tail = match[2];
+        const bookingRoute =
+          /^\/locations\/([^/]+)\/booking-core\/(availability|requests|walk-ins|bookings\/([^/]+)(?:\/(confirm|propose|assign|accept|decline|withdraw|cancel))?)$/.exec(
+            tail,
+          );
+        if (booking && bookingRoute) {
+          const location = validate(uuid, bookingRoute[1]);
+          const identifier = bookingRoute[3] ? validate(uuid, bookingRoute[3]) : null;
+          const part = bookingRoute[2];
+          if (req.method === "GET" && part === "availability") {
+            const input = params(
+              url,
+              z
+                .object({
+                  service_id: uuid,
+                  professional_id: uuid.optional(),
+                  start: z.string().max(40),
+                })
+                .strict(),
+            );
+            return send(200, await booking.availability(user, workspace, location, input));
+          }
+          if (req.method === "GET" && identifier && !bookingRoute[4]) {
+            params(url, z.object({}).strict());
+            return send(200, await booking.read(user, workspace, location, identifier));
+          }
+          if (req.method === "POST") {
+            params(url, z.object({}).strict());
+            const action =
+              part === "requests" ? "request" : part === "walk-ins" ? "walk-in" : bookingRoute[4];
+            if (!action) throw new ApiError(404, "NOT_FOUND");
+            const fields = { operation_id: uuid };
+            if (identifier) fields.expected_version = z.string().regex(/^[1-9][0-9]{0,14}$/);
+            if (["request", "walk-in"].includes(action))
+              Object.assign(fields, {
+                customer_id: uuid,
+                service_id: uuid,
+                professional_id: uuid.optional(),
+                start: z.string().max(40),
+              });
+            if (action === "propose")
+              Object.assign(fields, { professional_id: uuid, start: z.string().max(40) });
+            if (action === "assign") fields.professional_id = uuid;
+            const input = await jsonBody(req, z.object(fields).strict());
+            const result = await booking.mutate(
+              user,
+              workspace,
+              location,
+              action,
+              input,
+              identifier,
+            );
+            if (result.error) throw new ApiError(result.status, result.error.code);
+            return send(result.status ?? (identifier ? 200 : 201), result);
+          }
+          throw new ApiError(404, "NOT_FOUND");
+        }
         const locationRoute =
           /^\/locations\/([^/]+)\/(services|professionals|openings|bookings|imports\/preview)$/.exec(
             tail,

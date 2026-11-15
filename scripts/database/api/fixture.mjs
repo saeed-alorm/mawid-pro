@@ -44,7 +44,11 @@ export const AUTH_USERS = {
   otherCustomerA: "mawid_fixture_other_customer_a",
 };
 
-export async function createLocalFixture({ authorizationFixtures = false, migrationCount } = {}) {
+export async function createLocalFixture({
+  authorizationFixtures = false,
+  bookingFixtures = false,
+  migrationCount,
+} = {}) {
   const suffix = randomBytes(8).toString("hex");
   const name = "mawid-issue6-api-" + suffix;
   const database = "mawid_local_data_" + suffix;
@@ -148,6 +152,15 @@ export async function createLocalFixture({ authorizationFixtures = false, migrat
         "'; GRANT mawid_local_maintenance TO mawid_fixture_maintenance;",
     );
     const maintenanceConfig = { ...base, user: "mawid_fixture_maintenance" };
+    let bookingConfig;
+    if (migrationCount === undefined) {
+      await admin.query(
+        "CREATE ROLE mawid_fixture_booking LOGIN PASSWORD '" +
+          password +
+          "'; GRANT mawid_local_booking TO mawid_fixture_booking;",
+      );
+      bookingConfig = { ...base, user: "mawid_fixture_booking" };
+    }
     const configs = [];
     const actorIds = [101, 102, 103, 104, 105];
     for (const [index, user] of Object.values(USERS).entries()) {
@@ -260,9 +273,22 @@ export async function createLocalFixture({ authorizationFixtures = false, migrat
         [A, id(12), id(63), id(33), S],
       );
     }
+    if (bookingFixtures) {
+      await admin.query(
+        "INSERT INTO mawid_core.eligibility SELECT workspace_id,location_id,professional_id,$1 FROM mawid_core.professionals",
+        [S],
+      );
+      await admin.query(
+        "INSERT INTO mawid_core.professional_intervals(workspace_id,location_id,professional_id,kind,period) SELECT workspace_id,location_id,professional_id,'availability',tstzrange(clock_timestamp()-interval '1 day',clock_timestamp()+interval '180 days','[)') FROM mawid_core.professionals",
+      );
+      await admin.query(
+        "INSERT INTO mawid_core.opening_intervals(workspace_id,location_id,external_key,weekday,opens,closes) SELECT workspace_id,location_id,'booking-day-'||d,d,'09:00','19:00' FROM mawid_core.locations CROSS JOIN generate_series(0,6) d WHERE d<>1",
+      );
+    }
     return {
       configs,
       maintenanceConfig,
+      bookingConfig,
       admin,
       async restart() {
         docker("restart", name);
