@@ -1,5 +1,3 @@
-Title: Connect development booking clients to the authoritative booking core
-
 The customer and staff forms previously wrote only device-local demo records.
 Explicit development mode now reads authorized catalogs, availability, bookings
 and versions from the existing core. Customer requests, manager assignment,
@@ -24,14 +22,18 @@ including the 23 booking scenarios, 13 notification integration checks, 26 web
 tests, lint/types, normal/Pages builds and browser checks. Exact evidence is in
 `database/booking-client-verification.json` and the adjacent regression record.
 
-The private final 0.4.1+6 APK was built, signature/bundle verified and installed
-on BBB100_2/API27 and the recovered API35 emulator. Its actual physical customer
-form created Pending v1 and staff inbox entries. On the earlier 0.4.0+5 artifact,
-actual native customer/staff forms completed Pending v1 → Confirmed v2 and the
-customer's in-app notification open persisted. API35 permission denial/restoration
-was observed on that earlier build. Emulator FCM registration reports
-AUTHENTICATION_FAILED. Final physical FCM delivery/opening and terminated-process
-acceptance remain pending USB/operator access; #7 is not accepted or closed.
+The final private 0.4.1+6 APK completed the specified cross-device flow: actual
+BBB100_2/API27 customer request → separately authorized API35 native staff approval
+→ exact physical FCM tag after verified process absence → actual notification tap
+→ authorized Confirmed v2, persisted open and normal native Approved state.
+Private [companion PR #4](https://github.com/saeed-alorm/mawid-mobile/pull/4) records
+the exact artifact and independent device/server evidence. No force-stop was used.
+
+API35 permission denial/restoration was observed on the earlier artifact, while
+emulator FCM registration fails with AUTHENTICATION_FAILED. Working staff push,
+Android13+ terminated delivery and broader multi-brand acceptance remain unverified.
+Two lab destinations accepted the same notification; one SDK open was observed.
+No exactly-once alert or pilot-ready claim is made; #7 remains open.
 
 After self-review, authorization failures retain uncertain retry keys and journals
 are isolated by actor/workspace/location. The nine affected checks passed after
@@ -43,3 +45,7 @@ roles, mutation versions, durable retries, revoked/delayed responses, dev-only
 proxy constraints and unchanged private asset/bundle boundaries. This is assistant
 self-review, not maintainer approval. No merge, production deployment, store release,
 paid infrastructure or private CI spend is included.
+
+Cleanup: the disposable database/server was stopped; temporary device sessions,
+token exports and test USB forwards were verified removed. The phone’s original
+30-second screen timeout was restored, and the task-started emulator was closed.

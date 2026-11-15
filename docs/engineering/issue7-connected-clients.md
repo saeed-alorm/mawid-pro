@@ -60,11 +60,23 @@ tests pass; the final `com.mawid.demo` debug APK is `0.4.1+6`, source
 `2e39276d1e5a0d1095435d3b7bd3770809c3c62f`, SHA-256
 `ce18a65d455254394067a5d6ca2f29afec5e03596943ca3e33b12b1ff519b467`.
 
-The earlier native artifact demonstrated actual customer request → native staff
-approval → customer state/in-app notification opening. The final APK created an
-actual physical Pending v1 request and staff inbox entries. These device records
-are private. New-APK physical FCM delivery/opening and terminated-process acceptance
-remain pending; emulator FCM registration reports `AUTHENTICATION_FAILED` despite
-observed API35 permission denial/restoration. No device delivery is inferred from
-the simulated tests or provider acceptance. #7 remains open, and #5 remains a
-prerequisite before pilot use. No merge or release is included.
+The earlier native artifact demonstrated customer request → native staff approval
+→ customer state/in-app opening. The final `0.4.1+6` APK then completed the specified
+cross-device flow: BBB100_2/API27 actual customer request, API35 native staff
+approval, physical FCM receipt after verified process absence, actual notification
+tap, authorized Confirmed v2 fetch/persisted open and Approved in the normal native
+appointment list. Private companion evidence records the exact artifact and each
+independent observation. Provider acceptance alone was not used as receipt proof.
+
+API35 permission denial/restoration was observed on the earlier artifact, but
+emulator FCM registration reports `AUTHENTICATION_FAILED`; working staff push and
+Android13+ terminated delivery are not claimed. Two lab destinations accepted the
+same confirmation event; the notification tag matched and one SDK open was
+observed, without an exactly-once alert guarantee. #7 remains open for maintainer
+review and remaining matrix acceptance. #5 is still required before pilot use.
+No merge or release is included.
+
+The disposable lab was stopped after evidence capture. Temporary device session
+exports and USB forwards were verified removed, the original physical screen
+timeout was restored, and the task-started emulator was closed. A future test
+requires fresh separately authorized sessions.
