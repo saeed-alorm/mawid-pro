@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ManagementPage, type ManageSection } from "@/components/management-pages";
+import { BookingBoundary } from "@/components/server-booking";
 
 const sections: ManageSection[] = [
   "overview",
@@ -20,5 +21,9 @@ function ManageRoute() {
   const safeSection = sections.includes(section as ManageSection)
     ? (section as ManageSection)
     : "overview";
-  return <ManagementPage tenantId={tenantId} section={safeSection} />;
+  return (
+    <BookingBoundary staff>
+      <ManagementPage tenantId={tenantId} section={safeSection} />
+    </BookingBoundary>
+  );
 }

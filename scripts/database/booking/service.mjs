@@ -186,6 +186,28 @@ export class LocalBookingService {
     return { end, from, to, professionals: candidates.map((r) => r.professional_id) };
   }
   project(x, b) {
+    const local = (value) => {
+      if (!value) return null;
+      const p = Object.fromEntries(
+        new Intl.DateTimeFormat("sv-SE", {
+          timeZone: "Asia/Beirut",
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+          hour: "2-digit",
+          minute: "2-digit",
+          hourCycle: "h23",
+          timeZoneName: "longOffset",
+        })
+          .formatToParts(new Date(value))
+          .map((part) => [part.type, part.value]),
+      );
+      return {
+        date: `${p.year}-${p.month}-${p.day}`,
+        time: `${p.hour}:${p.minute}`,
+        offset: p.timeZoneName,
+      };
+    };
     const result = {
       booking_id: b.booking_id,
       location_id: b.location_id,
@@ -200,6 +222,14 @@ export class LocalBookingService {
       assigned_end: b.assigned_end,
       assigned_professional_id: b.assigned_professional_id,
       offer_expires_at: b.offer_expires_at,
+      submitted_at: b.submitted_at,
+      requested_local: local(b.requested_start),
+      assigned_local: local(b.assigned_start),
+      can_cancel:
+        b.state === "confirmed" &&
+        (x.customers.includes(b.customer_id)
+          ? canSelfCancel(x.now, +new Date(b.assigned_start))
+          : x.roles.includes("admin")),
       server_time: iso(x.now),
       timezone: "Asia/Beirut",
     };
@@ -226,6 +256,81 @@ export class LocalBookingService {
         timezone: "Asia/Beirut",
         confirmed: false,
       };
+    });
+  }
+  // UI reads use the same locked, reauthorized context as mutations. No client
+  // role, package, local catalog or notification payload grants access.
+  async view(user, w, l, after = null) {
+    return this.run(user, w, l, async (x) => {
+      await this.expire(x);
+      const query = async (sql, values = [w, l]) => (await x.c.query(sql, values)).rows;
+      const staff = x.roles.length > 0;
+      const profileStaff = x.roles.some((r) => ["manager", "admin"].includes(r));
+      const rows = await query(
+        "SELECT * FROM mawid_core.bookings WHERE workspace_id=$1 AND location_id=$2 AND ($3::uuid IS NULL OR booking_id>$3) AND ($4::boolean OR customer_id=ANY($5::uuid[])) ORDER BY booking_id LIMIT 51",
+        [w, l, after, staff, x.customers],
+      );
+      return {
+        actor_id: x.actor,
+        roles: x.roles,
+        customer_ids: x.customers,
+        services: await query(
+          "SELECT service_id,name,duration_minutes FROM mawid_core.services WHERE workspace_id=$1 AND location_id=$2 ORDER BY service_id LIMIT 200",
+        ),
+        professionals: await query(
+          "SELECT p.professional_id,p.display_name,p.active,ARRAY(SELECT e.service_id FROM mawid_core.eligibility e WHERE e.workspace_id=p.workspace_id AND e.location_id=p.location_id AND e.professional_id=p.professional_id) AS service_ids FROM mawid_core.professionals p WHERE workspace_id=$1 AND location_id=$2 ORDER BY professional_id LIMIT 200",
+        ),
+        customers: await query(
+          "SELECT customer_id,display_name FROM mawid_core.customer_profiles WHERE workspace_id=$1 AND anonymized_at IS NULL AND ($2::boolean OR customer_id=ANY($3::uuid[])) ORDER BY customer_id LIMIT 200",
+          [w, profileStaff, x.customers],
+        ),
+        bookings: rows.slice(0, 50).map((b) => this.project(x, b)),
+        next_after: rows.length > 50 ? rows[49].booking_id : null,
+        server_time: iso(x.now),
+        beirut_date: new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Beirut" }).format(x.now),
+        review_at: iso(nextReview(await this.periods(x, x.now), x.now)),
+        timezone: "Asia/Beirut",
+      };
+    });
+  }
+  async slots(user, w, l, input) {
+    return this.run(user, w, l, async (x) => {
+      const items = [];
+      // Bounded seven-day picker; every candidate uses the existing slot core.
+      const stop = x.now + 7 * 86400000;
+      const periods = await this.periods(x, x.now);
+      const wall = new Intl.DateTimeFormat("sv-SE", {
+        timeZone: "Asia/Beirut",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        hourCycle: "h23",
+        timeZoneName: "longOffset",
+      });
+      for (const [a, b] of periods) {
+        if (a > stop) break;
+        for (
+          let t = Math.ceil(Math.max(a, x.now + 1) / 1800000) * 1800000;
+          t < Math.min(b, stop);
+          t += 1800000
+        ) {
+          try {
+            await this.slot(x, input.service_id, input.professional_id ?? null, t);
+            const parts = Object.fromEntries(wall.formatToParts(t).map((p) => [p.type, p.value]));
+            items.push({
+              start: iso(t).replace(".000Z", "Z"),
+              date: `${parts.year}-${parts.month}-${parts.day}`,
+              time: `${parts.hour}:${parts.minute}`,
+              offset: parts.timeZoneName,
+            });
+          } catch (e) {
+            if (e.apiCode !== "SLOT_UNAVAILABLE") throw e;
+          }
+        }
+      }
+      return { items, server_time: iso(x.now), timezone: "Asia/Beirut", confirmed: false };
     });
   }
   async read(user, w, l, id) {
