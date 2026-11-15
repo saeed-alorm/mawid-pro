@@ -63,7 +63,8 @@ try {
     adb,
     [
       ...base,
-      "exec-in",
+      "shell",
+      "-T",
       "run-as",
       "com.mawid.demo",
       "tee",
@@ -71,6 +72,20 @@ try {
     ],
     { input: JSON.stringify(input), stdio: ["pipe", "pipe", "pipe"], timeout: 10000 },
   );
+  const transferred = execFileSync(
+    adb,
+    [
+      ...base,
+      "shell",
+      "-T",
+      "run-as",
+      "com.mawid.demo",
+      "cat",
+      "code_cache/mawid-notification-session.private.json",
+    ],
+    { encoding: "utf8", stdio: ["pipe", "pipe", "pipe"], timeout: 10000 },
+  );
+  if (transferred.trim() !== JSON.stringify(input)) throw Error();
   console.log(
     "Private synthetic notification session paired over USB. Open Notifications and connect the local test inbox.",
   );
