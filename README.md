@@ -2,10 +2,10 @@
 
 [Web demo](https://saeed-alorm.github.io/mawid-pro/) · [Product HQ](https://www.notion.so/40cf53c2a11d80c493fede8991643fea) · [Engineering readiness](docs/github-readiness.md) · [Feature traceability](docs/engineering/feature-index.md)
 
-A bilingual, browser-local salon booking prototype. Identity/OTP (`123456`), customers,
-appointments and business data are fictional. Reset demo data restores seeded state.
-There is no real authentication, backend, SMS, payment collection or production tenant
-isolation. The private Flutter Android candidate is separate; iOS has no verified build.
+The public web demo is a bilingual, browser-local salon booking prototype. Identity/OTP
+(`123456`), customers, appointments and business data are fictional. Reset demo data
+restores seeded state. The private Flutter Android candidate is separate. iOS has no
+verified build.
 
 ## Development
 
@@ -35,6 +35,29 @@ The [issue #5 identity proof](docs/engineering/issue5-identity-contract-2026-11-
 adds `npm run test:identity` and `npm run test:identity-email`. They require Docker
 and use disposable fictional data, a local Supabase Auth instance and a mail
 catcher. They do not enable pilot sign-in or change the Pages demo.
+
+## Hosted Email OTP staging
+
+Create `.env.staging.local` with the staging project's public browser settings.
+Keep the Resend SMTP credentials in Supabase Auth settings.
+
+```dotenv
+VITE_SUPABASE_URL=https://<staging-project-ref>.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=<staging-publishable-key>
+```
+
+Use `npm run dev:staging` for local UI testing against hosted Auth. Build and
+deploy the separate `mawid-auth-staging` Worker from the intended Cloudflare account.
+
+```sh
+npm run build:staging
+npx wrangler@4.162.0 deploy --config wrangler.staging.jsonc
+```
+
+Use an existing staging user whose email the SMTP sender can deliver to. Enter
+the code on the MAWID staging page and look for **Email verified**. The page
+confirms the account with Supabase and keeps the session in memory until sign-out,
+expiry, or reload. Booking and staff access remain unavailable in this build.
 
 ## Source map
 
