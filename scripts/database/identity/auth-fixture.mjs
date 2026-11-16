@@ -4,7 +4,9 @@ import { randomBytes, randomUUID } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { exportJWK, generateKeyPair } from "jose";
 import { Pool } from "pg";
+import { postgresSessionReader } from "./postgres-session-reader.mjs";
 import { VerifiedSessions } from "./session-gate.mjs";
+import { bindFixtureIdentity } from "./verified-pg-fixture.mjs";
 
 export const AUTH_IMAGE =
   "supabase/gotrue:v2.197.0@sha256:1736a63078f5922b198c4cbe50f80ab9a2d3b54fe8b7b6cfb2e9dc5dbbc12c6b";
@@ -128,9 +130,11 @@ export async function createAuthFixture(fixture) {
       fixture.containerName !== "mawid-issue6-api-" + c.database.slice("mawid_local_data_".length)
     )
       throw new Error("UNSAFE_AUTH_FIXTURE");
+    const authPassword = randomBytes(32).toString("hex");
+    const readerPassword = randomBytes(32).toString("hex");
     await fixture.admin.query(
       "CREATE ROLE mawid_fixture_auth LOGIN PASSWORD '" +
-        c.password +
+        authPassword +
         "'; CREATE SCHEMA auth AUTHORIZATION mawid_fixture_auth; ALTER ROLE mawid_fixture_auth SET search_path=auth,pg_catalog;",
     );
     docker(["network", "create", "--label", "mawid.fixture=issue5-identity", network]);
@@ -167,7 +171,7 @@ export async function createAuthFixture(fixture) {
       API_EXTERNAL_URL: issuer,
       GOTRUE_DB_DRIVER: "postgres",
       GOTRUE_DB_DATABASE_URL:
-        "postgres://mawid_fixture_auth:" + c.password + "@fixture-db:5432/" + c.database,
+        "postgres://mawid_fixture_auth:" + authPassword + "@fixture-db:5432/" + c.database,
       GOTRUE_SITE_URL: "https://local-app.example.invalid",
       GOTRUE_DISABLE_SIGNUP: "false",
       GOTRUE_JWT_SECRET: randomBytes(32).toString("hex"),
@@ -212,7 +216,7 @@ export async function createAuthFixture(fixture) {
       // Before any OTP request: scrub fixture credentials from startup diagnostics.
       const startup = spawnSync("docker", ["logs", authName], { encoding: "utf8", timeout: 5000 });
       let message = (startup.stdout + startup.stderr).slice(-3000);
-      for (const secret of [c.password, env.GOTRUE_JWT_SECRET, env.GOTRUE_JWT_KEYS, privateJwk.d])
+      for (const secret of [authPassword, env.GOTRUE_JWT_SECRET, env.GOTRUE_JWT_KEYS, privateJwk.d])
         message = message.replaceAll(secret, "[redacted]");
       console.error("LOCAL_AUTH_STARTUP", message.replace(/postgres:\/\/[^\s]+/g, "[database]"));
       console.error(
@@ -256,12 +260,13 @@ export async function createAuthFixture(fixture) {
     }
     await fixture.admin.query(
       "CREATE ROLE mawid_fixture_identity LOGIN PASSWORD '" +
-        c.password +
-        "'; GRANT USAGE ON SCHEMA auth TO mawid_fixture_identity; GRANT SELECT(id,user_id,created_at,updated_at,not_after) ON auth.sessions TO mawid_fixture_identity; GRANT SELECT(id,banned_until,deleted_at,email_confirmed_at) ON auth.users TO mawid_fixture_identity; CREATE POLICY fixture_identity_session ON auth.sessions FOR SELECT TO mawid_fixture_identity USING (id=NULLIF(current_setting('mawid.verified_session',true),'')::uuid AND user_id=NULLIF(current_setting('mawid.verified_subject',true),'')::uuid); CREATE POLICY fixture_identity_user ON auth.users FOR SELECT TO mawid_fixture_identity USING (id=NULLIF(current_setting('mawid.verified_subject',true),'')::uuid);",
+        readerPassword +
+        "'; GRANT mawid_identity_reader TO mawid_fixture_identity; GRANT USAGE ON SCHEMA auth TO mawid_fixture_identity; GRANT SELECT(id,user_id,created_at,updated_at,not_after) ON auth.sessions TO mawid_fixture_identity; GRANT SELECT(id,banned_until,deleted_at,email_confirmed_at) ON auth.users TO mawid_fixture_identity; CREATE POLICY fixture_identity_session ON auth.sessions FOR SELECT TO mawid_fixture_identity USING (id=NULLIF(current_setting('mawid.verified_session',true),'')::uuid AND user_id=NULLIF(current_setting('mawid.verified_subject',true),'')::uuid); CREATE POLICY fixture_identity_user ON auth.users FOR SELECT TO mawid_fixture_identity USING (id=NULLIF(current_setting('mawid.verified_subject',true),'')::uuid);",
     );
     identityReader = new Pool({
       ...c,
       user: "mawid_fixture_identity",
+      password: readerPassword,
       ssl: false,
       max: 2,
       statement_timeout: 2000,
@@ -276,60 +281,18 @@ export async function createAuthFixture(fixture) {
       "SELECT rolsuper OR rolbypassrls OR rolcreatedb OR rolcreaterole OR rolreplication AS privileged, pg_has_role(session_user,'mawid_local_actor','MEMBER') OR pg_has_role(session_user,'mawid_local_booking','MEMBER') OR pg_has_role(session_user,'mawid_local_notify','MEMBER') AS app_role FROM pg_roles WHERE rolname=session_user",
     );
     if (!reader || reader.privileged || reader.app_role) throw new Error("UNSAFE_IDENTITY_READER");
-    const bindings = new Map();
+    const policy = {
+      maximumAccessSeconds: 300,
+      maximumSessionMs: 900000,
+      inactivityMs: 900000,
+      clockToleranceSeconds: 5,
+    };
     const gate = new VerifiedSessions({
       issuer,
       audience: "authenticated",
       jwks: { keys: [publicJwk] },
-      policy: {
-        maximumAccessSeconds: 300,
-        maximumSessionMs: 900000,
-        inactivityMs: 900000,
-        clockToleranceSeconds: 5,
-      },
-      readSession: async ({ issuer: requested, subject, sessionId }) => {
-        if (requested !== issuer || !bindings.has(subject)) return null;
-        const client = await identityReader.connect();
-        let row,
-          broken = false;
-        try {
-          await client.query("BEGIN");
-          await client.query(
-            "SELECT set_config('mawid.verified_subject',$1,true),set_config('mawid.verified_session',$2,true)",
-            [subject, sessionId],
-          );
-          ({
-            rows: [row],
-          } = await client.query(
-            "SELECT s.created_at,s.updated_at,s.not_after,u.banned_until,u.deleted_at,u.email_confirmed_at FROM auth.sessions s JOIN auth.users u ON u.id=s.user_id WHERE s.id=$1 AND s.user_id=$2",
-            [sessionId, subject],
-          ));
-          await client.query("COMMIT");
-        } catch (error) {
-          try {
-            await client.query("ROLLBACK");
-          } catch {
-            broken = true;
-          }
-          throw error;
-        } finally {
-          client.release(broken);
-        }
-        if (!row) return null;
-        return {
-          issuer,
-          subject,
-          sessionId,
-          principal: bindings.get(subject),
-          bindingVersion: 1,
-          bindingRevokedAt: null,
-          createdAt: +row.created_at,
-          lastSeenAt: Math.max(+row.created_at, +row.updated_at),
-          expiresAt: row.not_after ? +row.not_after : +row.created_at + 900000,
-          revokedAt: null,
-          disabled: !!row.deleted_at || !row.email_confirmed_at || +row.banned_until > Date.now(),
-        };
-      },
+      policy,
+      readSession: postgresSessionReader(identityReader, { issuer, ...policy }),
     });
     return {
       gate,
@@ -339,9 +302,9 @@ export async function createAuthFixture(fixture) {
         const {
           rows: [counts],
         } = await identityReader.query(
-          "SELECT (SELECT count(*) FROM auth.sessions) AS sessions,(SELECT count(*) FROM auth.users) AS users",
+          "SELECT (SELECT count(*) FROM auth.sessions) AS sessions,(SELECT count(*) FROM auth.users) AS users,(SELECT count(*) FROM mawid_core.identity_bindings) AS bindings",
         );
-        return counts.sessions === "0" && counts.users === "0";
+        return counts.sessions === "0" && counts.users === "0" && counts.bindings === "0";
       },
       async mailCount(email) {
         return (await mailbox(email)).length;
@@ -358,9 +321,7 @@ export async function createAuthFixture(fixture) {
         throw new Error("LOCAL_AUTH_RESTART_FAILED");
       },
       bind(subject, principal) {
-        if (!fixture.configs.some((config) => config.user === principal))
-          throw new Error("UNKNOWN_FIXTURE_PRINCIPAL");
-        bindings.set(subject, principal);
+        return bindFixtureIdentity(fixture, issuer, subject, principal);
       },
       async requestCode(email, createUser = true, metadata = {}) {
         const seen = new Set((await mailbox(email)).map((message) => message.id));

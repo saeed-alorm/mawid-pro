@@ -137,7 +137,7 @@ try {
   let issuer = service;
   if (verifiedIdentity) {
     await service.close();
-    issuer = await createSignedSessionFixture(fixture.configs);
+    issuer = await createSignedSessionFixture(fixture);
     service = issuer.service;
   }
   server = await startLocalDataServer(service, { log: (event) => logs.push(event) });
@@ -696,7 +696,8 @@ try {
     ...(verifiedIdentity
       ? [
           "scripts/database/identity/session-gate.mjs",
-          "scripts/database/identity/verified-local-data.mjs",
+          "scripts/database/identity/verified-data.mjs",
+          "scripts/database/identity/verified-pg-fixture.mjs",
           "scripts/database/identity/signed-session-fixture.mjs",
         ]
       : []),
@@ -718,7 +719,7 @@ try {
         postgres: (await fixture.admin.query("SHOW server_version")).rows[0].server_version,
         image: IMAGE,
         identity_transport: verifiedIdentity
-          ? "ES256 test issuer with live session lookup"
+          ? "ES256 test issuer with live session lookup and persisted PostgreSQL bindings"
           : "fictional opaque fixture sessions",
         operations: coverage,
         files: files.map((name) => ({
@@ -747,7 +748,8 @@ try {
 } catch (error) {
   console.error("LOCAL_AUTHORIZATION_VERIFICATION_FAILED", {
     check: currentCheck,
-    code: /^[A-Z0-9_]{1,60}$/.test(error.code) ? error.code : "TEST_FAILED",
+    code:
+      [error.code, error.message].find((value) => /^[A-Z0-9_]{1,60}$/.test(value)) ?? "TEST_FAILED",
   });
   process.exitCode = 1;
 } finally {
