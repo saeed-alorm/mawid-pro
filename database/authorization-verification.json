@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-16T07:08:43.024Z",
+  "generated_at": "2026-11-16T11:37:27.768Z",
   "node": "v24.22.1",
   "postgres": "17.12 (Debian 17.12-1.pgdg12+1)",
   "image": "postgres:17.12-bookworm@sha256:40865bc877a289da75963d97d72b59633f639fc5af7a4e856bfa3714cae5b536",
@@ -104,11 +104,11 @@
   "files": [
     {
       "name": "scripts/database/api/data-service.mjs",
-      "sha256": "e29707130c44c3ceff388e9e6472c48566bc39e29dddf7e2fdb657ddf57ad51c"
+      "sha256": "913312bc79236796a6c58d0d0c570ba51d9b2686bdfce6522e905407ecd3891e"
     },
     {
       "name": "scripts/database/api/http-server.mjs",
-      "sha256": "858d4b7765fdc456189be6c6203b7ecb9932b9581cbafd45af806f7359e21390"
+      "sha256": "100d7fc8af94f096e9b9513350bef47c3511d6c9a6329725f73aa71b8cac21c5"
     },
     {
       "name": "scripts/database/api/fixture.mjs",
@@ -116,7 +116,7 @@
     },
     {
       "name": "scripts/database/api/verify-authorization.mjs",
-      "sha256": "411ea63171b39d689f451702b395954e22ffe268985865a03d7f25c95ae0bb6a"
+      "sha256": "fbc045558a7455518cee2f709cb8338de324d2a7f9462f139c56ba0829b9ddca"
     },
     {
       "name": "scripts/database/csv.mjs",
@@ -157,6 +157,10 @@
     {
       "name": "supabase/migrations/20261115101500_local_notifications.sql",
       "sha256": "e8f16abc8b10c77bb27fa7c68ea6966d283c326d484ad73962371fe1355d7d29"
+    },
+    {
+      "name": "supabase/migrations/20261116130000_verified_shop_identity.sql",
+      "sha256": "58a6652ac798f7d602a47f528212e7128fa78f011611ef96c98e5ed5d39210ec"
     }
   ],
   "checks": [
