@@ -1,0 +1,42 @@
+{
+  "mode": "fictional-local-only",
+  "notification_transport": "simulated",
+  "device_acceptance": false,
+  "generated_at": "2026-11-15T15:17:26.592Z",
+  "checks": [
+    {
+      "name": "view and slots authorize customer scope, deny cross-shop access and omit staff-only metadata",
+      "passed": true
+    },
+    {
+      "name": "actual customer form saves pending Any request; independent staff inbox receives committed event",
+      "passed": true
+    },
+    {
+      "name": "manager assigns Any without reservation; separate admin confirms; customer UI and notification refresh to v3",
+      "passed": true
+    },
+    {
+      "name": "lost HTTP acknowledgement and offline UI remain unconfirmed; exact retry creates one booking and one event",
+      "passed": true
+    },
+    {
+      "name": "stale staff decision gives useful conflict and refreshes current state",
+      "passed": true
+    },
+    {
+      "name": "after-hours UI saves immediately while staff push waits for next configured opening",
+      "passed": true
+    },
+    {
+      "name": "revoked customer refresh clears all cached bookings in the actual UI",
+      "passed": true
+    }
+  ],
+  "sha256": {
+    "scripts/database/booking/service.mjs": "b5edf0237995b9966a07f93b84c98adb09ab21d24a509e5df4401315edbceac8",
+    "scripts/database/api/http-server.mjs": "55492d133cd8ecfc32caad538d73304c3e0ea955e7565ae954903c52f4660570",
+    "src/lib/booking-client.ts": "61250e03285aded668c26a5140db17c2cbe0bc90c89c8dfe6129617aa9a44fa4",
+    "src/components/server-booking.tsx": "4e225f9f9b8a428f37e0845be67b1a05451aa5048d6af1cb4212840d4e8c126d"
+  }
+}

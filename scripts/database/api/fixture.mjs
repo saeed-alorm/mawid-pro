@@ -280,6 +280,12 @@ export async function createLocalFixture({
       );
     }
     if (bookingFixtures) {
+      // The data/RLS fixture includes raw persistence rows without core events.
+      // A booking-client lab starts with real core-created bookings only; do not
+      // present those raw persistence samples as actionable appointment requests.
+      await admin.query(
+        "DELETE FROM mawid_core.bookings b WHERE NOT EXISTS (SELECT 1 FROM mawid_core.booking_events e WHERE e.workspace_id=b.workspace_id AND e.location_id=b.location_id AND e.booking_id=b.booking_id)",
+      );
       await admin.query(
         "INSERT INTO mawid_core.eligibility SELECT workspace_id,location_id,professional_id,$1 FROM mawid_core.professionals",
         [S],

@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-15T12:32:58.382Z",
+  "generated_at": "2026-11-15T14:32:57.824Z",
   "node": "v24.22.1",
   "postgres": "17.12 (Debian 17.12-1.pgdg12+1)",
   "image": "postgres:17.12-bookworm@sha256:40865bc877a289da75963d97d72b59633f639fc5af7a4e856bfa3714cae5b536",
@@ -53,7 +53,7 @@
     },
     {
       "name": "scripts/database/api/fixture.mjs",
-      "sha256": "09a42e2582e74dc80bb351f7aff89a448a012535e21d6bc105c419f83766986e"
+      "sha256": "2a9cc24d27cac8862995a0604a0da0025af31af72d3fa32dc0ea17dc930ffc03"
     },
     {
       "name": "package-lock.json",

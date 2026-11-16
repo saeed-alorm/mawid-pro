@@ -218,13 +218,24 @@ export async function startLocalDataServer(
           throw new ApiError(404, "NOT_FOUND");
         }
         const bookingRoute =
-          /^\/locations\/([^/]+)\/booking-core\/(availability|requests|walk-ins|bookings\/([^/]+)(?:\/(confirm|propose|assign|accept|decline|withdraw|cancel))?)$/.exec(
+          /^\/locations\/([^/]+)\/booking-core\/(view|slots|availability|requests|walk-ins|bookings\/([^/]+)(?:\/(confirm|propose|assign|accept|decline|withdraw|cancel))?)$/.exec(
             tail,
           );
         if (booking && bookingRoute) {
           const location = validate(uuid, bookingRoute[1]);
           const identifier = bookingRoute[3] ? validate(uuid, bookingRoute[3]) : null;
           const part = bookingRoute[2];
+          if (req.method === "GET" && part === "view") {
+            const { after } = params(url, z.object({ after: uuid.optional() }).strict());
+            return send(200, await booking.view(user, workspace, location, after));
+          }
+          if (req.method === "GET" && part === "slots") {
+            const input = params(
+              url,
+              z.object({ service_id: uuid, professional_id: uuid.optional() }).strict(),
+            );
+            return send(200, await booking.slots(user, workspace, location, input));
+          }
           if (req.method === "GET" && part === "availability") {
             const input = params(
               url,
