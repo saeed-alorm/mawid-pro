@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-16T07:08:53.238Z",
+  "generated_at": "2026-11-16T11:36:04.892Z",
   "database": "17.12 (Debian 17.12-1.pgdg12+1)",
   "image": "postgres:17.12-bookworm@sha256:40865bc877a289da75963d97d72b59633f639fc5af7a4e856bfa3714cae5b536",
   "base": "b3af265048b4f22c29981ad943e4a34eb317085c",
@@ -35,6 +35,10 @@
     {
       "name": "20261115101500_local_notifications.sql",
       "sha256": "e8f16abc8b10c77bb27fa7c68ea6966d283c326d484ad73962371fe1355d7d29"
+    },
+    {
+      "name": "20261116130000_verified_shop_identity.sql",
+      "sha256": "58a6652ac798f7d602a47f528212e7128fa78f011611ef96c98e5ed5d39210ec"
     }
   ],
   "checks": [

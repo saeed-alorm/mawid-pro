@@ -162,12 +162,17 @@ export class VerifiedSessions {
   }
 
   async principal(handle) {
+    return (await this.identity(handle)).principal;
+  }
+
+  async identity(handle) {
     const identity = handle && typeof handle === "object" ? this.#handles.get(handle) : null;
     if (!identity) throw new SessionError();
     if (!(await this.#current(identity))) {
       this.#handles.delete(handle);
       throw new SessionError();
     }
-    return identity.principal;
+    const { issuer, subject, principal } = identity;
+    return { issuer, subject, principal };
   }
 }

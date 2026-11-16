@@ -1,11 +1,87 @@
 import { Pool } from "pg";
 import { randomBytes, createHash } from "node:crypto";
 
+export async function dataTransaction(pool, fn) {
+  const client = await pool.connect();
+  let broken = false;
+  try {
+    await client.query("BEGIN");
+    const result = await fn(client);
+    await client.query("COMMIT");
+    return result;
+  } catch (error) {
+    try {
+      await client.query("ROLLBACK");
+    } catch {
+      broken = true;
+    }
+    throw error;
+  } finally {
+    client.release(broken);
+  }
+}
+
+export class ScopedDataService {
+  async assertWorkspace(client, workspaceId) {
+    const {
+      rows: [row],
+    } = await client.query(
+      "SELECT EXISTS(SELECT 1 FROM mawid_core.memberships WHERE workspace_id=$1 AND revoked_at IS NULL) OR EXISTS(SELECT 1 FROM mawid_core.customer_profiles WHERE workspace_id=$1 AND actor_id=mawid_core.actor() AND anonymized_at IS NULL) AS allowed",
+      [workspaceId],
+    );
+    if (!row.allowed) {
+      const e = new Error("NOT_FOUND");
+      e.code = "P0002";
+      throw e;
+    }
+  }
+  async assertProfileRead(client, workspaceId) {
+    const {
+      rows: [row],
+    } = await client.query(
+      "SELECT mawid_core.has_role($1,NULL,ARRAY['manager','admin']) OR EXISTS(SELECT 1 FROM mawid_core.customer_profiles WHERE workspace_id=$1 AND actor_id=mawid_core.actor() AND anonymized_at IS NULL) AS allowed",
+      [workspaceId],
+    );
+    if (!row.allowed) {
+      const error = new Error("NOT_FOUND");
+      error.code = "P0002";
+      throw error;
+    }
+  }
+  async assertBookingRead(client, workspaceId, locationId) {
+    const {
+      rows: [row],
+    } = await client.query(
+      "SELECT (mawid_core.has_role($1,$2,ARRAY['manager','admin','professional']) AND EXISTS(SELECT 1 FROM mawid_core.locations WHERE workspace_id=$1 AND location_id=$2)) OR EXISTS(SELECT 1 FROM mawid_core.customer_profiles WHERE workspace_id=$1 AND actor_id=mawid_core.actor() AND anonymized_at IS NULL) AS allowed",
+      [workspaceId, locationId],
+    );
+    if (!row.allowed) {
+      const error = new Error("NOT_FOUND");
+      error.code = "P0002";
+      throw error;
+    }
+  }
+  async assertLocation(client, workspaceId, locationId) {
+    const {
+      rows: [row],
+    } = await client.query(
+      "SELECT mawid_core.has_role($1,$2,ARRAY['manager','admin','professional']) AND EXISTS(SELECT 1 FROM mawid_core.locations WHERE workspace_id=$1 AND location_id=$2) AS allowed",
+      [workspaceId, locationId],
+    );
+    if (!row.allowed) {
+      const e = new Error("NOT_FOUND");
+      e.code = "P0002";
+      throw e;
+    }
+  }
+}
+
 // Rehearsal adapter only: config is issued by the local fixture owner, never HTTP.
-export class LocalDataService {
+export class LocalDataService extends ScopedDataService {
   #pools = new Map();
   #sessions = new Map();
   constructor(configs) {
+    super();
     if (!Array.isArray(configs) || configs.length < 1 || configs.length > 12)
       throw new Error("LOCAL_CONFIG_REQUIRED");
     for (const config of configs) {
@@ -80,75 +156,7 @@ export class LocalDataService {
   async transaction(user, fn) {
     const pool = this.#pools.get(user);
     if (!pool) throw new Error("NOT_FOUND");
-    const client = await pool.connect();
-    let broken = false;
-    try {
-      await client.query("BEGIN");
-      const result = await fn(client);
-      await client.query("COMMIT");
-      return result;
-    } catch (error) {
-      try {
-        await client.query("ROLLBACK");
-      } catch {
-        broken = true;
-      }
-      throw error;
-    } finally {
-      client.release(broken);
-    }
-  }
-  async assertWorkspace(client, workspaceId) {
-    const {
-      rows: [row],
-    } = await client.query(
-      "SELECT EXISTS(SELECT 1 FROM mawid_core.memberships WHERE workspace_id=$1 AND revoked_at IS NULL) OR EXISTS(SELECT 1 FROM mawid_core.customer_profiles WHERE workspace_id=$1 AND actor_id=mawid_core.actor() AND anonymized_at IS NULL) AS allowed",
-      [workspaceId],
-    );
-    if (!row.allowed) {
-      const e = new Error("NOT_FOUND");
-      e.code = "P0002";
-      throw e;
-    }
-  }
-  async assertProfileRead(client, workspaceId) {
-    const {
-      rows: [row],
-    } = await client.query(
-      "SELECT mawid_core.has_role($1,NULL,ARRAY['manager','admin']) OR EXISTS(SELECT 1 FROM mawid_core.customer_profiles WHERE workspace_id=$1 AND actor_id=mawid_core.actor() AND anonymized_at IS NULL) AS allowed",
-      [workspaceId],
-    );
-    if (!row.allowed) {
-      const error = new Error("NOT_FOUND");
-      error.code = "P0002";
-      throw error;
-    }
-  }
-  async assertBookingRead(client, workspaceId, locationId) {
-    const {
-      rows: [row],
-    } = await client.query(
-      "SELECT (mawid_core.has_role($1,$2,ARRAY['manager','admin','professional']) AND EXISTS(SELECT 1 FROM mawid_core.locations WHERE workspace_id=$1 AND location_id=$2)) OR EXISTS(SELECT 1 FROM mawid_core.customer_profiles WHERE workspace_id=$1 AND actor_id=mawid_core.actor() AND anonymized_at IS NULL) AS allowed",
-      [workspaceId, locationId],
-    );
-    if (!row.allowed) {
-      const error = new Error("NOT_FOUND");
-      error.code = "P0002";
-      throw error;
-    }
-  }
-  async assertLocation(client, workspaceId, locationId) {
-    const {
-      rows: [row],
-    } = await client.query(
-      "SELECT mawid_core.has_role($1,$2,ARRAY['manager','admin','professional']) AND EXISTS(SELECT 1 FROM mawid_core.locations WHERE workspace_id=$1 AND location_id=$2) AS allowed",
-      [workspaceId, locationId],
-    );
-    if (!row.allowed) {
-      const e = new Error("NOT_FOUND");
-      e.code = "P0002";
-      throw e;
-    }
+    return dataTransaction(pool, fn);
   }
   async close() {
     this.#sessions.clear();
