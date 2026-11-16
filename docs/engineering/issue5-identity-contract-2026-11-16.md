@@ -66,9 +66,10 @@ cannot silently create indefinite application sessions.
 existing HTTP permission matrix with signed fictional identities. `test:identity-email`
 uses real, pinned Supabase Auth plus a numeric-code mail template and local SMTP
 catcher, connected to the existing disposable data/booking/notification fixture.
-Published service ports are loopback-only. Linux uses an internal Docker network;
-Windows uses a dedicated bridge because Docker Desktop cannot forward the internal
-network's published ports. SMTP still routes only to the local catcher.
+Published service ports are loopback-only on a dedicated Docker bridge. Auth
+health checks use the published loopback port; an internal Docker network blocked
+that forwarding on both Docker Desktop and the GitHub runner. SMTP routes only
+to the local catcher, which has no outbound mail delivery.
 Generated signing keys, mail contents and tokens remain transient.
 
 The Auth metadata reader has its own nonprivileged login, selected-column grants
@@ -123,3 +124,8 @@ self-review. It is not a maintainer approval, production permission proof or rel
 The merge-chain follow-ups are now in main: [public #26](https://github.com/saeed-alorm/mawid-pro/pull/26)
 and [private #5](https://github.com/saeed-alorm/mawid-mobile/pull/5). This issue #5
 branch starts at public main `d400d98`; private main is `e4ba9a9`.
+
+The first GitHub run passed web checks and exposed the internal-network forwarding
+failure in the Auth proof. The dedicated bridge fix passed all 16 local provider
+checks again; the regression record preserves that first CI outcome. Current CI
+is tracked on the PR, independently from local verification.

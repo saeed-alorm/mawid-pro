@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-16T07:28:03.067Z",
+  "generated_at": "2026-11-16T07:37:30.678Z",
   "baseline": {
     "public_main": "d400d98",
     "private_main": "e4ba9a93ba31255632c96c13a7630ef8731b96d3",
@@ -103,6 +103,12 @@
       "name": "test:data-db",
       "passed": true,
       "checks": 61
+    },
+    {
+      "name": "test:identity-email",
+      "passed": true,
+      "checks": 16,
+      "reason": "Portable dedicated bridge with loopback-only published ports; final local proof after the CI networking fix."
     }
   ],
   "effective_commands": [
@@ -237,7 +243,7 @@
     },
     {
       "name": "scripts/database/identity/auth-fixture.mjs",
-      "sha256": "f902c45cafc42381ed7d62516adc4fdbeb1b122f5991ca8c9c7bb91e2f8eaa3b"
+      "sha256": "4f1c083180f88f26ec5b8e2333b084f43f72fc441ad79673dbe9c4a65d21be9e"
     },
     {
       "name": "scripts/database/identity/session-gate.mjs",
@@ -269,5 +275,15 @@
     "Independent HTTP sessions are not physical two-device/APK acceptance.",
     "Pilot rate/session/recovery policy, destination revocation and full target acceptance remain required.",
     "No hosted changes, real accounts, paid usage or release."
+  ],
+  "effective_commands_scope": "Local Windows regressions plus targeted reruns; GitHub CI is recorded separately.",
+  "ci_attempts": [
+    {
+      "head": "7583c977664d63f88f36fe7a43e919b9b6d56ae1",
+      "run": "https://github.com/saeed-alorm/mawid-pro/actions/runs/43824369272",
+      "web_checks": "passed",
+      "data_checks": "failed",
+      "reason": "Internal Docker network blocked host access to the healthy Auth container; reproduced by internal health succeeding while loopback health failed."
+    }
   ]
 }

@@ -133,14 +133,7 @@ export async function createAuthFixture(fixture) {
         c.password +
         "'; CREATE SCHEMA auth AUTHORIZATION mawid_fixture_auth; ALTER ROLE mawid_fixture_auth SET search_path=auth,pg_catalog;",
     );
-    docker([
-      "network",
-      "create",
-      ...(process.platform === "win32" ? [] : ["--internal"]),
-      "--label",
-      "mawid.fixture=issue5-identity",
-      network,
-    ]);
+    docker(["network", "create", "--label", "mawid.fixture=issue5-identity", network]);
     networkCreated = true;
     docker(["network", "connect", "--alias", "fixture-db", network, fixture.containerName]);
     connected = true;

@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-16T07:25:03.759Z",
+  "generated_at": "2026-11-16T07:35:29.439Z",
   "node": "v24.22.1",
   "images": [
     "postgres:17.12-bookworm@sha256:40865bc877a289da75963d97d72b59633f639fc5af7a4e856bfa3714cae5b536",
@@ -84,7 +84,7 @@
     },
     {
       "name": "scripts/database/identity/auth-fixture.mjs",
-      "sha256": "f902c45cafc42381ed7d62516adc4fdbeb1b122f5991ca8c9c7bb91e2f8eaa3b"
+      "sha256": "4f1c083180f88f26ec5b8e2333b084f43f72fc441ad79673dbe9c4a65d21be9e"
     },
     {
       "name": "scripts/database/identity/verify-email-otp.mjs",
