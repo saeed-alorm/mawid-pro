@@ -47,11 +47,13 @@ export class LocalNotifications {
   async close() {
     await this.pool.end();
   }
-  async transaction(fn) {
+  async transaction(fn, user) {
     const c = await this.pool.connect();
     try {
       await c.query("BEGIN");
+      if (user !== undefined) await this.data.assertSession?.(user);
       const r = await fn(c);
+      if (user !== undefined) await this.data.assertSession?.(user);
       await c.query("COMMIT");
       return r;
     } catch (e) {
@@ -101,6 +103,7 @@ export class LocalNotifications {
       digest = this.vault.digest(input.token);
     return this.transaction(async (c) => {
       await c.query("SELECT pg_advisory_xact_lock(hashtextextended($1,8))", [digest]);
+      await this.data.assertSession?.(user);
       await this.scope(c, actor, w, l);
       // Possession of a token or guessed installation ID never changes its actor.
       if (
@@ -143,14 +146,16 @@ export class LocalNotifications {
         ],
       );
       return { destination_id: row.destination_id, registered: true };
-    });
+    }, user);
   }
   async unregister(user, w, l, installation) {
     const actor = await this.actor(user);
-    await this.pool.query(
-      "UPDATE mawid_core.push_destinations SET revoked_at=clock_timestamp(),token_ciphertext='',version=version+1 WHERE workspace_id=$1 AND location_id=$2 AND actor_id=$3 AND installation_id=$4",
-      [w, l, actor, installation],
-    );
+    await this.transaction(async (c) => {
+      await c.query(
+        "UPDATE mawid_core.push_destinations SET revoked_at=clock_timestamp(),token_ciphertext='',version=version+1 WHERE workspace_id=$1 AND location_id=$2 AND actor_id=$3 AND installation_id=$4",
+        [w, l, actor, installation],
+      );
+    }, user);
     return { registered: false };
   }
   async inbox(user, w, l) {
@@ -185,7 +190,7 @@ export class LocalNotifications {
           provider_acceptance_is_device_delivery: false,
         })),
       };
-    });
+    }, user);
   }
   async open(user, w, l, notification) {
     const actor = await this.actor(user);
@@ -205,7 +210,7 @@ export class LocalNotifications {
         [notification],
       );
       return n;
-    });
+    }, user);
     // Fresh server booking projection authorizes again, including expired offers.
     return this.booking.read(user, w, l, row.booking_id);
   }

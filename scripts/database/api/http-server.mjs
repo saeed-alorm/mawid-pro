@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { parseImport, exportCsv } from "../csv.mjs";
 import { BookingError } from "../booking/service.mjs";
+import { SessionError } from "../identity/session-gate.mjs";
 
 const uuid = z.string().regex(/^[a-f0-9]{8}(-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i);
 const page = z
@@ -71,6 +72,7 @@ async function jsonBody(req, schema) {
   return validate(schema, value);
 }
 function safeError(error) {
+  if (error instanceof SessionError) return error;
   if (error instanceof BookingError) return error;
   if (["INVALID_TIME", "SCHEDULE_UNAVAILABLE"].includes(error.message))
     return new ApiError(422, error.message);
@@ -162,7 +164,7 @@ export async function startLocalDataServer(
         if (req.headers.host !== new URL(origin).host) throw new ApiError(421, "INVALID_HOST");
         if (req.headers.origin && req.headers.origin !== origin)
           throw new ApiError(403, "ORIGIN_DENIED");
-        const user = service.authenticate(req.headers.authorization);
+        const user = await service.authenticate(req.headers.authorization);
         if (!user) throw new ApiError(401, "SESSION_REQUIRED");
         const url = new URL(req.url, origin);
         if (url.origin !== origin) throw new ApiError(400, "INVALID_REQUEST");

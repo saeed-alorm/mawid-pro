@@ -6,6 +6,7 @@ import path from "node:path";
 import { createLocalFixture, IDS, USERS, AUTH_USERS, id, IMAGE } from "./fixture.mjs";
 import { LocalDataService } from "./data-service.mjs";
 import { startLocalDataServer } from "./http-server.mjs";
+import { createSignedSessionFixture } from "../identity/signed-session-fixture.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
 const A = IDS.workspaceA,
@@ -25,6 +26,7 @@ let fixture,
   currentCheck = "setup",
   serial = 0;
 const logs = [];
+const verifiedIdentity = process.argv.includes("--verified-identity");
 const csv = (kind, key) =>
   ({
     customers:
@@ -132,9 +134,15 @@ const dataFingerprint = async () => {
 try {
   fixture = await createLocalFixture({ authorizationFixtures: true });
   service = new LocalDataService(fixture.configs);
+  let issuer = service;
+  if (verifiedIdentity) {
+    await service.close();
+    issuer = await createSignedSessionFixture(fixture.configs);
+    service = issuer.service;
+  }
   server = await startLocalDataServer(service, { log: (event) => logs.push(event) });
   for (const [key, user] of Object.entries({ ...USERS, ...AUTH_USERS }))
-    sessions[key] = service.issueSession(user).token;
+    sessions[key] = (await issuer.issueSession(user)).token;
   // Regression probes run before the matrix so boundary failures are unambiguous.
   await check("location-scoped staff cannot list tenant-wide profile contacts", async () =>
     expect(await call({ path: "/profiles" }, "locationManagerA"), 404, "NOT_FOUND"),
@@ -604,9 +612,9 @@ try {
   await fixture.admin.query("UPDATE mawid_core.memberships SET revoked_at=NULL WHERE actor_id=$1", [
     IDS.managerActorA,
   ]);
-  const revoked = service.issueSession(USERS.managerA).token;
-  service.revokeSession(revoked);
-  const expired = service.issueSession(USERS.managerA, 1).token;
+  const revoked = (await issuer.issueSession(USERS.managerA)).token;
+  issuer.revokeSession(revoked);
+  const expired = (await issuer.issueSession(USERS.managerA, 1)).token;
   await new Promise((resolve) => setTimeout(resolve, 10));
   for (const [scenario, token] of [
     ["revoked session", revoked],
@@ -685,18 +693,33 @@ try {
     "scripts/database/api/verify-authorization.mjs",
     "scripts/database/csv.mjs",
     "package-lock.json",
+    ...(verifiedIdentity
+      ? [
+          "scripts/database/identity/session-gate.mjs",
+          "scripts/database/identity/verified-local-data.mjs",
+          "scripts/database/identity/signed-session-fixture.mjs",
+        ]
+      : []),
     ...readdirSync(path.join(root, "supabase/migrations"))
       .filter((f) => f.endsWith(".sql"))
       .map((f) => "supabase/migrations/" + f),
   ];
   writeFileSync(
-    path.join(root, "database/authorization-verification.json"),
+    path.join(
+      root,
+      verifiedIdentity
+        ? "database/identity-authorization-verification.json"
+        : "database/authorization-verification.json",
+    ),
     JSON.stringify(
       {
         generated_at: new Date().toISOString(),
         node: process.version,
         postgres: (await fixture.admin.query("SHOW server_version")).rows[0].server_version,
         image: IMAGE,
+        identity_transport: verifiedIdentity
+          ? "ES256 test issuer with live session lookup"
+          : "fictional opaque fixture sessions",
         operations: coverage,
         files: files.map((name) => ({
           name,

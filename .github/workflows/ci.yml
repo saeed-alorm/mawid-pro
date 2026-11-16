@@ -46,6 +46,8 @@ jobs:
       - run: npm run test:data-csv
       - run: npm run test:data-api
       - run: npm run test:data-auth
+      - run: npm run test:identity
+      - run: npm run test:identity-email
       - run: npm run test:booking
       - run: npm run test:notifications
       - run: npm run test:data-maintenance
