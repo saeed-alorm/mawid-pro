@@ -56,6 +56,7 @@ export class LocalBookingService {
       // A coarse workspace lock is intentional for this bounded local pilot core.
       // It also covers the same professional shared between locations.
       await c.query("SELECT pg_advisory_xact_lock(hashtextextended($1,7))", [w]);
+      await this.data.assertSession?.(user);
       const members = (
         await c.query(
           "SELECT roles FROM mawid_core.memberships WHERE workspace_id=$1 AND actor_id=$2 AND revoked_at IS NULL AND (location_id IS NULL OR location_id=$3) FOR SHARE",
@@ -92,6 +93,7 @@ export class LocalBookingService {
         customers: customers.map((x) => x.customer_id),
       };
       const result = await fn(ctx);
+      await this.data.assertSession?.(user);
       await c.query("COMMIT");
       return result;
     } catch (e) {

@@ -1,0 +1,289 @@
+{
+  "generated_at": "2026-11-16T07:37:30.678Z",
+  "baseline": {
+    "public_main": "d400d98",
+    "private_main": "e4ba9a93ba31255632c96c13a7630ef8731b96d3",
+    "public_integration_pr": "https://github.com/saeed-alorm/mawid-pro/pull/26",
+    "private_integration_pr": "https://github.com/saeed-alorm/mawid-mobile/pull/5"
+  },
+  "toolchain": {
+    "node": "24.22.1",
+    "npm": "11.9.0",
+    "platform": "Windows"
+  },
+  "initial_suite": [
+    {
+      "name": "ci",
+      "passed": true
+    },
+    {
+      "name": "test:identity",
+      "passed": true
+    },
+    {
+      "name": "test:identity-email",
+      "passed": false
+    },
+    {
+      "name": "test:data-api",
+      "passed": true
+    },
+    {
+      "name": "test:data-auth",
+      "passed": true
+    },
+    {
+      "name": "test:booking",
+      "passed": true
+    },
+    {
+      "name": "test:notifications",
+      "passed": true
+    },
+    {
+      "name": "test:data-maintenance",
+      "passed": true
+    },
+    {
+      "name": "test:data-migrations",
+      "passed": true
+    },
+    {
+      "name": "test:data-csv",
+      "passed": true
+    },
+    {
+      "name": "test",
+      "passed": true
+    },
+    {
+      "name": "lint",
+      "passed": false
+    },
+    {
+      "name": "typecheck",
+      "passed": true
+    },
+    {
+      "name": "build",
+      "passed": true
+    },
+    {
+      "name": "build:pages",
+      "passed": true
+    },
+    {
+      "name": "verify:pages",
+      "passed": true
+    },
+    {
+      "name": "verify:toolchain",
+      "passed": true
+    },
+    {
+      "name": "test:browser",
+      "passed": true
+    }
+  ],
+  "followup_verification": [
+    {
+      "name": "test:identity-email",
+      "passed": true,
+      "checks": 16,
+      "reason": "Assert suppressed resend delivery rather than requiring an enumeration-revealing HTTP status; added notification race and RLS reader proof; verified final restricted reader."
+    },
+    {
+      "name": "lint",
+      "passed": true,
+      "errors": 0,
+      "existing_warnings": 11,
+      "reason": "Formatted new fixture/test code after the initial two formatter diagnostics."
+    },
+    {
+      "name": "test:data-db",
+      "passed": true,
+      "checks": 61
+    },
+    {
+      "name": "test:identity-email",
+      "passed": true,
+      "checks": 16,
+      "reason": "Portable dedicated bridge with loopback-only published ports; final local proof after the CI networking fix."
+    }
+  ],
+  "effective_commands": [
+    {
+      "name": "ci",
+      "passed": true
+    },
+    {
+      "name": "test:identity",
+      "passed": true
+    },
+    {
+      "name": "test:identity-email",
+      "passed": true
+    },
+    {
+      "name": "test:data-api",
+      "passed": true
+    },
+    {
+      "name": "test:data-auth",
+      "passed": true
+    },
+    {
+      "name": "test:booking",
+      "passed": true
+    },
+    {
+      "name": "test:notifications",
+      "passed": true
+    },
+    {
+      "name": "test:data-maintenance",
+      "passed": true
+    },
+    {
+      "name": "test:data-migrations",
+      "passed": true
+    },
+    {
+      "name": "test:data-csv",
+      "passed": true
+    },
+    {
+      "name": "test",
+      "passed": true
+    },
+    {
+      "name": "lint",
+      "passed": true
+    },
+    {
+      "name": "typecheck",
+      "passed": true
+    },
+    {
+      "name": "build",
+      "passed": true
+    },
+    {
+      "name": "build:pages",
+      "passed": true
+    },
+    {
+      "name": "verify:pages",
+      "passed": true
+    },
+    {
+      "name": "verify:toolchain",
+      "passed": true
+    },
+    {
+      "name": "test:browser",
+      "passed": true
+    },
+    {
+      "name": "test:data-db",
+      "passed": true
+    }
+  ],
+  "counts": {
+    "identity_unit": 33,
+    "signed_identity_permission_matrix": 282,
+    "email_otp_provider": 16,
+    "app_tests": 26,
+    "browser_tests": 2,
+    "database_foundation": 61
+  },
+  "assistant_review": {
+    "passed": true,
+    "scope": [
+      "Pinned trust configuration and signed subject/session identity; no role selection by headers or user metadata.",
+      "Opaque handles and current session/binding revalidation, including lookup latency and worker lock waits.",
+      "Auth RLS retained with nonprivileged metadata reader, selected-column grants and transaction-local verified context.",
+      "No private mobile source, real data, tokens, OTPs, service credentials or generated signing keys in source/evidence.",
+      "Synthetic issuer remains fixture-only; proof ports are loopback-only and temporary Auth containers were removed."
+    ],
+    "maintainer_approval": false
+  },
+  "files": [
+    {
+      "name": "package.json",
+      "sha256": "15551fba8f5dfdd1acb438fe3a121f7e1bfe11f6acca292e705f40692eeeec73"
+    },
+    {
+      "name": "package-lock.json",
+      "sha256": "a31f3ee94be0604649611c4ae0bc8eba4f575ebf69281d66dab1b3fb1456f8f6"
+    },
+    {
+      "name": ".github/workflows/ci.yml",
+      "sha256": "b7cd80a4bd46c742aa4955bb06f2b3f1579d282058ca3520087093f02a418ca7"
+    },
+    {
+      "name": "scripts/database/api/fixture.mjs",
+      "sha256": "1327acb8abcbcc3c8423035fbbe41d5a53699177c27d7a32e16a90cbf3bfeb09"
+    },
+    {
+      "name": "scripts/database/api/http-server.mjs",
+      "sha256": "858d4b7765fdc456189be6c6203b7ecb9932b9581cbafd45af806f7359e21390"
+    },
+    {
+      "name": "scripts/database/api/verify-authorization.mjs",
+      "sha256": "411ea63171b39d689f451702b395954e22ffe268985865a03d7f25c95ae0bb6a"
+    },
+    {
+      "name": "scripts/database/booking/service.mjs",
+      "sha256": "4899cd6a43464fd2f7000c19873e3a3d697fad178d2c0fec61b8ecf09973edb3"
+    },
+    {
+      "name": "scripts/database/notifications/service.mjs",
+      "sha256": "d0273c2733d5de57b923351959d87bbc506c9907f6a7a69dc246310cfcfe8f4c"
+    },
+    {
+      "name": "scripts/database/identity/auth-fixture.mjs",
+      "sha256": "4f1c083180f88f26ec5b8e2333b084f43f72fc441ad79673dbe9c4a65d21be9e"
+    },
+    {
+      "name": "scripts/database/identity/session-gate.mjs",
+      "sha256": "8d8af15614d339c7427b19e21751e3fb5dd9552310d6d9981e7b6b751964c88b"
+    },
+    {
+      "name": "scripts/database/identity/session-gate.test.mjs",
+      "sha256": "ce9ccea29c7889ac814aba3b7514a0acb61486923d300e5c397b4efe4ace7f8c"
+    },
+    {
+      "name": "scripts/database/identity/signed-session-fixture.mjs",
+      "sha256": "3aebc45754ba09b486d6378e1286684b3ef327eb6e13b362a0d6129d47ca4c32"
+    },
+    {
+      "name": "scripts/database/identity/verified-local-data.mjs",
+      "sha256": "2df2f5f32226a2feaac6d56700f5f75ffce86c667bff4eb1d8c229f9b84de431"
+    },
+    {
+      "name": "scripts/database/identity/verify-email-otp.mjs",
+      "sha256": "d9a56b8ca4d9f705cfc3019938c39d40d67d7cd9114cc44fac258bacd1525df2"
+    },
+    {
+      "name": "scripts/database/identity/templates/email-otp.html",
+      "sha256": "b2b0c9bc8762b8ae2db00676d38d786afd868bb0a20f3006c35d40834f2fb337"
+    }
+  ],
+  "limits": [
+    "First issue #5 implementation slice; no production actor mapping, staff invitation workflow, client sign-in rollout or hosted email delivery.",
+    "Independent HTTP sessions are not physical two-device/APK acceptance.",
+    "Pilot rate/session/recovery policy, destination revocation and full target acceptance remain required.",
+    "No hosted changes, real accounts, paid usage or release."
+  ],
+  "effective_commands_scope": "Local Windows regressions plus targeted reruns; GitHub CI is recorded separately.",
+  "ci_attempts": [
+    {
+      "head": "7583c977664d63f88f36fe7a43e919b9b6d56ae1",
+      "run": "https://github.com/saeed-alorm/mawid-pro/actions/runs/43824369272",
+      "web_checks": "passed",
+      "data_checks": "failed",
+      "reason": "Internal Docker network blocked host access to the healthy Auth container; reproduced by internal health succeeding while loopback health failed."
+    }
+  ]
+}

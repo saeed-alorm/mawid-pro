@@ -31,6 +31,11 @@ Nitro Cloudflare target for compatibility; this is not production hosting approv
 Pages uses `/mawid-pro/`, prerenders the launcher and copies it to `404.html` for
 SPA deep links. `npm run preview:pages` serves the built client on port 4173.
 
+The [issue #5 identity proof](docs/engineering/issue5-identity-contract-2026-11-16.md)
+adds `npm run test:identity` and `npm run test:identity-email`. They require Docker
+and use disposable fictional data, a local Supabase Auth instance and a mail
+catcher. They do not enable pilot sign-in or change the Pages demo.
+
 ## Source map
 
 - `src/routes/`, `src/router.tsx`: routing and application shell.
@@ -60,4 +65,3 @@ Implementation stack, publishing feasibility, spending cap, capacity, delivery d
 Saeed (`saeed-alorm`) is lead engineer. Rabeeh/Rabih Bou Diab is a partner; no product
 role or GitHub username is inferred. Follow [CONTRIBUTING](CONTRIBUTING.md) for branches,
 review, acceptance and releases. No paid sync is required.
-

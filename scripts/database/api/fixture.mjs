@@ -298,6 +298,7 @@ export async function createLocalFixture({
       );
     }
     return {
+      containerName: name,
       configs,
       maintenanceConfig,
       bookingConfig,

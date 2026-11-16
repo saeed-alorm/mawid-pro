@@ -1,0 +1,103 @@
+{
+  "generated_at": "2026-11-16T07:35:29.439Z",
+  "node": "v24.22.1",
+  "images": [
+    "postgres:17.12-bookworm@sha256:40865bc877a289da75963d97d72b59633f639fc5af7a4e856bfa3714cae5b536",
+    "supabase/gotrue:v2.197.0@sha256:1736a63078f5922b198c4cbe50f80ab9a2d3b54fe8b7b6cfb2e9dc5dbbc12c6b",
+    "inbucket/inbucket:3.0.3@sha256:dc912ab76de647ca2a363fe285515e512e964cf699166773f3c2c73f5e7f71c0",
+    "nginx:stable-alpine@sha256:901e593c95dc85f5a729f5765516321366ef4ac401821431d408897e95287d0a"
+  ],
+  "checks": [
+    {
+      "name": "a delivered six-digit Email OTP creates a verified provider session",
+      "passed": true
+    },
+    {
+      "name": "the restricted session reader has no unbound access after a pooled request",
+      "passed": true
+    },
+    {
+      "name": "consumed and incorrect Email OTP codes cannot create sessions",
+      "passed": true
+    },
+    {
+      "name": "verified email alone cannot grant an application identity or staff membership",
+      "passed": true
+    },
+    {
+      "name": "the provider enforces its configured resend window",
+      "passed": true
+    },
+    {
+      "name": "a code older than the configured lifetime cannot create a session",
+      "passed": true
+    },
+    {
+      "name": "individual staff Email OTP sessions retain explicit additive roles",
+      "passed": true
+    },
+    {
+      "name": "cross-shop, other-customer and forged-role operations are denied",
+      "passed": true
+    },
+    {
+      "name": "independent clients sign in to the same identity with separate sessions",
+      "passed": true
+    },
+    {
+      "name": "refresh rotates credentials without changing the application identity",
+      "passed": true
+    },
+    {
+      "name": "local logout denies an unexpired access token and preserves the other client",
+      "passed": true
+    },
+    {
+      "name": "revocation during a booking lock wait cannot commit a queued request",
+      "passed": true
+    },
+    {
+      "name": "provider restart preserves active sessions and current memberships still control access",
+      "passed": true
+    },
+    {
+      "name": "logs and saved evidence contain no credentials, Email OTPs or contacts",
+      "passed": true
+    },
+    {
+      "name": "fresh Email OTP recovers the existing identity after all-device logout",
+      "passed": true
+    },
+    {
+      "name": "revocation during a notification lock wait cannot register a destination",
+      "passed": true
+    }
+  ],
+  "files": [
+    {
+      "name": "scripts/database/identity/session-gate.mjs",
+      "sha256": "8d8af15614d339c7427b19e21751e3fb5dd9552310d6d9981e7b6b751964c88b"
+    },
+    {
+      "name": "scripts/database/identity/verified-local-data.mjs",
+      "sha256": "2df2f5f32226a2feaac6d56700f5f75ffce86c667bff4eb1d8c229f9b84de431"
+    },
+    {
+      "name": "scripts/database/identity/auth-fixture.mjs",
+      "sha256": "4f1c083180f88f26ec5b8e2333b084f43f72fc441ad79673dbe9c4a65d21be9e"
+    },
+    {
+      "name": "scripts/database/identity/verify-email-otp.mjs",
+      "sha256": "d9a56b8ca4d9f705cfc3019938c39d40d67d7cd9114cc44fac258bacd1525df2"
+    },
+    {
+      "name": "scripts/database/identity/templates/email-otp.html",
+      "sha256": "b2b0c9bc8762b8ae2db00676d38d786afd868bb0a20f3006c35d40834f2fb337"
+    }
+  ],
+  "limits": [
+    "Real Supabase Auth and SMTP catcher, fictional accounts/data, isolated local network only.",
+    "Subject-to-application bindings are test-owned; no automatic email or metadata binding is authorized.",
+    "No hosted email delivery, production actor adapter, client sign-in screens, staff invitation or two-device APK acceptance is established."
+  ]
+}
