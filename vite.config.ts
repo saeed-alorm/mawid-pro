@@ -1,14 +1,31 @@
-import { defineConfig } from "vite";
+import { fileURLToPath, URL } from "node:url";
+import { defineConfig, loadEnv } from "vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import tsconfigPaths from "vite-tsconfig-paths";
 import { nitro } from "nitro/vite";
+import { stagingAuthConfig } from "./src/lib/staging-auth";
 
 // Standard plugins, exactly once. This preserves the existing SSR build target;
 // it is a build compatibility choice, not approval of production hosting.
 export default defineConfig(({ command, mode }) => {
   const isPages = mode === "github-pages";
+  if (mode === "staging") {
+    const envDir = fileURLToPath(new URL(".", import.meta.url));
+    const env = loadEnv(mode, envDir);
+    if (!stagingAuthConfig(mode, env["VITE_SUPABASE_URL"], env["VITE_SUPABASE_PUBLISHABLE_KEY"])) {
+      throw new Error("Staging requires a hosted Supabase URL and publishable key.");
+    }
+    return {
+      root: fileURLToPath(new URL("./staging", import.meta.url)),
+      envDir,
+      publicDir: false,
+      server: { host: "127.0.0.1", port: 8080 },
+      resolve: { tsconfigPaths: true },
+      plugins: [tailwindcss(), react()],
+    };
+  }
   const basepath = "/mawid-pro";
   const localApi =
     command === "serve" && mode === "development"
