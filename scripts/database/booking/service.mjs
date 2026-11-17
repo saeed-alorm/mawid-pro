@@ -1,5 +1,6 @@
 import { Pool } from "pg";
 import { randomUUID, createHash } from "node:crypto";
+import { VisitBookings } from "./visits.mjs";
 import {
   instant,
   responseDeadline,
@@ -32,6 +33,7 @@ export class LocalBookingService {
     )
       throw new Error("INVALID_BOOKING_CONFIG");
     this.data = data;
+    this.visits = new VisitBookings(this, fail);
     this.pool = new Pool({
       ...config,
       max: 4,
@@ -188,6 +190,18 @@ export class LocalBookingService {
       to = end + s.buffer_after * 60000;
     const periods = await this.periods(x, from);
     if (!periods.some(([a, b]) => a <= from && b >= to)) fail(409, "SLOT_UNAVAILABLE");
+    const professionals = await this.availableProfessionals(
+      x,
+      service,
+      professional,
+      from,
+      to,
+      ignore,
+    );
+    if (!professionals.length) fail(409, "SLOT_UNAVAILABLE");
+    return { end, from, to, professionals };
+  }
+  async availableProfessionals(x, service, professional, from, to, ignore) {
     const candidates = (
       await x.c.query(
         `SELECT p.professional_id FROM mawid_core.professionals p JOIN mawid_core.eligibility e USING(workspace_id,location_id,professional_id)
@@ -199,8 +213,7 @@ export class LocalBookingService {
         [x.w, x.l, service, professional, iso(from), iso(to), ignore, iso(x.now)],
       )
     ).rows;
-    if (!candidates.length) fail(409, "SLOT_UNAVAILABLE");
-    return { end, from, to, professionals: candidates.map((r) => r.professional_id) };
+    return candidates.map((r) => r.professional_id);
   }
   project(x, b) {
     const local = (value) => {
@@ -246,7 +259,7 @@ export class LocalBookingService {
         b.state === "confirmed" &&
         (x.customers.includes(b.customer_id)
           ? canSelfCancel(x.now, +new Date(b.assigned_start))
-          : x.roles.includes("admin")),
+          : x.roles.some((r) => ["admin", "manager"].includes(r))),
       cancellation_is_late:
         b.state === "confirmed" && isLateCancellation(x.now, +new Date(b.assigned_start)),
       server_time: iso(x.now),
@@ -291,33 +304,40 @@ export class LocalBookingService {
       await this.expire(x);
       const query = async (sql, values = [w, l]) => (await x.c.query(sql, values)).rows;
       const staff = x.roles.some((r) => ["admin", "manager"].includes(r));
-      const profileStaff = x.roles.some((r) => ["manager", "admin"].includes(r));
       const rows = await query(
-        "SELECT * FROM mawid_core.bookings WHERE workspace_id=$1 AND location_id=$2 AND ($3::uuid IS NULL OR booking_id>$3) AND ($4::boolean OR customer_id=ANY($5::uuid[]) OR coalesce(assigned_professional_id,requested_professional_id)=ANY($6::uuid[])) ORDER BY booking_id LIMIT 51",
+        "SELECT * FROM mawid_core.bookings WHERE workspace_id=$1 AND location_id=$2 AND segment_count=1 AND ($3::uuid IS NULL OR booking_id>$3) AND ($4::boolean OR customer_id=ANY($5::uuid[]) OR coalesce(assigned_professional_id,requested_professional_id)=ANY($6::uuid[])) ORDER BY booking_id LIMIT 51",
         [w, l, after, staff, x.customers, x.professionals],
       );
       return {
-        actor_id: x.actor,
-        roles: x.roles,
-        customer_ids: x.customers,
-        services: await query(
-          "SELECT service_id,name,duration_minutes FROM mawid_core.services WHERE workspace_id=$1 AND location_id=$2 ORDER BY service_id LIMIT 200",
-        ),
-        professionals: await query(
-          "SELECT p.professional_id,p.display_name,p.active,ARRAY(SELECT e.service_id FROM mawid_core.eligibility e WHERE e.workspace_id=p.workspace_id AND e.location_id=p.location_id AND e.professional_id=p.professional_id) AS service_ids FROM mawid_core.professionals p WHERE workspace_id=$1 AND location_id=$2 ORDER BY professional_id LIMIT 200",
-        ),
-        customers: await query(
-          "SELECT customer_id,display_name FROM mawid_core.customer_profiles WHERE workspace_id=$1 AND anonymized_at IS NULL AND ($2::boolean OR customer_id=ANY($3::uuid[])) ORDER BY customer_id LIMIT 200",
-          [w, profileStaff, x.customers],
-        ),
+        ...(await this.catalog(x)),
         bookings: rows.slice(0, 50).map((b) => this.project(x, b)),
         next_after: rows.length > 50 ? rows[49].booking_id : null,
-        server_time: iso(x.now),
-        beirut_date: new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Beirut" }).format(x.now),
-        review_at: iso(nextReview(await this.periods(x, x.now), x.now)),
-        timezone: "Asia/Beirut",
       };
     });
+  }
+  async catalog(x) {
+    const { w, l } = x;
+    const query = async (sql, values = [w, l]) => (await x.c.query(sql, values)).rows;
+    const profileStaff = x.roles.some((r) => ["manager", "admin"].includes(r));
+    return {
+      actor_id: x.actor,
+      roles: x.roles,
+      customer_ids: x.customers,
+      services: await query(
+        "SELECT service_id,name,duration_minutes FROM mawid_core.services WHERE workspace_id=$1 AND location_id=$2 ORDER BY service_id LIMIT 200",
+      ),
+      professionals: await query(
+        "SELECT p.professional_id,p.display_name,p.active,ARRAY(SELECT e.service_id FROM mawid_core.eligibility e WHERE e.workspace_id=p.workspace_id AND e.location_id=p.location_id AND e.professional_id=p.professional_id) AS service_ids FROM mawid_core.professionals p WHERE workspace_id=$1 AND location_id=$2 ORDER BY professional_id LIMIT 200",
+      ),
+      customers: await query(
+        "SELECT customer_id,display_name FROM mawid_core.customer_profiles WHERE workspace_id=$1 AND anonymized_at IS NULL AND ($2::boolean OR customer_id=ANY($3::uuid[])) ORDER BY customer_id LIMIT 200",
+        [w, profileStaff, x.customers],
+      ),
+      server_time: iso(x.now),
+      beirut_date: new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Beirut" }).format(x.now),
+      review_at: iso(nextReview(await this.periods(x, x.now), x.now)),
+      timezone: "Asia/Beirut",
+    };
   }
   async slots(user, w, l, input) {
     return this.run(user, w, l, async (x) => {
@@ -364,7 +384,7 @@ export class LocalBookingService {
       await this.expire(x);
       const b = (
         await x.c.query(
-          "SELECT * FROM mawid_core.bookings WHERE workspace_id=$1 AND location_id=$2 AND booking_id=$3",
+          "SELECT * FROM mawid_core.bookings WHERE workspace_id=$1 AND location_id=$2 AND booking_id=$3 AND segment_count=1",
           [w, l, id],
         )
       ).rows[0];
@@ -378,7 +398,7 @@ export class LocalBookingService {
       let b = id
         ? (
             await c.query(
-              "SELECT * FROM mawid_core.bookings WHERE workspace_id=$1 AND location_id=$2 AND booking_id=$3 FOR UPDATE",
+              "SELECT * FROM mawid_core.bookings WHERE workspace_id=$1 AND location_id=$2 AND booking_id=$3 AND segment_count=1 FOR UPDATE",
               [w, l, id],
             )
           ).rows[0]

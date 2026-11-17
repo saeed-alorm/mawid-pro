@@ -235,6 +235,53 @@ export async function startLocalDataServer(
           }
           throw new ApiError(404, "NOT_FOUND");
         }
+        const visitRoute =
+          /^\/locations\/([^/]+)\/visit-core\/(view|slots|availability|requests|walk-ins|visits\/([^/]+)(?:\/(confirm|propose|assign|reschedule|accept|decline|withdraw|cancel))?)$/.exec(
+            tail,
+          );
+        if (booking && visitRoute) {
+          const location = validate(uuid, visitRoute[1]);
+          const identifier = visitRoute[3] ? validate(uuid, visitRoute[3]) : null;
+          const part = visitRoute[2];
+          const visits = booking.visits;
+          const segments = z
+            .array(z.object({ service_id: uuid, professional_id: uuid.optional() }).strict())
+            .min(1)
+            .max(8);
+          const start = z.string().max(40);
+          if (req.method === "GET" && part === "view") {
+            const { after } = params(url, z.object({ after: uuid.optional() }).strict());
+            return send(200, await visits.view(user, workspace, location, after));
+          }
+          params(url, z.object({}).strict());
+          if (req.method === "GET" && identifier && !visitRoute[4])
+            return send(200, await visits.read(user, workspace, location, identifier));
+          if (req.method !== "POST") throw new ApiError(404, "NOT_FOUND");
+          if (part === "slots" || part === "availability") {
+            const input = await jsonBody(
+              req,
+              z.object(part === "slots" ? { segments } : { segments, start }).strict(),
+            );
+            return send(
+              200,
+              await visits.availability(user, workspace, location, input, part === "slots"),
+            );
+          }
+          const action =
+            part === "requests" ? "request" : part === "walk-ins" ? "walk-in" : visitRoute[4];
+          if (!action) throw new ApiError(404, "NOT_FOUND");
+          const fields = { operation_id: uuid };
+          if (identifier) fields.expected_version = z.string().regex(/^[1-9][0-9]{0,14}$/);
+          if (["request", "walk-in"].includes(action))
+            Object.assign(fields, { customer_id: uuid, segments, start });
+          if (["propose", "reschedule"].includes(action)) fields.start = start;
+          if (["walk-in", "confirm", "assign", "propose", "reschedule"].includes(action))
+            fields.assignments = z.array(uuid.nullable()).min(1).max(8).optional();
+          const input = await jsonBody(req, z.object(fields).strict());
+          const result = await visits.mutate(user, workspace, location, action, input, identifier);
+          if (result.error) throw new ApiError(result.status, result.error.code);
+          return send(identifier ? 200 : 201, result);
+        }
         const bookingRoute =
           /^\/locations\/([^/]+)\/booking-core\/(view|slots|availability|requests|walk-ins|bookings\/([^/]+)(?:\/(confirm|propose|assign|accept|decline|withdraw|cancel))?)$/.exec(
             tail,
@@ -331,7 +378,7 @@ export async function startLocalDataServer(
             else await service.assertLocation(client, workspace, location);
             const text =
               kind === "bookings"
-                ? "SELECT booking_id,customer_id,location_id,service_id,requested_start,requested_end,assigned_start,assigned_end,state,version,cancelled_at FROM mawid_core.bookings WHERE workspace_id=$1 AND location_id=$2 AND ($3::uuid IS NULL OR booking_id>$3) ORDER BY booking_id LIMIT $4"
+                ? "SELECT booking_id,customer_id,location_id,service_id,requested_start,requested_end,assigned_start,assigned_end,state,version,cancelled_at FROM mawid_core.bookings WHERE workspace_id=$1 AND location_id=$2 AND segment_count=1 AND ($3::uuid IS NULL OR booking_id>$3) ORDER BY booking_id LIMIT $4"
                 : catalogs[kind];
             return (await client.query(text, [workspace, location, after ?? null, limit + 1])).rows;
           });
@@ -439,17 +486,23 @@ export async function startLocalDataServer(
         }
         if (method === "GET" && jobRoute?.[1] === "exports" && jobRoute[3] === "/download") {
           const job = validate(uuid, jobRoute[2]);
-          const { format } = params(
+          const { format, contract } = params(
             url,
-            z.object({ format: z.enum(["json", "csv"]).default("json") }).strict(),
+            z
+              .object({
+                format: z.enum(["json", "csv"]).default("json"),
+                contract: z.enum(["1", "2"]).default("1"),
+              })
+              .strict(),
           );
           const result = await service.transaction(
             user,
             async (client) =>
               (
-                await client.query("SELECT mawid_core.download_export($1,$2) AS payload", [
+                await client.query("SELECT mawid_core.download_visit_export($1,$2,$3) AS payload", [
                   workspace,
                   job,
+                  Number(contract),
                 ])
               ).rows[0].payload,
           );
@@ -470,6 +523,29 @@ export async function startLocalDataServer(
             ...result.profiles.map((row) => ({ record_type: "profile", ...row })),
             ...result.bookings.map((row) => ({ record_type: "booking", ...row })),
           ];
+          if (contract === "2") {
+            columns.push(
+              "position",
+              "service_id",
+              "requested_professional_id",
+              "assigned_professional_id",
+              "requested_end",
+              "assigned_end",
+              "buffer_before_seconds",
+              "buffer_after_seconds",
+            );
+            for (const booking of result.bookings) {
+              rows.push(
+                ...booking.segments.map((segment) => ({
+                  record_type: "visit_segment",
+                  booking_id: booking.booking_id,
+                  customer_id: booking.customer_id,
+                  location_id: booking.location_id,
+                  ...segment,
+                })),
+              );
+            }
+          }
           res.writeHead(200, {
             "content-type": "text/csv; charset=utf-8",
             "content-disposition": 'attachment; filename="mawid-export.csv"',
