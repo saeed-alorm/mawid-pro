@@ -10,7 +10,7 @@ try {
     process.argv.slice(2);
   if (
     extra.length ||
-    !["com.mawid.demo", "com.mawid.customer.platinum", "com.mawid.management"].includes(application)
+    !/^com\.mawid\.(?:demo|management|customer\.[a-z][a-z0-9_]{0,62})$/.test(application)
   )
     throw Error();
   if (!sessionFile || !path.isAbsolute(sessionFile)) throw Error();

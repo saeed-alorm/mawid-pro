@@ -12,6 +12,7 @@ Both partner managers control bookings. Other employees only view their own appo
 - Approval, offers, rescheduling and cancellation apply atomically to the visit. The first service start determines eligibility and any late cancellation counts once. Partial approval and cancellation are deferred.
 - Segments run in order with no discretionary gaps or simultaneous service. Each professional owns the entire buffered interval for their segment. Two consecutive services with the same professional require both internal buffers in sequence. This mandatory turnover is visible between services and included in elapsed visit duration. Different professionals can use overlapping buffers around consecutive services. A repeated professional with overlapping buffered intervals elsewhere in the chain is unavailable.
 - Pending requests do not reserve capacity. One additional reminder goes to both current partners after 15 opening-time minutes.
+- Caller intake uses a display name and an optional phone. An existing record must already be associated with the location to appear in lookup. A new record is created without an account binding and in the same transaction as its visit.
 - One review invitation becomes due two minutes after the final scheduled service end, without a manual completion action. The verified visit owner may submit one integer score from 1–5 per distinct assigned professional and one final review per visit/professional. Written feedback is visible to management. Public profiles show genuine averages and review counts.
 - No-show and overrun policy, marketing, campaigns, awards, Instagram and iOS are deferred.
 
@@ -19,12 +20,20 @@ Both partner managers control bookings. Other employees only view their own appo
 
 | Deliverable | Status | Evidence or remaining work |
 | --- | --- | --- |
-| A. Contract, data and compatibility | In progress | Migration, single-service access, retention/export and recovery |
-| B. Server booking | Pending | Atomic chain validation, authorization, holds and replay |
-| C. Caller intake | Pending | Salon-scoped partner access and retry-safe intake |
-| D. Booking and calendar UI | Pending | Customer and staff connected UI, English and Arabic |
-| E. Durable jobs | Pending | Reminders, leases and suppression |
-| F. Reviews | Pending | Owner verification, due time, rating and retention |
-| G. Private Android | Pending | Shared contract, candidate build and device checks |
+| A. Contract, data and compatibility | Implemented and verified locally | Historical ID/allocation/event/retry preservation, legacy filtering, v2 export, retention and migration/recovery fixtures |
+| B. Server booking | Implemented and verified locally | Complete-chain validation, second-segment conflicts and races, scope, holds, expiry, rescheduling and replay |
+| C. Caller intake | Implemented and verified locally | Location-scoped lookup, app-less caller creation and exact retry replay |
+| D. Booking and calendar UI | Implemented and verified locally | Connected visit form, employee-first Arabic/RTL booking, management visit schedule and read-only employees |
+| E. Durable jobs | Implemented and verified locally | Opening-time reminder, two current partners, competing workers and recipient rechecks |
+| F. Reviews | Implemented and verified locally | Signed ownership, final-end timing, booking revision checks, distinct scores, scoped feedback, aggregate and erasure |
+| G. Private Android | Implemented, with install and connected emulator checks verified | Separate customer and management packages loaded authorized data from the same fictional fixture. Native approval and physical-device acceptance remain unverified |
 
 Only local fictional fixtures are in scope. Hosted identity-to-booking and live-pilot acceptance remain tracked under their existing issue homes.
+
+## Contract versions
+
+Single-service clients keep `booking-core`. Its detail and lists omit multi-service visits. The new `visit-core` provides visit-shaped read projections and accepts ordered `segments` for requests, slots and staff intake. Any is represented by an omitted preferred professional. Explicit staff assignments use a positional array, and mutations carry `expected_version` when editing an existing visit and `operation_id` for retry. Use `contract=2` for visit-aware notification links and export downloads. The visits API uses a bounded eight-segment visit and a seven-day picker. The advisory picker and every confirmed transaction validate the complete chain.
+
+Approval at the requested time preserves the requested sequence. Staff use a proposal if a different assignment changes the timing or a specific preference. A partner reschedule of a confirmed visit changes the entire schedule and releases the earlier allocations only after the replacement passes validation. The server recalculates timing and uses the existing workspace transaction lock and allocation exclusion constraint.
+
+An additional pending reminder is attached to a v2 request's original event and uses its 15-opening-minute deadline. Assigning an Any preference keeps that reminder while the request stays pending. Confirmation, acceptance, intake and rescheduling create review jobs for their exact visit revision. The regular legacy notification contract continues to read single-service bookings. New reviews retain anonymous scores until visit retention removes the records and scrub written feedback on erasure. The local signed fixture uses simulated delivery.
