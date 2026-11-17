@@ -4,6 +4,23 @@ Local engineering review only. Pilot access remains disabled. The approved archi
 
 Base: public fetched origin/main at 29c7a778b94d4b99a0a6c4b75a017096bd372ab6, including PR #34. Worktree: mawid-pro-native-completion, branch codex/native-completion. Implementation: e53bc9d00cb9d983e2d773b078f7ee48d885e460. The later handoff/evidence commit does not change runtime source.
 
+Absolute worktree: `C:/Users/Saeed/Documents/ChatGPT/MAWID/mawid-pro-native-completion`.
+The private companion is `saeed-alorm/mawid-mobile`, branch `codex/native-completion`,
+at `C:/Users/Saeed/Documents/ChatGPT/MAWID/mawid-mobile-native-completion`.
+Its final candidate runtime is `14fd4fe8852db7ca17cadf7211e3fc8d2ec3a289`, based on
+fetched private main `ff9a58b94cbe53f486e61e2f1ad92abbe68fb2f1` (PR #6).
+Both known baselines were ancestors of fetched main; neither fetch contained newer
+merged commits. The original Desktop checkout and unrelated edits were preserved.
+
+The private candidates use this public runtime commit and require the new package
+registration/session/open projections together with the existing signed review and
+visit-aware availability APIs. Private native analysis and all 37 tests pass after
+independent review fixes. Separate customer/management debug APKs build from clean
+source at `0.4.2+7`; hashes, signatures, exact-build emulator receipts, remaining
+physical/provider gates and private PR copy live in the private repository's
+`docs/engineering/native-completion-handoff.md` and `docs/evidence/native-completion/`.
+No mobile source, branded assets, APKs or private configuration were added here.
+
 ## Server and native contract
 
 - Register at POST /v1/workspaces/:workspace/locations/:location/notifications/registrations with installation_id (UUID), application_id, environment, locale and token. com.mawid.customer.platinum is for current customer-only identities; com.mawid.management is for explicit current staff grants. Identifiers, tokens and client metadata never grant permissions. Local compatibility retains com.mawid.demo; hosted staging excludes it through its required server application/workspace/location allowlist.
