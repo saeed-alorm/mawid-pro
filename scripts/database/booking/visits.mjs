@@ -182,6 +182,9 @@ export class VisitBookings {
       ...this.core.project(x, b),
       contract_version: 2,
       segments: segments.map(segmentProjection),
+      ...(partner(x) && b.intake_source
+        ? { intake_source: b.intake_source, entered_by: b.entered_by }
+        : {}),
     };
   }
 
@@ -217,6 +220,26 @@ export class VisitBookings {
         ),
         next_after: rows.length > 50 ? rows[49].booking_id : null,
       };
+    });
+  }
+
+  async lookupCallers(user, w, l, query) {
+    return this.core.run(user, w, l, async (x) => {
+      if (!partner(x)) this.fail(403, "ACTION_DENIED");
+      const phone = query.replace(/\D/g, "");
+      const { rows } = await x.c.query(
+        `SELECT p.customer_id,p.display_name,
+           CASE WHEN p.contact ~ '^\\+?[0-9 ()-]+$' THEN p.contact ELSE NULL END AS phone
+         FROM mawid_core.customer_profiles p WHERE p.workspace_id=$1 AND p.anonymized_at IS NULL
+         AND EXISTS(SELECT 1 FROM mawid_core.bookings b WHERE b.workspace_id=$1 AND b.location_id=$2
+           AND b.customer_id=p.customer_id)
+         AND (strpos(lower(p.display_name),lower($3))>0
+           OR (length($4)>=4 AND p.contact ~ '^\\+?[0-9 ()-]+$'
+             AND strpos(regexp_replace(p.contact,'[^0-9]','','g'),$4)>0))
+         ORDER BY p.display_name,p.customer_id LIMIT 20`,
+        [w, l, query, phone],
+      );
+      return { items: rows };
     });
   }
 
@@ -280,10 +303,30 @@ export class VisitBookings {
       let deliver = now;
       const creating = !b;
       if (creating) {
+        let customerId = input.customer_id;
+        if (input.caller) {
+          const phone = input.caller.phone?.replace(/[ ()-]/g, "") ?? null;
+          if (phone && !/^\+?[0-9]{4,15}$/.test(phone)) this.fail(422, "INVALID_PHONE");
+          customerId = (
+            await c.query(
+              `INSERT INTO mawid_core.customer_profiles(workspace_id,external_key,display_name,contact)
+             VALUES($1,$2,$3,$4) RETURNING customer_id`,
+              [w, "caller:" + actor + ":" + input.operation_id, input.caller.name, phone],
+            )
+          ).rows[0].customer_id;
+        } else if (input.source) {
+          const linked = (
+            await c.query(
+              "SELECT 1 FROM mawid_core.bookings WHERE workspace_id=$1 AND location_id=$2 AND customer_id=$3 LIMIT 1",
+              [w, l, customerId],
+            )
+          ).rowCount;
+          if (!linked) this.fail(404, "NOT_FOUND");
+        }
         const profile = (
           await c.query(
             "SELECT customer_id FROM mawid_core.customer_profiles WHERE workspace_id=$1 AND customer_id=$2 AND anonymized_at IS NULL FOR SHARE",
-            [w, input.customer_id],
+            [w, customerId],
           )
         ).rows[0];
         if (!profile) this.fail(404, "NOT_FOUND");
@@ -294,8 +337,8 @@ export class VisitBookings {
         b = (
           await c.query(
             `INSERT INTO mawid_core.bookings(workspace_id,location_id,customer_id,service_id,
-            requested_professional_id,requested_start,requested_end,submitted_at,response_due_at,segment_count)
-           VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
+            requested_professional_id,requested_start,requested_end,submitted_at,response_due_at,segment_count,intake_source,entered_by)
+           VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING *`,
             [
               w,
               l,
@@ -307,6 +350,8 @@ export class VisitBookings {
               iso(now),
               iso(responseDeadline(openings, now)),
               requested.length,
+              input.source ?? null,
+              input.source ? actor : null,
             ],
           )
         ).rows[0];

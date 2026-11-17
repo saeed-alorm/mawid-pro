@@ -44,6 +44,8 @@ try {
   const after = await row(`SELECT * FROM mawid_core.bookings WHERE ${where}`);
   assert.equal(after.segment_count, 1, "existing booking becomes a one-segment visit");
   delete after.segment_count;
+  delete after.intake_source;
+  delete after.entered_by;
   assert.deepEqual(after, before);
 
   const segment = await row(`SELECT * FROM mawid_core.visit_segments WHERE ${where}`);

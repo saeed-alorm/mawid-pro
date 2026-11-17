@@ -236,7 +236,7 @@ export async function startLocalDataServer(
           throw new ApiError(404, "NOT_FOUND");
         }
         const visitRoute =
-          /^\/locations\/([^/]+)\/visit-core\/(view|slots|availability|requests|walk-ins|visits\/([^/]+)(?:\/(confirm|propose|assign|reschedule|accept|decline|withdraw|cancel))?)$/.exec(
+          /^\/locations\/([^/]+)\/visit-core\/(view|slots|availability|requests|walk-ins|caller-intake|callers|visits\/([^/]+)(?:\/(confirm|propose|assign|reschedule|accept|decline|withdraw|cancel))?)$/.exec(
             tail,
           );
         if (booking && visitRoute) {
@@ -253,6 +253,10 @@ export async function startLocalDataServer(
             const { after } = params(url, z.object({ after: uuid.optional() }).strict());
             return send(200, await visits.view(user, workspace, location, after));
           }
+          if (req.method === "GET" && part === "callers") {
+            const { q } = params(url, z.object({ q: z.string().trim().min(2).max(120) }).strict());
+            return send(200, await visits.lookupCallers(user, workspace, location, q));
+          }
           params(url, z.object({}).strict());
           if (req.method === "GET" && identifier && !visitRoute[4])
             return send(200, await visits.read(user, workspace, location, identifier));
@@ -266,6 +270,30 @@ export async function startLocalDataServer(
               200,
               await visits.availability(user, workspace, location, input, part === "slots"),
             );
+          }
+          if (part === "caller-intake") {
+            const input = await jsonBody(
+              req,
+              z
+                .object({
+                  operation_id: uuid,
+                  source: z.enum(["phone", "whatsapp", "walk-in"]),
+                  customer_id: uuid.optional(),
+                  caller: z
+                    .object({
+                      name: z.string().trim().min(1).max(120),
+                      phone: z.string().trim().min(4).max(30).optional(),
+                    })
+                    .strict()
+                    .optional(),
+                  segments,
+                  start,
+                  assignments: z.array(uuid.nullable()).min(1).max(8).optional(),
+                })
+                .strict()
+                .refine((fields) => Boolean(fields.customer_id) !== Boolean(fields.caller)),
+            );
+            return send(201, await visits.mutate(user, workspace, location, "walk-in", input));
           }
           const action =
             part === "requests" ? "request" : part === "walk-ins" ? "walk-in" : visitRoute[4];

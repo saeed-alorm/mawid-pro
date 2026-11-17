@@ -116,6 +116,36 @@ try {
       Date.parse(sameProfessional.body.segments[0].requested_end),
     300000,
   );
+  const callerIntent = {
+    operation_id: randomUUID(),
+    source: "phone",
+    caller: { name: "Fictional caller", phone: "+961 70 000 001" },
+    start,
+    segments: draft.segments,
+  };
+  const caller = await request(USERS.managerA, "/visit-core/caller-intake", callerIntent);
+  assert.equal(caller.status, 201, JSON.stringify(caller));
+  assert.deepEqual(
+    await request(USERS.managerA, "/visit-core/caller-intake", callerIntent),
+    caller,
+  );
+  const lookup = await request(USERS.managerA, "/visit-core/callers?q=96170000001");
+  assert.deepEqual(
+    lookup.body.items.map((item) => item.customer_id),
+    [caller.body.customer_id],
+  );
+  const profile = (
+    await fixture.admin.query(
+      "SELECT actor_id,contact FROM mawid_core.customer_profiles WHERE customer_id=$1",
+      [caller.body.customer_id],
+    )
+  ).rows[0];
+  assert.deepEqual(profile, { actor_id: null, contact: "+96170000001" });
+  assert.equal(
+    (await request(USERS.customerA, "/visit-core/caller-intake", callerIntent)).status,
+    403,
+  );
+  assert.equal((await request(USERS.managerB, "/visit-core/callers?q=Fictional")).status, 404);
   console.log(
     "Visit chain, second-segment conflict, replay, buffers and atomic cancellation verified.",
   );
