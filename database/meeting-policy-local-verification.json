@@ -1,14 +1,14 @@
 {
   "mode": "synthetic-local-identities",
   "scope": "two fictional partner managers, four own-only professionals; no hosted changes or device acceptance",
-  "checked_at": "2026-11-17T13:42:13.749Z",
+  "checked_at": "2026-11-17T20:23:28.787Z",
   "sources": {
     "supabase/migrations/20261117132037_professional_scope_late_cancellation.sql": "5f7543c3ca63c03c8076d9315cff8d183f8cb76c88cc1d24ed0f92078d1619ba",
-    "scripts/database/api/fixture.mjs": "84c0e18e008603831ffa057206baf185f2a9313fc7c5d93d06d2c33de10a2ba1",
-    "scripts/database/booking/service.mjs": "7b396eb9ecbbff365f45bc255a3e0faa6e475f38457e0c9e0e77e7666bbef775",
+    "scripts/database/api/fixture.mjs": "bd2ef6f8fe34c352fe7d750f9247cb0818f221fc306d00f72db7f1c4449bda45",
+    "scripts/database/booking/service.mjs": "fe8261ea542e1201c6a12c566debf847edae0c74690f041318c8ab67bbc8e09b",
     "scripts/database/booking/time.mjs": "5a13ffbeecaae2381bce2a786593dd8db73b07db241cd20a785138f3573f85aa",
-    "scripts/database/notifications/service.mjs": "6ceb3e2bcd5931a6914ebe44d16137bb47daa364e19b92f5b4545396eea71a16",
-    "scripts/database/booking/verify-meeting-policy.mjs": "47024c77c880a80b1baa6af7ab1e897f18706e06fdf658e955e576ce69e00425"
+    "scripts/database/notifications/service.mjs": "7fff8c7670a3f8af3cc60d96c5d5e55f4ef418dc1ece138275da979b796434af",
+    "scripts/database/booking/verify-meeting-policy.mjs": "0d45a213b8b87033cf1211952d85cdecd9900d1c4306da6c97f9980f9a140740"
   },
   "checks": [
     {
@@ -69,6 +69,14 @@
     },
     {
       "name": "early and salon cancellations do not count; exact 60-minute SQL boundary is excluded",
+      "passed": true
+    },
+    {
+      "name": "whole visits expose only each of four employees’ own ordered segments",
+      "passed": true
+    },
+    {
+      "name": "only partners receive the current salon late-cancellation count and fourth-event flag",
       "passed": true
     }
   ]

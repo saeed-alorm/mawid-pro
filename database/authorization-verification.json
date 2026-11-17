@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-17T13:34:18.664Z",
+  "generated_at": "2026-11-17T20:20:27.171Z",
   "node": "v24.22.1",
   "postgres": "17.12 (Debian 17.12-1.pgdg12+1)",
   "image": "postgres:17.12-bookworm@sha256:40865bc877a289da75963d97d72b59633f639fc5af7a4e856bfa3714cae5b536",
@@ -108,11 +108,11 @@
     },
     {
       "name": "scripts/database/api/http-server.mjs",
-      "sha256": "100d7fc8af94f096e9b9513350bef47c3511d6c9a6329725f73aa71b8cac21c5"
+      "sha256": "d69da7ed87f04081f49ac1015251fdeafc2f9755060eeeba6d748db81c4b623c"
     },
     {
       "name": "scripts/database/api/fixture.mjs",
-      "sha256": "84c0e18e008603831ffa057206baf185f2a9313fc7c5d93d06d2c33de10a2ba1"
+      "sha256": "bd2ef6f8fe34c352fe7d750f9247cb0818f221fc306d00f72db7f1c4449bda45"
     },
     {
       "name": "scripts/database/api/verify-authorization.mjs",
@@ -165,6 +165,26 @@
     {
       "name": "supabase/migrations/20261117132037_professional_scope_late_cancellation.sql",
       "sha256": "5f7543c3ca63c03c8076d9315cff8d183f8cb76c88cc1d24ed0f92078d1619ba"
+    },
+    {
+      "name": "supabase/migrations/20261117144500_visit_segments.sql",
+      "sha256": "cb58d9439d9e13f3047ae54d984d9926b1359f14e15b6e05feaae881af421f63"
+    },
+    {
+      "name": "supabase/migrations/20261117150000_caller_visit_intake.sql",
+      "sha256": "a3b16311d28742be76c30173add69dc33834e1b847faa25425ca6ef7ee1336ff"
+    },
+    {
+      "name": "supabase/migrations/20261117151500_scheduled_booking_notifications.sql",
+      "sha256": "d38707884ccff2132409d756ba9ba0ecc53b55e24896e743dca89b9040bf35c5"
+    },
+    {
+      "name": "supabase/migrations/20261117153000_visit_reviews.sql",
+      "sha256": "20739dfcd8e519ee1984312d6f3d8022695ed2b30f398af5acbee89ef874e116"
+    },
+    {
+      "name": "supabase/migrations/20261117220000_native_notification_packages.sql",
+      "sha256": "36ef0bb57ac936ce4c39a1fba4f02375e2c76048cb765be728e1845c3fc3dc77"
     }
   ],
   "checks": [
