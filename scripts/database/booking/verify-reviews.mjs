@@ -171,6 +171,18 @@ try {
   );
   await fixture.admin.query("COMMIT");
 
+  // Simulate validation beginning before the old start while the database
+  // reaches the write after it. The scoped SQL update must reject the change.
+  const historical = await result(USERS.managerA, editPath, 200);
+  bookingTime = Date.parse(historical.segments[0].assigned_start) - 1;
+  const crossedWhileValidating = await result(USERS.managerA, editPath + "/reschedule", 409, {
+    ...pastEdit,
+    operation_id: randomUUID(),
+  });
+  assert.equal(crossedWhileValidating.error.code, "RESCHEDULE_CUTOFF");
+  assert.deepEqual(await history(), beforeCutoffHistory);
+  bookingTime = undefined;
+
   const eligible = await result(USERS.customerA, reviewPath, 200);
   assert.deepEqual(eligible.professional_ids, [professional]);
   const submit = (reviews, status) =>

@@ -560,6 +560,8 @@ try {
   });
   const paths = [
     "scripts/database/booking/service.mjs",
+    "scripts/database/booking/visits.mjs",
+    "scripts/database/booking/visit-search.mjs",
     "scripts/database/api/http-server.mjs",
     "src/lib/booking-client.ts",
     "src/components/server-booking.tsx",

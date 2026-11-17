@@ -27,6 +27,7 @@ export function searchBudget(
   const remaining = { step: steps, query: queries };
   return (kind) => {
     if (performance.now() >= deadline) throw new VisitSearchLimit("request");
+    if (kind === "time") return;
     if (remaining[kind] <= 0) throw new VisitSearchLimit(scope);
     parent?.(kind);
     remaining[kind]--;
@@ -99,71 +100,25 @@ export class VisitSlotSearch {
       if (savedStart > x.now && savedStart <= horizon && !dates.includes(localDate(savedStart)))
         dates.push(localDate(savedStart));
     }
-    const { rows: days } = await x.c.query(
-      `SELECT (day::timestamp AT TIME ZONE 'Asia/Beirut') AS start,
-              ((day+1)::timestamp AT TIME ZONE 'Asia/Beirut') AS finish
-       FROM unnest($1::date[]) AS days(day) ORDER BY day`,
-      [dates],
-    );
-    const initial = +days[0].start - DAY;
-    // Eight segments can each span a full day plus two full days of buffers.
-    const periods = await this.core.periods(
-      x,
-      initial,
-      Math.ceil((+days.at(-1).finish - initial) / DAY) + 25,
-    );
-    const deadline = performance.now() + TIME_BUDGET_MS;
-    const windows = days.map(({ start, finish }) => {
-      const starts = new Set();
-      const upper = Math.min(+finish, stop);
-      if (upper > x.now) {
-        for (const [from, to] of periods) {
-          if (from >= upper) break;
-          for (
-            let time = Math.ceil(Math.max(+start, from, x.now + 1) / HALF_HOUR) * HALF_HOUR;
-            time < Math.min(to, upper);
-            time += HALF_HOUR
-          )
-            starts.add(time);
-        }
-      }
-      if (
-        savedStart > x.now &&
-        savedStart <= horizon &&
-        savedStart >= +start &&
-        savedStart < +finish
-      )
-        starts.add(savedStart);
-      return {
-        starts: [...starts].sort((a, b) => a - b),
-        budget: searchBudget("day", { steps: 4096, queries: 224, deadline }),
-        capped: false,
-      };
-    });
-
     const items = [];
-    const rounds = Math.max(...windows.map((window) => window.starts.length));
-    scan: for (let index = 0; index < rounds; index++) {
-      for (const window of windows) {
-        const time = window.starts[index];
-        if (window.capped || time == null) continue;
-        const budget = searchBudget("candidate", {
-          steps: 192,
-          queries: 32,
-          deadline,
-          parent: window.budget,
-        });
-        try {
-          const item = await findSlot(time, periods, budget);
-          if (item) items.push(item);
-        } catch (error) {
-          if (!(error instanceof VisitSearchLimit)) throw error;
-          exhausted = true;
-          if (error.scope === "request") break scan;
-          if (error.scope === "day") window.capped = true;
-        }
-      }
+    const deadline = performance.now() + TIME_BUDGET_MS;
+    await x.c.query("SAVEPOINT visit_slot_read");
+    try {
+      await x.c.query("SET LOCAL statement_timeout = '1s'");
+      const capped = await this.#scan(
+        x,
+        { dates, stop, horizon, savedStart, deadline },
+        findSlot,
+        items,
+      );
+      exhausted ||= capped;
+    } catch (error) {
+      if (error.code !== "57014" && !(error instanceof VisitSearchLimit)) throw error;
+      exhausted = true;
     }
+    // The scan is read-only. Recover a timed-out transaction and reset its SQL deadline.
+    await x.c.query("ROLLBACK TO SAVEPOINT visit_slot_read");
+    await x.c.query("RELEASE SAVEPOINT visit_slot_read");
     items.sort((a, b) => a.start.localeCompare(b.start));
     const continuation =
       page && page.date < page.last
@@ -184,5 +139,79 @@ export class VisitSlotSearch {
           }
         : {}),
     };
+  }
+
+  async #scan(x, { dates, stop, horizon, savedStart, deadline }, findSlot, items) {
+    const checkTime = () => {
+      if (performance.now() >= deadline) throw new VisitSearchLimit("request");
+    };
+    const { rows: days } = await x.c.query(
+      `SELECT (day::timestamp AT TIME ZONE 'Asia/Beirut') AS start,
+              ((day+1)::timestamp AT TIME ZONE 'Asia/Beirut') AS finish
+       FROM unnest($1::date[]) AS days(day) ORDER BY day`,
+      [dates],
+    );
+    checkTime();
+    const initial = +days[0].start - DAY;
+    // Eight segments can each span a full day plus two full days of buffers.
+    const periods = await this.core.periods(
+      x,
+      initial,
+      Math.ceil((+days.at(-1).finish - initial) / DAY) + 25,
+    );
+    checkTime();
+    const windows = days
+      .map(({ start, finish }) => {
+        const includesSaved =
+          savedStart > x.now &&
+          savedStart <= horizon &&
+          savedStart >= +start &&
+          savedStart < +finish;
+        const starts = includesSaved ? [savedStart] : [];
+        const upper = Math.min(+finish, stop);
+        if (upper > x.now) {
+          for (const [from, to] of periods) {
+            if (from >= upper) break;
+            for (
+              let time = Math.ceil(Math.max(+start, from, x.now + 1) / HALF_HOUR) * HALF_HOUR;
+              time < Math.min(to, upper);
+              time += HALF_HOUR
+            )
+              if (time !== savedStart) starts.push(time);
+          }
+        }
+        return {
+          starts,
+          includesSaved,
+          budget: searchBudget("day", { steps: 4096, queries: 224, deadline }),
+          capped: false,
+        };
+      })
+      .sort((a, b) => Number(b.includesSaved) - Number(a.includesSaved));
+
+    let exhausted = false;
+    const rounds = Math.max(...windows.map((window) => window.starts.length));
+    for (let index = 0; index < rounds; index++) {
+      for (const window of windows) {
+        const time = window.starts[index];
+        if (window.capped || time == null) continue;
+        const budget = searchBudget("candidate", {
+          steps: 192,
+          queries: 32,
+          deadline,
+          parent: window.budget,
+        });
+        try {
+          const item = await findSlot(time, periods, budget);
+          if (item) items.push(item);
+        } catch (error) {
+          if (!(error instanceof VisitSearchLimit) || error.scope === "request") throw error;
+          exhausted = true;
+          if (error.scope === "day") window.capped = true;
+        }
+      }
+    }
+    checkTime();
+    return exhausted;
   }
 }

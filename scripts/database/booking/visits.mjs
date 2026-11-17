@@ -32,10 +32,12 @@ const segmentsFor = async (x, booking) =>
       key(x, booking),
     )
   ).rows;
-const savedSpecs = (segments) =>
+const savedSpecs = (segments, assigned = false) =>
   segments.map((segment) => ({
     ...segment,
-    duration: +segment.requested_end - +segment.requested_start,
+    duration: assigned
+      ? +segment.assigned_end - +segment.assigned_start
+      : +segment.requested_end - +segment.requested_start,
   }));
 
 const segmentProjection = (s) => ({
@@ -76,12 +78,12 @@ export class VisitBookings {
     );
     const services = new Map(rows.map((row) => [row.service_id, row]));
     return segments.map(({ service_id, professional_id }, index) => {
-      const service = services.get(service_id);
+      const service = services.get(service_id.toLowerCase());
       if (!service) this.fail(404, "NOT_FOUND");
       return {
         position: index + 1,
-        service_id,
-        requested_professional_id: professional_id ?? null,
+        service_id: service.service_id,
+        requested_professional_id: professional_id?.toLowerCase() ?? null,
         duration: service.duration_minutes * 60000,
         buffer_before_seconds: service.buffer_before * 60,
         buffer_after_seconds: service.buffer_after * 60,
@@ -91,9 +93,9 @@ export class VisitBookings {
 
   async chain(x, specs, start, { ignore = null, assignments = null, periods, budget } = {}) {
     if (start <= x.now || start > x.now + 180 * 86400000) this.fail(422, "FUTURE_TIME_REQUIRED");
-    const opening = periods ?? (await this.core.periods(x, start - 86400000));
-    const candidates = new Map();
     const spend = budget ?? searchBudget();
+    const candidates = new Map();
+    let opening = periods;
     let truncated = false;
     const eligibleAt = async (s, professional, from, to) => {
       if (!opening.some(([a, b]) => a <= from && b >= to)) return [];
@@ -109,6 +111,7 @@ export class VisitBookings {
           ignore,
           MAX_CANDIDATES + 1,
         );
+        spend("time");
         truncated ||= matches.length > MAX_CANDIDATES;
         candidates.set(cacheKey, matches.slice(0, MAX_CANDIDATES));
       }
@@ -155,6 +158,8 @@ export class VisitBookings {
       return null;
     };
     try {
+      opening ??= await this.core.periods(x, start - 86400000);
+      spend("time");
       const result = await search([]);
       if (result) return result;
       if (truncated) throw new VisitSearchLimit("candidate");
@@ -213,7 +218,7 @@ export class VisitBookings {
       if (blocked) this.fail(409, blocked);
       const assignments = this.assignments(segments, input.assignments, "reschedule");
       if (assignments.some((professional) => !professional)) this.fail(409, "ASSIGNMENT_REQUIRED");
-      const slots = await this.slots(x, savedSpecs(segments), {
+      const slots = await this.slots(x, savedSpecs(segments, true), {
         booking: b,
         assignments,
         search: input.search,
@@ -228,7 +233,11 @@ export class VisitBookings {
     return segments.map((s, i) =>
       action === "accept"
         ? s.assigned_professional_id
-        : (positional?.[i] ?? s.assigned_professional_id ?? s.requested_professional_id),
+        : ((
+            positional?.[i] ??
+            s.assigned_professional_id ??
+            s.requested_professional_id
+          )?.toLowerCase() ?? null),
     );
   }
 
@@ -552,7 +561,7 @@ export class VisitBookings {
           : action === "accept"
             ? +b.assigned_start
             : +b.requested_start;
-        chain = await this.chain(x, savedSpecs(segments), start, {
+        chain = await this.chain(x, savedSpecs(segments, action === "reschedule"), start, {
           ignore: b.booking_id,
           assignments: assignment,
         });
@@ -584,11 +593,11 @@ export class VisitBookings {
       }
       if (action !== "request") {
         const schedule = chain && action !== "assign";
-        b = (
+        const updated = (
           await c.query(
             `UPDATE mawid_core.bookings SET state=$4,version=version+$5,assigned_professional_id=$6,
             assigned_start=$7,assigned_end=$8,offer_expires_at=$9,cancelled_at=$10,cancellation_actor=$11
-            WHERE ${scope} RETURNING *`,
+            WHERE ${scope} AND (NOT $12::boolean OR assigned_start>clock_timestamp()) RETURNING *`,
             [
               ...key(x, b),
               state,
@@ -599,9 +608,12 @@ export class VisitBookings {
               expires,
               state === "cancelled" ? iso(now) : null,
               state === "cancelled" ? (own ? "customer" : "salon") : null,
+              action === "reschedule",
             ],
           )
         ).rows[0];
+        if (!updated) this.fail(409, "RESCHEDULE_CUTOFF");
+        b = updated;
         await c.query(`DELETE FROM mawid_core.allocations WHERE ${scope}`, key(x, b));
         for (const s of chain ?? []) {
           await c.query(

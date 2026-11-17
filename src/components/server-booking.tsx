@@ -528,7 +528,8 @@ export function ServerBookingPage({
                         {saved ? (
                           <option value={saved.service_id}>
                             {selectedService?.name ?? say("Saved service", "الخدمة المحفوظة")} ·{" "}
-                            {(Date.parse(saved.requested_end) - Date.parse(saved.requested_start)) /
+                            {(Date.parse(saved.assigned_end ?? saved.requested_end) -
+                              Date.parse(saved.assigned_start ?? saved.requested_start)) /
                               60000}{" "}
                             {say("min", "د")}
                           </option>

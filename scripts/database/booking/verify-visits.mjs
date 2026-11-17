@@ -425,6 +425,10 @@ try {
     )
   ).rows;
   assert.deepEqual(recentReminders, [{ actor_id: id(101) }]);
+  await fixture.admin.query(
+    "UPDATE mawid_core.memberships SET revoked_at=NULL WHERE workspace_id=$1 AND actor_id=$2",
+    [w, id(105)],
+  );
 
   const { early, later } = (
     await fixture.admin.query(
@@ -537,6 +541,103 @@ try {
   assert.equal(noMatches.body.search.status, "complete");
   assert.equal(noMatches.body.search.continuation, null);
   assert.deepEqual((await searchSlots(USERS.customerA, unavailable)).body.items, []);
+  await admin.query(
+    `DELETE FROM mawid_core.professional_intervals WHERE workspace_id=$1 AND location_id=$2
+       AND professional_id=$3 AND kind='availability'`,
+    [w, l, finisher],
+  );
+  const legacyExhausted = await searchSlots(USERS.customerA, flexibleChain);
+  assert.equal(legacyExhausted.status, 409);
+  assert.equal(legacyExhausted.body.error.code, "AVAILABILITY_SEARCH_INCOMPLETE");
+
+  const { fullDay, savedTime } = (
+    await admin.query(
+      `SELECT d::text AS "fullDay", (d+'18:15'::time) AT TIME ZONE 'Asia/Beirut' AS "savedTime"
+       FROM (SELECT (clock_timestamp() AT TIME ZONE 'Asia/Beirut')::date+4 AS d) AS dates`,
+    )
+  ).rows[0];
+  await admin.query(
+    `INSERT INTO mawid_core.schedule_exceptions(workspace_id,location_id,local_date,opens,closes)
+     VALUES($1,$2,$3,'00:00','24:00')`,
+    [w, l, fullDay],
+  );
+  const busyDay = await request(USERS.customerA, "/visit-core/requests", {
+    customer_id: customer,
+    operation_id: randomUUID(),
+    segments: Array.from({ length: 8 }, () => ({ service_id: first, professional_id: a })),
+    start: savedTime.toISOString().replace(".000Z", "Z"),
+  });
+  assert.equal(busyDay.status, 201, JSON.stringify(busyDay));
+  const busyConfirmed = await action(USERS.managerA, busyDay.body, "confirm");
+  assert.equal(busyConfirmed.status, 200, JSON.stringify(busyConfirmed));
+  const busyPreview = await preview(USERS.managerA, busyConfirmed.body, {
+    search: { date: fullDay },
+  });
+  assert.equal(busyPreview.status, 200, JSON.stringify(busyPreview));
+  assert.equal(busyPreview.body.search.exhausted, true);
+  assert.ok(
+    busyPreview.body.items.some((item) => Date.parse(item.start) === +savedTime),
+    "prioritize the saved appointment before exhausting the day's candidate budget",
+  );
+  const legacyStart = new Date(+savedTime - 5 * 3600000).toISOString().replace(".000Z", "Z");
+  const legacyPending = await request(USERS.customerA, "/booking-core/requests", {
+    customer_id: customer,
+    operation_id: randomUUID(),
+    service_id: first,
+    professional_id: a,
+    start: legacyStart,
+  });
+  assert.equal(legacyPending.status, 201, JSON.stringify(legacyPending));
+  await admin.query(
+    "UPDATE mawid_core.services SET duration_minutes=45 WHERE workspace_id=$1 AND location_id=$2 AND service_id=$3",
+    [w, l, first],
+  );
+  const legacyConfirmed = await request(
+    USERS.adminA,
+    "/booking-core/bookings/" + legacyPending.body.booking_id + "/confirm",
+    { operation_id: randomUUID(), expected_version: legacyPending.body.version },
+  );
+  assert.equal(legacyConfirmed.status, 200, JSON.stringify(legacyConfirmed));
+  await admin.query(
+    "UPDATE mawid_core.services SET duration_minutes=90 WHERE workspace_id=$1 AND location_id=$2 AND service_id=$3",
+    [w, l, first],
+  );
+  const legacyPreview = await preview(USERS.managerA, legacyConfirmed.body, {
+    search: { date: fullDay },
+  });
+  assert.equal(legacyPreview.status, 200, JSON.stringify(legacyPreview));
+  assert.equal(
+    legacyPreview.body.items.find(({ start }) => start === legacyStart).segments[0].assigned_end,
+    legacyConfirmed.body.assigned_end,
+    "keep the actual confirmed duration of a legacy request",
+  );
+  const legacyMoved = await action(USERS.managerA, legacyConfirmed.body, "reschedule", {
+    start: legacyStart,
+  });
+  assert.equal(legacyMoved.status, 200, JSON.stringify(legacyMoved));
+  assert.equal(legacyMoved.body.assigned_end, legacyConfirmed.body.assigned_end);
+
+  const lookupProfessionals = booking.availableProfessionals.bind(booking);
+  let lookups = 0;
+  booking.availableProfessionals = async (...args) => {
+    if (++lookups === 2) await args[0].c.query("SELECT pg_sleep(2)");
+    return lookupProfessionals(...args);
+  };
+  try {
+    const timed = await searchSlots(USERS.customerA, [{ service_id: first, professional_id: a }], {
+      date: fullDay,
+    });
+    assert.equal(timed.status, 200, JSON.stringify(timed));
+    assert.equal(timed.body.search.exhausted, true);
+    assert.equal(
+      timed.body.items.length,
+      1,
+      "retain valid results when a later SQL lookup times out",
+    );
+    assert.equal(typeof timed.body.search.continuation, "string");
+  } finally {
+    booking.availableProfessionals = lookupProfessionals;
+  }
   console.log(
     "Visit chain, reschedule preview, bounded availability, replay, buffers and atomic cancellation verified.",
   );
