@@ -1,11 +1,20 @@
 import { createHash } from "node:crypto";
 import { instant, responseDeadline, nextReview, holdExpiry, canSelfCancel } from "./time.mjs";
+import { VisitSearchLimit, VisitSlotSearch, searchBudget } from "./visit-search.mjs";
 
 const iso = (time) => new Date(time).toISOString();
+const MAX_CANDIDATES = 64;
 const terminal = ["cancelled", "declined", "withdrawn", "expired"];
 const partner = (x) => x.roles.some((role) => role === "admin" || role === "manager");
 const key = (x, b) => [x.w, x.l, b.booking_id];
 const scope = "workspace_id=$1 AND location_id=$2 AND booking_id=$3";
+const visitSelect = `SELECT b.*, EXISTS (
+  SELECT 1 FROM mawid_core.visit_reviews r
+  WHERE (r.workspace_id,r.location_id,r.booking_id)=(b.workspace_id,b.location_id,b.booking_id)
+) AS has_reviews FROM mawid_core.bookings b`;
+const headerScope = "b.workspace_id=$1 AND b.location_id=$2 AND b.booking_id=$3";
+const rescheduleBlock = (x, b) =>
+  b.has_reviews ? "VISIT_HAS_REVIEWS" : x.now < +b.assigned_start ? null : "RESCHEDULE_CUTOFF";
 const sortKeys = (value) => {
   if (Array.isArray(value)) return value.map(sortKeys);
   if (value && typeof value === "object")
@@ -23,6 +32,13 @@ const segmentsFor = async (x, booking) =>
       key(x, booking),
     )
   ).rows;
+const savedSpecs = (segments, assigned = false) =>
+  segments.map((segment) => ({
+    ...segment,
+    duration: assigned
+      ? +segment.assigned_end - +segment.assigned_start
+      : +segment.requested_end - +segment.requested_start,
+  }));
 
 const segmentProjection = (s) => ({
   position: s.position,
@@ -36,11 +52,23 @@ const segmentProjection = (s) => ({
   buffer_before_seconds: Number(s.buffer_before_seconds),
   buffer_after_seconds: Number(s.buffer_after_seconds),
 });
+const previewSegments = (chain, assigned = false) =>
+  chain.map((segment) =>
+    segmentProjection({
+      ...segment,
+      requested_start: segment.start,
+      requested_end: segment.end,
+      assigned_professional_id: assigned ? segment.professional : null,
+      assigned_start: assigned ? segment.start : null,
+      assigned_end: assigned ? segment.end : null,
+    }),
+  );
 
 export class VisitBookings {
   constructor(core, fail) {
     this.core = core;
     this.fail = fail;
+    this.slotSearch = new VisitSlotSearch(core, fail);
   }
 
   async specs(x, segments) {
@@ -50,12 +78,12 @@ export class VisitBookings {
     );
     const services = new Map(rows.map((row) => [row.service_id, row]));
     return segments.map(({ service_id, professional_id }, index) => {
-      const service = services.get(service_id);
+      const service = services.get(service_id.toLowerCase());
       if (!service) this.fail(404, "NOT_FOUND");
       return {
         position: index + 1,
-        service_id,
-        requested_professional_id: professional_id ?? null,
+        service_id: service.service_id,
+        requested_professional_id: professional_id?.toLowerCase() ?? null,
         duration: service.duration_minutes * 60000,
         buffer_before_seconds: service.buffer_before * 60,
         buffer_after_seconds: service.buffer_after * 60,
@@ -63,24 +91,34 @@ export class VisitBookings {
     });
   }
 
-  async chain(x, specs, start, ignore = null, assignments = null, periods = null) {
+  async chain(x, specs, start, { ignore = null, assignments = null, periods, budget } = {}) {
     if (start <= x.now || start > x.now + 180 * 86400000) this.fail(422, "FUTURE_TIME_REQUIRED");
-    const opening = periods ?? (await this.core.periods(x, start - 86400000));
+    const spend = budget ?? searchBudget();
     const candidates = new Map();
-    let searched = 0;
+    let opening = periods;
+    let truncated = false;
     const eligibleAt = async (s, professional, from, to) => {
       if (!opening.some(([a, b]) => a <= from && b >= to)) return [];
       const cacheKey = [s.service_id, professional, from, to].join("/");
       if (!candidates.has(cacheKey)) {
-        candidates.set(
-          cacheKey,
-          await this.core.availableProfessionals(x, s.service_id, professional, from, to, ignore),
+        spend("query");
+        const matches = await this.core.availableProfessionals(
+          x,
+          s.service_id,
+          professional,
+          from,
+          to,
+          ignore,
+          MAX_CANDIDATES + 1,
         );
+        spend("time");
+        truncated ||= matches.length > MAX_CANDIDATES;
+        candidates.set(cacheKey, matches.slice(0, MAX_CANDIDATES));
       }
       return candidates.get(cacheKey);
     };
     const search = async (path) => {
-      if (++searched > 4096) this.fail(503, "RETRY_SAME_KEY");
+      spend("step");
       const index = path.length;
       if (index === specs.length) return path;
       const s = specs[index];
@@ -104,6 +142,7 @@ export class VisitBookings {
         const from = window.starts - before;
         const to = end + after;
         for (const professional of await eligibleAt(s, window.professional, from, to)) {
+          spend("step");
           if (
             professional === window.excludes ||
             path.some((old) => old.professional === professional && old.from < to && from < old.to)
@@ -118,46 +157,88 @@ export class VisitBookings {
       }
       return null;
     };
-    const result = await search([]);
-    if (!result) this.fail(409, "SLOT_UNAVAILABLE");
-    return result;
+    try {
+      opening ??= await this.core.periods(x, start - 86400000);
+      spend("time");
+      const result = await search([]);
+      if (result) return result;
+      if (truncated) throw new VisitSearchLimit("candidate");
+      if (budget) return null;
+      this.fail(409, "SLOT_UNAVAILABLE");
+    } catch (error) {
+      if (error instanceof VisitSearchLimit && !budget) this.fail(409, error.message);
+      throw error;
+    }
   }
 
   async availability(user, w, l, input, list = false) {
     return this.core.run(user, w, l, async (x) => {
       const specs = await this.specs(x, input.segments);
-      const preview = (chain) =>
-        chain.map((s) =>
-          segmentProjection({
-            ...s,
-            requested_start: s.start,
-            requested_end: s.end,
-          }),
-        );
       if (!list) {
         const chain = await this.chain(x, specs, instant(input.start));
-        return { available: true, contract_version: 2, segments: preview(chain) };
+        return { available: true, contract_version: 2, segments: previewSegments(chain) };
       }
-      const periods = await this.core.periods(x, x.now);
-      const items = [];
-      const stop = x.now + 7 * 86400000;
-      for (const [from, to] of periods) {
-        if (from > stop) break;
-        for (
-          let time = Math.ceil(Math.max(from, x.now + 1) / 1800000) * 1800000;
-          time < Math.min(to, stop);
-          time += 1800000
-        ) {
-          try {
-            const chain = await this.chain(x, specs, time, null, null, periods);
-            items.push({ start: iso(time).replace(".000Z", "Z"), segments: preview(chain) });
-          } catch (error) {
-            if (error.apiCode !== "SLOT_UNAVAILABLE") throw error;
-          }
-        }
-      }
-      return { contract_version: 2, items, timezone: "Asia/Beirut" };
+      return this.slots(x, specs, { search: input.search, request: input.segments });
     });
+  }
+
+  async slots(x, specs, { booking, assignments, search, request }) {
+    return this.slotSearch.slots(
+      x,
+      search,
+      request,
+      +booking?.assigned_start,
+      async (time, periods, budget) => {
+        const chain = await this.chain(x, specs, time, {
+          ignore: booking?.booking_id,
+          assignments,
+          periods,
+          budget,
+        });
+        return (
+          chain && {
+            start: iso(time).replace(".000Z", "Z"),
+            segments: previewSegments(chain, Boolean(booking)),
+          }
+        );
+      },
+    );
+  }
+
+  async rescheduleSlots(user, w, l, id, input) {
+    return this.core.run(user, w, l, async (x) => {
+      const b = (await x.c.query(`${visitSelect} WHERE ${headerScope}`, [w, l, id])).rows[0];
+      if (!b) this.fail(404, "NOT_FOUND");
+      const segments = await segmentsFor(x, b);
+      this.project(x, b, segments);
+      if (!partner(x)) this.fail(403, "ACTION_DENIED");
+      if (String(b.version) !== input.expected_version) this.fail(409, "STALE_VERSION");
+      if (b.state !== "confirmed") this.fail(409, "INVALID_TRANSITION");
+      const blocked = rescheduleBlock(x, b);
+      if (blocked) this.fail(409, blocked);
+      const assignments = this.assignments(segments, input.assignments, "reschedule");
+      if (assignments.some((professional) => !professional)) this.fail(409, "ASSIGNMENT_REQUIRED");
+      const slots = await this.slots(x, savedSpecs(segments, true), {
+        booking: b,
+        assignments,
+        search: input.search,
+        request: [b.booking_id, input.expected_version, assignments],
+      });
+      return { ...slots, booking_id: b.booking_id, version: String(b.version) };
+    });
+  }
+
+  assignments(segments, positional, action) {
+    if (positional && positional.length !== segments.length) this.fail(422, "ASSIGNMENT_COUNT");
+    return segments.map((s, i) =>
+      action === "accept"
+        ? s.assigned_professional_id
+        : ((
+            positional?.[i] ??
+            s.assigned_professional_id ??
+            s.requested_professional_id
+          )?.toLowerCase() ?? null),
+    );
   }
 
   project(x, b, segments) {
@@ -182,6 +263,7 @@ export class VisitBookings {
       ...this.core.project(x, b),
       contract_version: 2,
       segments: segments.map(segmentProjection),
+      ...(partner(x) && b.state === "confirmed" ? { can_reschedule: !rescheduleBlock(x, b) } : {}),
       ...(partner(x) && b.intake_source
         ? { intake_source: b.intake_source, entered_by: b.entered_by }
         : {}),
@@ -191,8 +273,7 @@ export class VisitBookings {
   async read(user, w, l, id) {
     return this.core.run(user, w, l, async (x) => {
       await this.core.expire(x);
-      const b = (await x.c.query(`SELECT * FROM mawid_core.bookings WHERE ${scope}`, [w, l, id]))
-        .rows[0];
+      const b = (await x.c.query(`${visitSelect} WHERE ${headerScope}`, [w, l, id])).rows[0];
       if (!b) this.fail(404, "NOT_FOUND");
       return this.project(x, b, await segmentsFor(x, b));
     });
@@ -217,7 +298,7 @@ export class VisitBookings {
         ...ratingByProfessional.get(p.professional_id),
       }));
       const { rows } = await x.c.query(
-        `SELECT b.* FROM mawid_core.bookings b
+        `${visitSelect}
          WHERE b.workspace_id=$1 AND b.location_id=$2 AND ($3::uuid IS NULL OR b.booking_id>$3)
            AND ($4::boolean OR b.customer_id=ANY($5::uuid[]) OR EXISTS(
              SELECT 1 FROM mawid_core.visit_segments s
@@ -326,8 +407,7 @@ export class VisitBookings {
     return this.core.run(user, w, l, async (x) => {
       const { c, actor, now } = x;
       let b = id
-        ? (await c.query(`SELECT * FROM mawid_core.bookings WHERE ${scope} FOR UPDATE`, [w, l, id]))
-            .rows[0]
+        ? (await c.query(`${visitSelect} WHERE ${headerScope} FOR UPDATE OF b`, [w, l, id])).rows[0]
         : null;
       if (id && !b) this.fail(404, "NOT_FOUND");
       let segments = b ? await segmentsFor(x, b) : [];
@@ -457,18 +537,16 @@ export class VisitBookings {
       let state = b.state;
       let chain;
       let expires = b.offer_expires_at;
-      const positional = input.assignments;
-      if (positional && positional.length !== segments.length) this.fail(422, "ASSIGNMENT_COUNT");
       const alternative = action === "propose" || action === "reschedule";
-      const assignment = segments.map((s, i) =>
-        action === "accept"
-          ? s.assigned_professional_id
-          : (positional?.[i] ?? s.assigned_professional_id ?? s.requested_professional_id),
-      );
+      const assignment = this.assignments(segments, input.assignments, action);
       if (["assign", "confirm", "propose", "reschedule", "accept", "walk-in"].includes(action)) {
         const required =
           action === "reschedule" ? "confirmed" : action === "accept" ? "proposed" : "pending";
         if (b.state !== required) this.fail(409, "INVALID_TRANSITION");
+        if (action === "reschedule") {
+          const blocked = rescheduleBlock(x, b);
+          if (blocked) this.fail(409, blocked);
+        }
         if (assignment.some((professional) => !professional)) this.fail(409, "ASSIGNMENT_REQUIRED");
         if (
           !alternative &&
@@ -483,16 +561,10 @@ export class VisitBookings {
           : action === "accept"
             ? +b.assigned_start
             : +b.requested_start;
-        chain = await this.chain(
-          x,
-          segments.map((s) => ({
-            ...s,
-            duration: +s.requested_end - +s.requested_start,
-          })),
-          start,
-          b.booking_id,
-          assignment,
-        );
+        chain = await this.chain(x, savedSpecs(segments, action === "reschedule"), start, {
+          ignore: b.booking_id,
+          assignments: assignment,
+        });
         if (
           action === "accept" &&
           chain.some(
@@ -521,11 +593,11 @@ export class VisitBookings {
       }
       if (action !== "request") {
         const schedule = chain && action !== "assign";
-        b = (
+        const updated = (
           await c.query(
             `UPDATE mawid_core.bookings SET state=$4,version=version+$5,assigned_professional_id=$6,
             assigned_start=$7,assigned_end=$8,offer_expires_at=$9,cancelled_at=$10,cancellation_actor=$11
-            WHERE ${scope} RETURNING *`,
+            WHERE ${scope} AND (NOT $12::boolean OR assigned_start>clock_timestamp()) RETURNING *`,
             [
               ...key(x, b),
               state,
@@ -536,9 +608,12 @@ export class VisitBookings {
               expires,
               state === "cancelled" ? iso(now) : null,
               state === "cancelled" ? (own ? "customer" : "salon") : null,
+              action === "reschedule",
             ],
           )
         ).rows[0];
+        if (!updated) this.fail(409, "RESCHEDULE_CUTOFF");
+        b = updated;
         await c.query(`DELETE FROM mawid_core.allocations WHERE ${scope}`, key(x, b));
         for (const s of chain ?? []) {
           await c.query(

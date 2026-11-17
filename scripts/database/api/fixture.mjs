@@ -67,7 +67,7 @@ export async function createLocalFixture({
       await admin?.end();
     } finally {
       if (created) {
-        docker("rm", "--force", name);
+        docker("rm", "--force", "--volumes", name);
         created = false;
       }
     }

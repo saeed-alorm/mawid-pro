@@ -4,7 +4,7 @@ import {
   BookingFailure,
   type BookingView,
   type ServerBooking,
-  type ServerSlot,
+  type SlotPage,
   type VisitPreference,
   type VisitSegment,
   type InboxItem,
@@ -43,7 +43,8 @@ export function ServerBookingPage({
   const say = (en: string, ar: string) => (lang === "ar" ? ar : en);
   const client = useRef<BookingClient | null>(null);
   const epoch = useRef(0),
-    read = useRef(0);
+    read = useRef(0),
+    slotRead = useRef(0);
   const [view, setView] = useState<BookingView | null>(null);
   const [inbox, setInbox] = useState<InboxItem[]>([]);
   const [busy, setBusy] = useState(false),
@@ -60,7 +61,8 @@ export function ServerBookingPage({
   >([]);
   const [customer, setCustomer] = useState(""),
     [start, setStart] = useState("");
-  const [slots, setSlots] = useState<ServerSlot[]>([]);
+  const [availability, setAvailability] = useState<SlotPage | null>(null);
+  const [searchDate, setSearchDate] = useState("");
   const [selected, setSelected] = useState<ServerBooking | null>(null);
   const [review, setReview] = useState<{
     booking_id: string;
@@ -79,10 +81,14 @@ export function ServerBookingPage({
       dateStyle: "medium",
       timeStyle: "short",
     }).format(new Date(value));
+  const clearAvailability = useCallback(() => {
+    slotRead.current++;
+    setAvailability(null);
+    setStart("");
+  }, []);
   const updateDraft = (next: VisitPreference[]) => {
     setDraft(next);
-    setSlots([]);
-    setStart("");
+    clearAvailability();
   };
   const clearPrivateFields = useCallback(() => {
     setCustomer("");
@@ -99,6 +105,9 @@ export function ServerBookingPage({
     updateDraft(draft.map((segment, i) => (i === index ? next : segment)));
   const loadVisit = (booking: ServerBooking, assigned: boolean) => {
     setSelected(assigned ? booking : null);
+    setSearchDate(
+      assigned && booking.state === "confirmed" ? (booking.assigned_local?.date ?? "") : "",
+    );
     updateDraft(
       (booking.segments ?? []).map((s) => ({
         service_id: s.service_id,
@@ -108,6 +117,7 @@ export function ServerBookingPage({
           undefined,
       })),
     );
+    document.getElementById("visit-draft")?.focus();
   };
   const refresh = useCallback(
     async (preserveMessage = false) => {
@@ -119,14 +129,14 @@ export function ServerBookingPage({
         const result = await c.view();
         if (e === epoch.current && r === read.current) {
           setView(result);
-          setSelected(null);
         }
       } catch (error) {
         if (e === epoch.current && r === read.current) {
           setView(null);
           clearPrivateFields();
           setInbox([]);
-          setSlots([]);
+          clearAvailability();
+          setSearchDate("");
           setSelected(null);
           if (!preserveMessage)
             setMessage(error instanceof BookingFailure ? error.code : "ACCESS_UNAVAILABLE");
@@ -140,7 +150,7 @@ export function ServerBookingPage({
         if (e === epoch.current && r === read.current) setInbox([]);
       }
     },
-    [clearPrivateFields],
+    [clearAvailability, clearPrivateFields],
   );
   useEffect(() => {
     setHydrated(true);
@@ -172,33 +182,94 @@ export function ServerBookingPage({
           ),
         );
     } catch (error) {
-      if (e === epoch.current)
-        setMessage(
-          say("Submission unconfirmed: ", "الإرسال غير مؤكد: ") +
-            (error instanceof BookingFailure ? error.code : "CONNECTION_UNCONFIRMED"),
-        );
+      if (e === epoch.current) {
+        const detail = bookingError(error, "CONNECTION_UNCONFIRMED");
+        setMessage(say("Submission unconfirmed: ", "الإرسال غير مؤكد: ") + detail);
+      }
     } finally {
       if (e === epoch.current) {
-        setSlots([]);
-        setStart("");
+        clearAvailability();
+        if (selected) {
+          setSelected(null);
+          setSearchDate("");
+          setDraft([{ service_id: "" }]);
+        }
         await refresh(true);
         setBusy(false);
       }
     }
   };
-  const loadSlots = async () => {
+  const bookingError = (error: unknown, fallback: string) => {
+    if (!(error instanceof BookingFailure)) return fallback;
+    if (error.code === "STALE_VERSION")
+      return say(
+        "This visit changed. Refresh and reopen it.",
+        "تغيّرت الزيارة. حدّث البيانات وافتحها مجدداً.",
+      );
+    if (error.code === "RESCHEDULE_CUTOFF")
+      return say(
+        "This visit has started. Create a new visit to book another time.",
+        "بدأت هذه الزيارة. أنشئ زيارة جديدة لحجز وقت آخر.",
+      );
+    if (error.code === "VISIT_HAS_REVIEWS")
+      return say(
+        "This visit has reviews. Create a new visit to book another time.",
+        "توجد تقييمات لهذه الزيارة. أنشئ زيارة جديدة لحجز وقت آخر.",
+      );
+    return error.code;
+  };
+  const partner = view?.roles.some((role) => role === "admin" || role === "manager");
+  const rescheduling = selected?.state === "confirmed";
+  const currentVisit =
+    selected && view?.bookings.find((item) => item.booking_id === selected.booking_id);
+  const editorCurrent =
+    !selected ||
+    (currentVisit?.version === selected.version && currentVisit.can_reschedule !== false);
+  const assignments = draft.map((segment) => segment.professional_id ?? null);
+  const replacementAssignments = assignments.map((id, index) =>
+    id === selected?.segments?.[index]?.assigned_professional_id ? null : id,
+  );
+  const canSchedule =
+    !!draft.length && draft.every((segment) => segment.service_id && segment.professional_id);
+  const canSearch =
+    editorCurrent &&
+    !!draft.length &&
+    draft.every((segment) => segment.service_id) &&
+    (!rescheduling || canSchedule);
+  const slots = availability?.items ?? [];
+  const continuation = availability?.search?.continuation;
+  const loadSlots = async (cursor?: string) => {
     const c = client.current,
       e = epoch.current;
-    if (!c || draft.some((segment) => !segment.service_id) || busy) return;
+    if (!c || !canSearch || busy) return;
+    if (!cursor) clearAvailability();
+    const request = ++slotRead.current;
     setBusy(true);
-    setSlots([]);
-    setStart("");
+    setMessage("");
     try {
-      const result = await c.request<{ items: ServerSlot[] }>("slots", { segments: draft });
-      if (e === epoch.current) setSlots(result.items);
+      const search = cursor ? { cursor } : searchDate ? { date: searchDate } : {};
+      const result = rescheduling
+        ? await c.request<SlotPage>(`visits/${selected.booking_id}/reschedule-slots`, {
+            expected_version: selected.version,
+            assignments: replacementAssignments,
+            search,
+          })
+        : await c.request<SlotPage>("slots", { segments: draft, search });
+      if (e !== epoch.current || request !== slotRead.current) return;
+      if (cursor) {
+        const distinct = new Map(result.items.map((slot) => [Date.parse(slot.start), slot]));
+        for (const slot of slots) distinct.set(Date.parse(slot.start), slot);
+        result.items = [...distinct.values()].sort(
+          (a, b) => Date.parse(a.start) - Date.parse(b.start),
+        );
+      } else if (rescheduling) {
+        const savedStart = Date.parse(selected.segments?.[0]?.assigned_start ?? "");
+        setStart(result.items.find((slot) => Date.parse(slot.start) === savedStart)?.start ?? "");
+      }
+      setAvailability(result);
     } catch (error) {
-      if (e === epoch.current)
-        setMessage(error instanceof BookingFailure ? error.code : "AVAILABILITY_UNAVAILABLE");
+      if (e === epoch.current && request === slotRead.current)
+        setMessage(bookingError(error, "AVAILABILITY_UNAVAILABLE"));
     } finally {
       if (e === epoch.current) setBusy(false);
     }
@@ -207,9 +278,6 @@ export function ServerBookingPage({
     act((c) =>
       c.mutate(`visits/${b.booking_id}/${action}`, { expected_version: b.version, ...extra }),
     );
-  const partner = view?.roles.some((role) => role === "admin" || role === "manager");
-  const assignments = draft.map((segment) => segment.professional_id ?? null);
-  const canSchedule = draft.every((segment) => segment.service_id && segment.professional_id);
   const preview = slots.find((slot) => slot.start === start)?.segments;
   const displayedVisits = view?.bookings.slice() ?? [];
   if (staff) {
@@ -285,7 +353,7 @@ export function ServerBookingPage({
             client.current = null;
             setView(null);
             setInbox([]);
-            setSlots([]);
+            setSearchDate("");
             setSelected(null);
             updateDraft([{ service_id: "", professional_id: initialProfessional }]);
             clearPrivateFields();
@@ -326,7 +394,8 @@ export function ServerBookingPage({
               setView(null);
               setInbox([]);
               clearPrivateFields();
-              setSlots([]);
+              clearAvailability();
+              setSearchDate("");
               setSelected(null);
               setBusy(false);
               setMessage("SESSION_DISCONNECTED");
@@ -388,94 +457,142 @@ export function ServerBookingPage({
           {(!staff || partner) && (
             <section id="visit-draft" tabIndex={-1} className="space-y-4 rounded-xl border p-4">
               <h2 className="text-lg font-semibold">
-                {selected
-                  ? say("Propose / assign", "اقتراح / تعيين")
-                  : staff
-                    ? say("Staff-created appointment", "موعد من الإدارة")
-                    : say("Request a time", "طلب موعد")}
+                {rescheduling
+                  ? say("Choose a new time", "اختيار موعد جديد")
+                  : selected
+                    ? say("Propose / assign", "اقتراح / تعيين")
+                    : staff
+                      ? say("Staff-created appointment", "موعد من الإدارة")
+                      : say("Request a time", "طلب موعد")}
               </h2>
-              {draft.map((segment, index) => (
-                <fieldset className="grid gap-3 rounded-lg border p-3 sm:grid-cols-2" key={index}>
-                  <legend className="px-1 text-sm font-medium">
-                    {say("Service", "الخدمة")} {index + 1}
-                  </legend>
-                  <label className="grid gap-1">
-                    {say("Service", "الخدمة")}
-                    <select
-                      className="rounded-md border bg-background p-2"
-                      aria-label={
-                        index === 0
-                          ? say("Service", "الخدمة")
-                          : say(`Service ${index + 1}`, `الخدمة ${index + 1}`)
-                      }
-                      value={segment.service_id}
-                      disabled={busy || !!selected}
-                      onChange={(event) => {
-                        const value = event.target.value;
-                        const stillEligible = view.professionals.some(
-                          (item) =>
-                            item.professional_id === segment.professional_id &&
-                            item.service_ids.includes(value),
-                        );
-                        editDraft(index, {
-                          service_id: value,
-                          ...(stillEligible ? { professional_id: segment.professional_id } : {}),
-                        });
-                      }}
-                    >
-                      <option value="">—</option>
-                      {view.services.map((item) => (
-                        <option key={item.service_id} value={item.service_id}>
-                          {item.name} · {item.duration_minutes} {say("min", "د")}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label className="grid gap-1">
-                    {say("Professional", "الاختصاصي")}
-                    <select
-                      className="rounded-md border bg-background p-2"
-                      aria-label={
-                        index === 0
-                          ? say("Professional", "الاختصاصي")
-                          : say(`Professional ${index + 1}`, `الاختصاصي ${index + 1}`)
-                      }
-                      value={segment.professional_id ?? ""}
-                      disabled={busy}
-                      onChange={(event) =>
-                        editDraft(index, {
-                          ...segment,
-                          professional_id: event.target.value || undefined,
-                        })
-                      }
-                    >
-                      <option value="">{say("Any professional", "أي اختصاصي")}</option>
-                      {view.professionals
-                        .filter(
-                          (item) =>
-                            item.active &&
-                            (segment.service_id
-                              ? item.service_ids.includes(segment.service_id)
-                              : item.professional_id === segment.professional_id),
-                        )
-                        .map((item) => (
+              {rescheduling && selected.segments && (
+                <div className="space-y-2">
+                  <h3 className="text-sm font-semibold">
+                    {say("Current visit schedule", "الجدول الحالي للزيارة")}
+                  </h3>
+                  {sequence(selected.segments, view, true)}
+                </div>
+              )}
+              {!editorCurrent && (
+                <p role="status">
+                  {say(
+                    "This visit changed or can no longer be edited. Close this form to see its current state.",
+                    "تغيّرت هذه الزيارة أو لم يعد تعديلها ممكناً. أغلق النموذج لرؤية حالتها الحالية.",
+                  )}
+                </p>
+              )}
+              {draft.map((segment, index) => {
+                const saved = rescheduling ? selected.segments?.[index] : undefined;
+                const selectedService = view.services.find(
+                  (item) => item.service_id === segment.service_id,
+                );
+                const eligible = view.professionals.filter(
+                  (item) =>
+                    item.active &&
+                    (segment.service_id
+                      ? item.service_ids.includes(segment.service_id)
+                      : item.professional_id === segment.professional_id),
+                );
+                const unavailable =
+                  segment.professional_id &&
+                  !eligible.some((item) => item.professional_id === segment.professional_id);
+                return (
+                  <fieldset className="grid gap-3 rounded-lg border p-3 sm:grid-cols-2" key={index}>
+                    <legend className="px-1 text-sm font-medium">
+                      {say("Service", "الخدمة")} {index + 1}
+                    </legend>
+                    <label className="grid gap-1">
+                      {say("Service", "الخدمة")}
+                      <select
+                        className="rounded-md border bg-background p-2"
+                        aria-label={
+                          index === 0
+                            ? say("Service", "الخدمة")
+                            : say(`Service ${index + 1}`, `الخدمة ${index + 1}`)
+                        }
+                        value={segment.service_id}
+                        disabled={busy || !!selected}
+                        onChange={(event) => {
+                          const value = event.target.value;
+                          const stillEligible = view.professionals.some(
+                            (item) =>
+                              item.professional_id === segment.professional_id &&
+                              item.service_ids.includes(value),
+                          );
+                          editDraft(index, {
+                            service_id: value,
+                            ...(stillEligible ? { professional_id: segment.professional_id } : {}),
+                          });
+                        }}
+                      >
+                        {saved ? (
+                          <option value={saved.service_id}>
+                            {selectedService?.name ?? say("Saved service", "الخدمة المحفوظة")} ·{" "}
+                            {(Date.parse(saved.assigned_end ?? saved.requested_end) -
+                              Date.parse(saved.assigned_start ?? saved.requested_start)) /
+                              60000}{" "}
+                            {say("min", "د")}
+                          </option>
+                        ) : (
+                          <>
+                            <option value="">—</option>
+                            {view.services.map((item) => (
+                              <option key={item.service_id} value={item.service_id}>
+                                {item.name} · {item.duration_minutes} {say("min", "د")}
+                              </option>
+                            ))}
+                          </>
+                        )}
+                      </select>
+                    </label>
+                    <label className="grid gap-1">
+                      {say("Professional", "الاختصاصي")}
+                      <select
+                        className="rounded-md border bg-background p-2"
+                        aria-label={
+                          index === 0
+                            ? say("Professional", "الاختصاصي")
+                            : say(`Professional ${index + 1}`, `الاختصاصي ${index + 1}`)
+                        }
+                        value={segment.professional_id ?? ""}
+                        disabled={busy || !editorCurrent}
+                        onChange={(event) =>
+                          editDraft(index, {
+                            ...segment,
+                            professional_id: event.target.value || undefined,
+                          })
+                        }
+                      >
+                        {!rescheduling && (
+                          <option value="">{say("Any professional", "أي اختصاصي")}</option>
+                        )}
+                        {unavailable && (
+                          <option value={segment.professional_id} disabled>
+                            {view.professionals.find(
+                              (item) => item.professional_id === segment.professional_id,
+                            )?.display_name ?? say("Saved professional", "الاختصاصي المحفوظ")}{" "}
+                            · {say("unavailable", "غير متاح")}
+                          </option>
+                        )}
+                        {eligible.map((item) => (
                           <option key={item.professional_id} value={item.professional_id}>
                             {item.display_name}
                           </option>
                         ))}
-                    </select>
-                  </label>
-                  {!selected && draft.length > 1 && (
-                    <Button
-                      variant="ghost"
-                      disabled={busy}
-                      onClick={() => updateDraft(draft.filter((_, i) => i !== index))}
-                    >
-                      {say("Remove service", "إزالة الخدمة")}
-                    </Button>
-                  )}
-                </fieldset>
-              ))}
+                      </select>
+                    </label>
+                    {!selected && draft.length > 1 && (
+                      <Button
+                        variant="ghost"
+                        disabled={busy}
+                        onClick={() => updateDraft(draft.filter((_, i) => i !== index))}
+                      >
+                        {say("Remove service", "إزالة الخدمة")}
+                      </Button>
+                    )}
+                  </fieldset>
+                );
+              })}
               {!selected && draft.length < 8 && (
                 <Button
                   variant="outline"
@@ -576,9 +693,22 @@ export function ServerBookingPage({
                 </fieldset>
               )}
               <div className="flex flex-wrap items-end gap-3">
+                <label className="grid gap-1">
+                  {say("Search date (Beirut)", "تاريخ البحث (بيروت)")}
+                  <input
+                    type="date"
+                    className="rounded-md border bg-background p-2"
+                    value={searchDate}
+                    disabled={busy || !editorCurrent}
+                    onChange={(event) => {
+                      setSearchDate(event.target.value);
+                      clearAvailability();
+                    }}
+                  />
+                </label>
                 <Button
                   variant="outline"
-                  disabled={busy || draft.some((item) => !item.service_id)}
+                  disabled={busy || !canSearch}
                   onClick={() => void loadSlots()}
                 >
                   {say("Refresh availability", "تحديث الأوقات المتاحة")}
@@ -589,7 +719,7 @@ export function ServerBookingPage({
                     className="rounded-md border bg-background p-2"
                     aria-label={say("Available time", "الوقت المتاح")}
                     value={start}
-                    disabled={busy}
+                    disabled={busy || !editorCurrent}
                     onChange={(event) => setStart(event.target.value)}
                   >
                     <option value="">—</option>
@@ -601,9 +731,37 @@ export function ServerBookingPage({
                   </select>
                 </label>
               </div>
+              {availability && (
+                <div className="space-y-2">
+                  <div role="status" className="text-sm">
+                    {availability.search?.status === "incomplete"
+                      ? availability.search.exhausted
+                        ? say(
+                            "Search incomplete. Choose another date or continue where available. Times found so far are listed above.",
+                            "البحث غير مكتمل. اختر تاريخاً آخر أو تابع البحث عند الإمكان. تظهر الأوقات المتاحة حتى الآن أعلاه.",
+                          )
+                        : say(
+                            "More dates remain. Continue the search or choose a date.",
+                            "لا تزال هناك تواريخ أخرى. تابع البحث أو اختر تاريخاً.",
+                          )
+                      : slots.length === 0
+                        ? say("No available times were found.", "لم يتم العثور على أوقات متاحة.")
+                        : null}
+                  </div>
+                  {continuation && (
+                    <Button
+                      variant="outline"
+                      disabled={busy || !canSearch}
+                      onClick={() => void loadSlots(continuation)}
+                    >
+                      {say("Continue search", "متابعة البحث")}
+                    </Button>
+                  )}
+                </div>
+              )}
               {preview && (
                 <div className="space-y-2">
-                  {sequence(preview, view)}
+                  {sequence(preview, view, rescheduling)}
                   <p className="text-sm">
                     {say("Total visit time", "مدة الزيارة الإجمالية")} ·{" "}
                     {(Date.parse(preview.at(-1)!.requested_end) -
@@ -618,19 +776,19 @@ export function ServerBookingPage({
                   {selected.state === "pending" &&
                     selected.segments?.some((item) => !item.requested_professional_id) && (
                       <Button
-                        disabled={busy || !canSchedule}
+                        disabled={busy || !canSchedule || !editorCurrent}
                         onClick={() => void mutate("assign", selected, { assignments })}
                       >
                         {say("Save assignment (no reservation)", "حفظ التعيين (دون حجز الوقت)")}
                       </Button>
                     )}
                   <Button
-                    disabled={busy || !start || !canSchedule}
+                    disabled={busy || !preview || !canSchedule || !editorCurrent}
                     onClick={() =>
                       void mutate(
                         selected.state === "confirmed" ? "reschedule" : "propose",
                         selected,
-                        { assignments, start },
+                        { assignments: rescheduling ? replacementAssignments : assignments, start },
                       )
                     }
                   >
@@ -640,8 +798,10 @@ export function ServerBookingPage({
                   </Button>
                   <Button
                     variant="ghost"
+                    disabled={busy}
                     onClick={() => {
                       setSelected(null);
+                      setSearchDate("");
                       updateDraft([{ service_id: "" }]);
                     }}
                   >
@@ -886,7 +1046,7 @@ export function ServerBookingPage({
                         </Button>
                       </>
                     )}
-                    {staff && partner && b.state === "confirmed" && (
+                    {staff && partner && b.state === "confirmed" && b.can_reschedule !== false && (
                       <Button variant="outline" disabled={busy} onClick={() => loadVisit(b, true)}>
                         {say("Choose a new time", "اختيار موعد جديد")}
                       </Button>

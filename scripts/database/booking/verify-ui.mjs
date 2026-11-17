@@ -45,6 +45,13 @@ async function awaitInbox(as, predicate) {
 }
 try {
   fixture = await createLocalFixture({ authorizationFixtures: true, bookingFixtures: true });
+  // These first cases require an open shop regardless of the CI runner's wall clock.
+  await fixture.admin.query(
+    `INSERT INTO mawid_core.schedule_exceptions(workspace_id,location_id,local_date,opens,closes)
+     SELECT $1,$2,(clock_timestamp() AT TIME ZONE 'Asia/Beirut')::date+n,'00:00','24:00'
+     FROM generate_series(0,1) AS days(n)`,
+    [W, L],
+  );
   data = new LocalDataService(fixture.configs);
   booking = new LocalBookingService(data, fixture.bookingConfig);
   notifications = new LocalNotifications(data, booking, fixture.notificationConfig, {
@@ -138,6 +145,29 @@ try {
     }
     return page;
   };
+  const pickTime = async (page, index = 1, arabic = false) => {
+    const refresh = page.getByRole("button", {
+      name: arabic ? "تحديث الأوقات المتاحة" : "Refresh availability",
+      exact: true,
+    });
+    const time = page.getByLabel(arabic ? "الوقت المتاح" : "Available time", { exact: true });
+    const more = page.getByRole("button", {
+      name: arabic ? "متابعة البحث" : "Continue search",
+      exact: true,
+    });
+    await refresh.click();
+    for (let day = 0; day < 7; day++) {
+      await expect(refresh).toBeEnabled({ timeout: 20000 });
+      if ((await time.locator("option").count()) > index) {
+        const value = await time.locator("option").nth(index).getAttribute("value");
+        await time.selectOption(value);
+        return value;
+      }
+      if (!(await more.count())) break;
+      await more.click();
+    }
+    throw new Error("Expected a selectable appointment time across the availability pages");
+  };
   const customer = await open("customerA"),
     manager = await open("managerA", true),
     admin = await open("adminA", true);
@@ -146,18 +176,7 @@ try {
     "actual customer form saves pending Any request; independent staff inbox receives committed event",
     async () => {
       await customer.getByLabel("Service", { exact: true }).selectOption(S);
-      await customer.getByRole("button", { name: "Refresh availability", exact: true }).click();
-      await customer
-        .getByLabel("Available time", { exact: true })
-        .locator("option")
-        .nth(1)
-        .waitFor({ state: "attached" });
-      at = await customer
-        .getByLabel("Available time", { exact: true })
-        .locator("option")
-        .nth(1)
-        .getAttribute("value");
-      await customer.getByLabel("Available time", { exact: true }).selectOption(at);
+      at = await pickTime(customer, 2);
       await customer.getByRole("button", { name: "Submit request", exact: true }).click();
       await customer.getByRole("status").filter({ hasText: "Server accepted" }).waitFor();
       created = (await api("customerA", "booking-core/view")).value.bookings.find(
@@ -246,21 +265,119 @@ try {
     },
   );
   await check(
+    "management previews the saved visit with its existing reservation and timings",
+    async () => {
+      const {
+        rows: [catalog],
+      } = await fixture.admin.query(
+        "SELECT duration_minutes,buffer_before,buffer_after FROM mawid_core.services WHERE workspace_id=$1 AND location_id=$2 AND service_id=$3",
+        [W, L, S],
+      );
+      try {
+        await fixture.admin.query(
+          "UPDATE mawid_core.services SET duration_minutes=75,buffer_before=13,buffer_after=7 WHERE workspace_id=$1 AND location_id=$2 AND service_id=$3",
+          [W, L, S],
+        );
+        await admin.getByRole("button", { name: "Refresh server state", exact: true }).click();
+        const card = admin
+          .getByRole("region", { name: "Server bookings" })
+          .locator("article")
+          .filter({ hasText: "confirmed · v3" });
+        await card.getByRole("button", { name: "Choose a new time", exact: true }).click();
+        const draft = admin.locator("#visit-draft");
+        await expect(draft.getByRole("heading", { name: "Current visit schedule" })).toBeVisible();
+        await expect(draft.getByLabel("Professional", { exact: true })).toHaveValue(P);
+        await expect(
+          draft.getByLabel("Service", { exact: true }).locator("option").last(),
+        ).toContainText(`${catalog.duration_minutes} min`);
+        const load = admin.waitForResponse((res) =>
+          new URL(res.url()).pathname.endsWith(`/visits/${created.booking_id}/reschedule-slots`),
+        );
+        await draft.getByRole("button", { name: "Refresh availability", exact: true }).click();
+        const response = await load;
+        assert.equal(response.status(), 200);
+        assert.deepEqual(response.request().postDataJSON().assignments, [null]);
+        assert.equal(response.request().postDataJSON().expected_version, "3");
+        const previous = (await response.json()).items.find(
+          (slot) => Date.parse(slot.start) === Date.parse(at),
+        );
+        assert.ok(previous, "the original time should still be offered");
+        await expect(draft.getByLabel("Available time", { exact: true })).toHaveValue(
+          previous.start,
+        );
+        await expect(
+          draft.getByText(`Total visit time · ${catalog.duration_minutes} min`),
+        ).toBeVisible();
+        await draft.getByRole("button", { name: "Reschedule visit", exact: true }).click();
+        await expect(
+          admin.getByRole("status").filter({ hasText: "Server accepted" }),
+        ).toBeVisible();
+        const { rows } = await fixture.admin.query(
+          "SELECT action,version FROM mawid_core.booking_events WHERE booking_id=$1 AND action='reschedule'",
+          [created.booking_id],
+        );
+        assert.deepEqual(rows, [{ action: "reschedule", version: "4" }]);
+      } finally {
+        await fixture.admin.query(
+          "UPDATE mawid_core.services SET duration_minutes=$4,buffer_before=$5,buffer_after=$6 WHERE workspace_id=$1 AND location_id=$2 AND service_id=$3",
+          [W, L, S, catalog.duration_minutes, catalog.buffer_before, catalog.buffer_after],
+        );
+      }
+    },
+  );
+  await check(
+    "availability preserves partial results and lets the customer continue or pick a date",
+    async () => {
+      const options = (
+        await api("customerA", "visit-core/slots", { segments: [{ service_id: S }] })
+      ).value.items;
+      assert.ok(options.length >= 2);
+      const page = await open("customerA");
+      const cursor = "connected-ui-fixture-cursor";
+      const date = "2029-11-22";
+      const requests = [];
+      try {
+        await page.route("**/visit-core/slots", async (route) => {
+          const { search } = route.request().postDataJSON();
+          requests.push(search);
+          const first = requests.length === 1;
+          await route.fulfill({
+            json: {
+              items: search?.date ? [] : [options[first ? 0 : 1]],
+              search: {
+                status: first ? "incomplete" : "complete",
+                continuation: first ? cursor : null,
+                exhausted: first,
+              },
+            },
+          });
+        });
+        const refresh = page.getByRole("button", { name: "Refresh availability", exact: true });
+        const time = page.getByLabel("Available time", { exact: true });
+        await page.getByLabel("Service", { exact: true }).selectOption(S);
+        await refresh.click();
+        await expect(page.getByText(/Search incomplete/)).toBeVisible();
+        await time.selectOption(options[0].start);
+        await page.getByRole("button", { name: "Continue search", exact: true }).click();
+        await expect(time.locator("option")).toHaveCount(3);
+        await expect(time).toHaveValue(options[0].start);
+        await page.getByLabel("Search date (Beirut)", { exact: true }).fill(date);
+        await refresh.click();
+        await expect(
+          page.getByText("No available times were found.", { exact: true }),
+        ).toBeVisible();
+        await expect(time.locator("option")).toHaveCount(1);
+        assert.deepEqual(requests, [{}, { cursor }, { date }]);
+      } finally {
+        await page.context().close();
+      }
+    },
+  );
+  await check(
     "lost HTTP acknowledgement and offline UI remain unconfirmed; exact retry creates one booking and one event",
     async () => {
       await customer.getByLabel("Service", { exact: true }).selectOption(S);
-      await customer.getByRole("button", { name: "Refresh availability", exact: true }).click();
-      await customer
-        .getByLabel("Available time", { exact: true })
-        .locator("option")
-        .nth(1)
-        .waitFor({ state: "attached" });
-      const next = await customer
-        .getByLabel("Available time", { exact: true })
-        .locator("option")
-        .nth(1)
-        .getAttribute("value");
-      await customer.getByLabel("Available time", { exact: true }).selectOption(next);
+      const next = await pickTime(customer);
       await customer.route(
         "**/visit-core/requests",
         async (route) => {
@@ -284,21 +401,7 @@ try {
         [rows[0].booking_id],
       );
       assert.equal(events.rows[0].count, "1");
-      await customer.getByRole("button", { name: "Refresh availability", exact: true }).click();
-      await customer
-        .getByLabel("Available time", { exact: true })
-        .locator("option")
-        .nth(2)
-        .waitFor({ state: "attached" });
-      await customer
-        .getByLabel("Available time", { exact: true })
-        .selectOption(
-          await customer
-            .getByLabel("Available time", { exact: true })
-            .locator("option")
-            .nth(2)
-            .getAttribute("value"),
-        );
+      await pickTime(customer, 2);
       await customer.context().setOffline(true);
       await customer.getByRole("button", { name: "Submit request", exact: true }).click();
       await customer.getByRole("status").filter({ hasText: "Submission unconfirmed" }).waitFor();
@@ -345,7 +448,9 @@ try {
     "after-hours UI saves immediately while staff push waits for next configured opening",
     async () => {
       await fixture.admin.query(
-        "INSERT INTO mawid_core.schedule_exceptions(workspace_id,location_id,local_date) VALUES($1,$2,(clock_timestamp() AT TIME ZONE 'Asia/Beirut')::date)",
+        `UPDATE mawid_core.schedule_exceptions SET opens=NULL,closes=NULL
+         WHERE workspace_id=$1 AND location_id=$2
+           AND local_date=(clock_timestamp() AT TIME ZONE 'Asia/Beirut')::date`,
         [W, L],
       );
       const slots = (
@@ -430,12 +535,7 @@ try {
       await arabic.getByRole("button", { name: "إضافة خدمة", exact: true }).click();
       await arabic.getByLabel("الخدمة 2", { exact: true }).selectOption(S);
       await expect(arabic.getByLabel("الاختصاصي 2", { exact: true })).toHaveValue("");
-      await arabic.getByRole("button", { name: "تحديث الأوقات المتاحة", exact: true }).click();
-      const option = arabic.getByLabel("الوقت المتاح", { exact: true }).locator("option").nth(1);
-      await option.waitFor({ state: "attached" });
-      await arabic
-        .getByLabel("الوقت المتاح", { exact: true })
-        .selectOption(await option.getAttribute("value"));
+      await pickTime(arabic, 1, true);
       await expect(arabic.getByText(/مدة الزيارة الإجمالية/)).toBeVisible();
       await arabic.getByRole("button", { name: "إرسال الطلب", exact: true }).click();
       await arabic.getByRole("status").filter({ hasText: "قبل الخادم الإجراء" }).waitFor();
@@ -460,6 +560,8 @@ try {
   });
   const paths = [
     "scripts/database/booking/service.mjs",
+    "scripts/database/booking/visits.mjs",
+    "scripts/database/booking/visit-search.mjs",
     "scripts/database/api/http-server.mjs",
     "src/lib/booking-client.ts",
     "src/components/server-booking.tsx",
