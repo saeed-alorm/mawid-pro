@@ -167,6 +167,21 @@ try {
     )
   ).rows[0];
   assert.deepEqual(profile, { actor_id: null, contact: "+96170000001" });
+  const conflictingCaller = await request(USERS.managerA, "/visit-core/caller-intake", {
+    ...callerIntent,
+    operation_id: randomUUID(),
+    caller: { name: "Uncommitted fictional caller" },
+  });
+  assert.equal(conflictingCaller.status, 409, JSON.stringify(conflictingCaller));
+  assert.equal(
+    (
+      await fixture.admin.query(
+        "SELECT count(*)::int AS count FROM mawid_core.customer_profiles WHERE workspace_id=$1 AND display_name=$2",
+        [w, "Uncommitted fictional caller"],
+      )
+    ).rows[0].count,
+    0,
+  );
   assert.equal(
     (await request(USERS.customerA, "/visit-core/caller-intake", callerIntent)).status,
     403,
@@ -247,6 +262,38 @@ try {
   assert.deepEqual(
     moved.body.segments.map((s) => s.assigned_start.slice(11, 16)),
     ["13:30", "14:00"],
+  );
+  // Shift the fictional confirmed visit into the final half hour without
+  // bypassing the allocation/segment commit constraints.
+  const shift = Date.now() + 1800000 - Date.parse(moved.body.segments[0].assigned_start);
+  await fixture.admin.query("BEGIN");
+  for (const table of ["bookings", "visit_segments"]) {
+    await fixture.admin.query(
+      `UPDATE mawid_core.${table} SET assigned_start=assigned_start+$2::bigint*interval '1 millisecond',
+       assigned_end=assigned_end+$2::bigint*interval '1 millisecond' WHERE booking_id=$1`,
+      [winner.booking_id, shift],
+    );
+  }
+  await fixture.admin.query(
+    `UPDATE mawid_core.allocations SET period=tstzrange(
+      lower(period)+$2::bigint*interval '1 millisecond',upper(period)+$2::bigint*interval '1 millisecond','[)')
+      WHERE booking_id=$1`,
+    [winner.booking_id, shift],
+  );
+  await fixture.admin.query("COMMIT");
+  const cancellation = { operation_id: randomUUID(), expected_version: moved.body.version };
+  const cancelledVisitPath = "/visit-core/visits/" + winner.booking_id + "/cancel";
+  const late = await request(USERS.customerA, cancelledVisitPath, cancellation);
+  assert.equal(late.status, 200, JSON.stringify(late));
+  assert.deepEqual(await request(USERS.customerA, cancelledVisitPath, cancellation), late);
+  const manager = await data.authenticate("Bearer " + data.issueSession(USERS.managerA).token);
+  assert.equal(
+    (
+      await data.transaction(manager, (client) =>
+        client.query("SELECT mawid_core.cancellation_count($1,$2) AS count", [w, customer]),
+      )
+    ).rows[0].count,
+    "1",
   );
   await action(USERS.customerA, fresh.body, "withdraw");
   const otherReminder = await pendingAt("10:00");
