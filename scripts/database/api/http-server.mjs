@@ -9,6 +9,21 @@ const uuid = z.string().regex(/^[a-f0-9]{8}(-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i);
 const page = z
   .object({ after: uuid.optional(), limit: z.coerce.number().int().min(1).max(50).default(50) })
   .strict();
+const slotSearch = z
+  .object({
+    date: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/)
+      .optional(),
+    cursor: z
+      .string()
+      .max(500)
+      .regex(/^[\w-]+\.[\w-]+$/)
+      .optional(),
+  })
+  .strict()
+  .refine(({ date, cursor }) => !(date && cursor))
+  .optional();
 class ApiError extends Error {
   constructor(status, code) {
     super(code);
@@ -323,6 +338,7 @@ export async function startLocalDataServer(
                 .object({
                   expected_version: z.string().regex(/^[1-9][0-9]{0,14}$/),
                   assignments: z.array(uuid.nullable()).min(1).max(8).optional(),
+                  search: slotSearch,
                 })
                 .strict(),
             );
@@ -334,7 +350,9 @@ export async function startLocalDataServer(
           if (part === "slots" || part === "availability") {
             const input = await jsonBody(
               req,
-              z.object(part === "slots" ? { segments } : { segments, start }).strict(),
+              z
+                .object(part === "slots" ? { segments, search: slotSearch } : { segments, start })
+                .strict(),
             );
             return send(
               200,
@@ -679,7 +697,9 @@ export async function startLocalDataServer(
               message:
                 safe.apiCode === LEGACY_VISIT_UPDATE_REQUIRED
                   ? "Update your app to view and manage multi-service visits."
-                  : safe.apiCode,
+                  : safe.apiCode === "AVAILABILITY_SEARCH_INCOMPLETE"
+                    ? "The availability search could not finish. Choose another day or specify the professionals."
+                    : safe.apiCode,
               request_id: requestId,
             },
           });

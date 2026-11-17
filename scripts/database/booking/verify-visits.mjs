@@ -425,8 +425,120 @@ try {
     )
   ).rows;
   assert.deepEqual(recentReminders, [{ actor_id: id(101) }]);
+
+  const { early, later } = (
+    await fixture.admin.query(
+      `SELECT ((clock_timestamp() AT TIME ZONE 'Asia/Beirut')::date+1)::text AS early,
+              ((clock_timestamp() AT TIME ZONE 'Asia/Beirut')::date+2)::text AS later`,
+    )
+  ).rows[0];
+  const flexible = id(200);
+  const finishing = id(201);
+  const finisher = id(250);
+  const workers = Array.from({ length: 8 }, (_, index) => id(210 + index));
+  const admin = fixture.admin;
+  await admin.query(
+    `INSERT INTO mawid_core.services(workspace_id,location_id,service_id,external_key,name,duration_minutes)
+     VALUES($1,$2,$3,'flex-search','Fictional flexible service',5),
+           ($1,$2,$4,'finish-search','Fictional finishing service',5)`,
+    [w, l, flexible, finishing],
+  );
+  await admin.query(
+    `INSERT INTO mawid_core.professionals(workspace_id,location_id,professional_id,external_key,display_name)
+     SELECT $1,$2,professional_id,'search-'||professional_id,'Fictional search professional'
+     FROM unnest($3::uuid[]) AS professional_id`,
+    [w, l, [...workers, finisher]],
+  );
+  await admin.query(
+    `INSERT INTO mawid_core.eligibility SELECT $1,$2,professional_id,$3
+     FROM unnest($4::uuid[]) AS professional_id`,
+    [w, l, flexible, workers],
+  );
+  await admin.query("INSERT INTO mawid_core.eligibility VALUES($1,$2,$3,$4)", [
+    w,
+    l,
+    finisher,
+    finishing,
+  ]);
+  for (const date of [early, later])
+    await admin.query(
+      `INSERT INTO mawid_core.schedule_exceptions(workspace_id,location_id,local_date,opens,closes)
+       VALUES($1,$2,$3,'09:00','12:00')`,
+      [w, l, date],
+    );
+  for (const [date, professionals] of [
+    [early, workers],
+    [later, [...workers, finisher]],
+  ]) {
+    await admin.query(
+      `INSERT INTO mawid_core.professional_intervals(workspace_id,location_id,professional_id,kind,period)
+       SELECT $1,$2,professional_id,'availability',
+       tstzrange(($4::date+'09:00'::time) AT TIME ZONE 'Asia/Beirut',
+                 ($4::date+'12:00'::time) AT TIME ZONE 'Asia/Beirut','[)')
+       FROM unnest($3::uuid[]) AS professional_id`,
+      [w, l, professionals, date],
+    );
+  }
+  const flexibleChain = [
+    ...Array.from({ length: 7 }, () => ({ service_id: flexible })),
+    { service_id: finishing, professional_id: finisher },
+  ];
+  const searchSlots = (user, segments, search) =>
+    request(user, "/visit-core/slots", { segments, search });
+  let page = await searchSlots(USERS.customerA, flexibleChain, { date: early });
+  assert.equal(page.status, 200, JSON.stringify(page));
+  assert.deepEqual(page.body.items, []);
+  const continuation = page.body.search.continuation;
+  assert.equal(page.body.search.status, "incomplete");
+  assert.equal(page.body.search.exhausted, true);
+  assert.equal(typeof continuation, "string");
+  const wrongActor = await searchSlots(USERS.managerA, flexibleChain, { cursor: continuation });
+  assert.equal(wrongActor.status, 422);
+  assert.equal(wrongActor.body.error.code, "INVALID_SEARCH_CONTINUATION");
+  assert.equal(
+    (await searchSlots(USERS.customerB, flexibleChain, { cursor: continuation })).status,
+    404,
+  );
+  const wrongChain = await searchSlots(USERS.customerA, draft.segments, { cursor: continuation });
+  assert.equal(wrongChain.status, 422);
+  assert.equal(wrongChain.body.error.code, "INVALID_SEARCH_CONTINUATION");
+  page = await searchSlots(USERS.customerA, flexibleChain, { cursor: continuation });
+  assert.equal(page.status, 200, JSON.stringify(page));
+  assert.ok(page.body.items.length > 0, "find feasible chains on the next day");
+  const localDate = new Intl.DateTimeFormat("sv-SE", {
+    timeZone: "Asia/Beirut",
+    dateStyle: "short",
+  });
+  for (const item of page.body.items) {
+    assert.equal(localDate.format(new Date(item.start)), later);
+    const exact = await request(USERS.customerA, "/visit-core/availability", {
+      segments: flexibleChain,
+      start: item.start,
+    });
+    assert.equal(exact.status, 200, JSON.stringify(exact));
+    assert.deepEqual(item.segments, exact.body.segments);
+  }
+  const android = await searchSlots(USERS.customerA, flexibleChain);
+  assert.equal(android.status, 200, JSON.stringify(android));
+  assert.ok(android.body.items.some(({ start }) => localDate.format(new Date(start)) === later));
+  assert.equal(android.body.search.status, "incomplete", "retain partial Android results");
+  const unavailable = [{ service_id: finishing, professional_id: id(999) }];
+  let noMatches = await searchSlots(USERS.customerA, unavailable, { date: early });
+  for (let index = 0; index < 7; index++) {
+    assert.equal(noMatches.status, 200, JSON.stringify(noMatches));
+    assert.deepEqual(noMatches.body.items, []);
+    assert.equal(noMatches.body.search.exhausted, false);
+    if (index === 6) break;
+    assert.equal(noMatches.body.search.status, "incomplete");
+    noMatches = await searchSlots(USERS.customerA, unavailable, {
+      cursor: noMatches.body.search.continuation,
+    });
+  }
+  assert.equal(noMatches.body.search.status, "complete");
+  assert.equal(noMatches.body.search.continuation, null);
+  assert.deepEqual((await searchSlots(USERS.customerA, unavailable)).body.items, []);
   console.log(
-    "Visit chain, second-segment conflict, replay, buffers and atomic cancellation verified.",
+    "Visit chain, reschedule preview, bounded availability, replay, buffers and atomic cancellation verified.",
   );
 } finally {
   await server.close();

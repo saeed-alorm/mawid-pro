@@ -1,7 +1,9 @@
 import { createHash } from "node:crypto";
 import { instant, responseDeadline, nextReview, holdExpiry, canSelfCancel } from "./time.mjs";
+import { VisitSearchLimit, VisitSlotSearch, searchBudget } from "./visit-search.mjs";
 
 const iso = (time) => new Date(time).toISOString();
+const MAX_CANDIDATES = 64;
 const terminal = ["cancelled", "declined", "withdrawn", "expired"];
 const partner = (x) => x.roles.some((role) => role === "admin" || role === "manager");
 const key = (x, b) => [x.w, x.l, b.booking_id];
@@ -57,6 +59,7 @@ export class VisitBookings {
   constructor(core, fail) {
     this.core = core;
     this.fail = fail;
+    this.slotSearch = new VisitSlotSearch(core, fail);
   }
 
   async specs(x, segments) {
@@ -79,24 +82,33 @@ export class VisitBookings {
     });
   }
 
-  async chain(x, specs, start, ignore = null, assignments = null, periods = null) {
+  async chain(x, specs, start, { ignore = null, assignments = null, periods, budget } = {}) {
     if (start <= x.now || start > x.now + 180 * 86400000) this.fail(422, "FUTURE_TIME_REQUIRED");
     const opening = periods ?? (await this.core.periods(x, start - 86400000));
     const candidates = new Map();
-    let searched = 0;
+    const spend = budget ?? searchBudget();
+    let truncated = false;
     const eligibleAt = async (s, professional, from, to) => {
       if (!opening.some(([a, b]) => a <= from && b >= to)) return [];
       const cacheKey = [s.service_id, professional, from, to].join("/");
       if (!candidates.has(cacheKey)) {
-        candidates.set(
-          cacheKey,
-          await this.core.availableProfessionals(x, s.service_id, professional, from, to, ignore),
+        spend("query");
+        const matches = await this.core.availableProfessionals(
+          x,
+          s.service_id,
+          professional,
+          from,
+          to,
+          ignore,
+          MAX_CANDIDATES + 1,
         );
+        truncated ||= matches.length > MAX_CANDIDATES;
+        candidates.set(cacheKey, matches.slice(0, MAX_CANDIDATES));
       }
       return candidates.get(cacheKey);
     };
     const search = async (path) => {
-      if (++searched > 4096) this.fail(503, "RETRY_SAME_KEY");
+      spend("step");
       const index = path.length;
       if (index === specs.length) return path;
       const s = specs[index];
@@ -120,6 +132,7 @@ export class VisitBookings {
         const from = window.starts - before;
         const to = end + after;
         for (const professional of await eligibleAt(s, window.professional, from, to)) {
+          spend("step");
           if (
             professional === window.excludes ||
             path.some((old) => old.professional === professional && old.from < to && from < old.to)
@@ -134,9 +147,16 @@ export class VisitBookings {
       }
       return null;
     };
-    const result = await search([]);
-    if (!result) this.fail(409, "SLOT_UNAVAILABLE");
-    return result;
+    try {
+      const result = await search([]);
+      if (result) return result;
+      if (truncated) throw new VisitSearchLimit("candidate");
+      if (budget) return null;
+      this.fail(409, "SLOT_UNAVAILABLE");
+    } catch (error) {
+      if (error instanceof VisitSearchLimit && !budget) this.fail(409, error.message);
+      throw error;
+    }
   }
 
   async availability(user, w, l, input, list = false) {
@@ -146,38 +166,31 @@ export class VisitBookings {
         const chain = await this.chain(x, specs, instant(input.start));
         return { available: true, contract_version: 2, segments: previewSegments(chain) };
       }
-      return this.slots(x, specs);
+      return this.slots(x, specs, { search: input.search, request: input.segments });
     });
   }
 
-  async slots(x, specs, { booking = null, assignments = null } = {}) {
-    const periods = await this.core.periods(x, x.now - 86400000);
-    const starts = new Set();
-    const stop = x.now + 7 * 86400000;
-    for (const [from, to] of periods) {
-      if (from > stop) break;
-      for (
-        let time = Math.ceil(Math.max(from, x.now + 1) / 1800000) * 1800000;
-        time < Math.min(to, stop);
-        time += 1800000
-      )
-        starts.add(time);
-    }
-    const savedStart = +booking?.assigned_start;
-    if (x.now < savedStart && savedStart <= x.now + 180 * 86400000) starts.add(savedStart);
-    const items = [];
-    for (const time of [...starts].sort((a, b) => a - b)) {
-      try {
-        const chain = await this.chain(x, specs, time, booking?.booking_id, assignments, periods);
-        items.push({
-          start: iso(time).replace(".000Z", "Z"),
-          segments: previewSegments(chain, Boolean(booking)),
+  async slots(x, specs, { booking, assignments, search, request }) {
+    return this.slotSearch.slots(
+      x,
+      search,
+      request,
+      +booking?.assigned_start,
+      async (time, periods, budget) => {
+        const chain = await this.chain(x, specs, time, {
+          ignore: booking?.booking_id,
+          assignments,
+          periods,
+          budget,
         });
-      } catch (error) {
-        if (error.apiCode !== "SLOT_UNAVAILABLE") throw error;
-      }
-    }
-    return { contract_version: 2, items, timezone: "Asia/Beirut" };
+        return (
+          chain && {
+            start: iso(time).replace(".000Z", "Z"),
+            segments: previewSegments(chain, Boolean(booking)),
+          }
+        );
+      },
+    );
   }
 
   async rescheduleSlots(user, w, l, id, input) {
@@ -192,7 +205,12 @@ export class VisitBookings {
       if (b.state !== "confirmed") this.fail(409, "INVALID_TRANSITION");
       const assignments = this.assignments(segments, input.assignments, "reschedule");
       if (assignments.some((professional) => !professional)) this.fail(409, "ASSIGNMENT_REQUIRED");
-      const slots = await this.slots(x, savedSpecs(segments), { booking: b, assignments });
+      const slots = await this.slots(x, savedSpecs(segments), {
+        booking: b,
+        assignments,
+        search: input.search,
+        request: [b.booking_id, input.expected_version, assignments],
+      });
       return { ...slots, booking_id: b.booking_id, version: String(b.version) };
     });
   }
@@ -523,7 +541,10 @@ export class VisitBookings {
           : action === "accept"
             ? +b.assigned_start
             : +b.requested_start;
-        chain = await this.chain(x, savedSpecs(segments), start, b.booking_id, assignment);
+        chain = await this.chain(x, savedSpecs(segments), start, {
+          ignore: b.booking_id,
+          assignments: assignment,
+        });
         if (
           action === "accept" &&
           chain.some(

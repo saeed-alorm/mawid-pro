@@ -10,6 +10,7 @@ export type ServerBooking = {
   assigned_local: { date: string; time: string; offset: string } | null;
   offer_expires_at: string | null;
   can_cancel: boolean;
+  can_reschedule?: boolean;
   cancellation_is_late?: boolean;
   overdue?: boolean;
   segments?: VisitSegment[];
@@ -45,6 +46,14 @@ export type BookingView = {
   review_at: string;
 };
 export type ServerSlot = { start: string; segments: VisitSegment[] };
+export type SlotPage = {
+  items: ServerSlot[];
+  search?: {
+    status: "complete" | "incomplete";
+    continuation: string | null;
+    exhausted: boolean;
+  };
+};
 export type InboxItem = {
   notification_id: string;
   booking_id: string;

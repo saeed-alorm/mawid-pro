@@ -130,17 +130,17 @@ export class LocalBookingService {
       c.release();
     }
   }
-  async periods({ c, w, l }, at) {
+  async periods({ c, w, l }, at, days = 370) {
     const { rows } = await c.query(
       `WITH days AS (
       SELECT d::date AS day FROM generate_series(($3::timestamptz AT TIME ZONE 'Asia/Beirut')::date,
-      ($3::timestamptz AT TIME ZONE 'Asia/Beirut')::date+370,interval '1 day') d
+      ($3::timestamptz AT TIME ZONE 'Asia/Beirut')::date+$4::int,interval '1 day') d
     ), hours AS (
       SELECT day,o.opens,o.closes FROM days JOIN mawid_core.opening_intervals o ON o.workspace_id=$1 AND o.location_id=$2 AND o.weekday=extract(dow FROM day)
       WHERE NOT EXISTS(SELECT 1 FROM mawid_core.schedule_exceptions x WHERE x.workspace_id=$1 AND x.location_id=$2 AND x.local_date=day)
       UNION ALL SELECT day,x.opens,x.closes FROM days JOIN mawid_core.schedule_exceptions x ON x.workspace_id=$1 AND x.location_id=$2 AND x.local_date=day WHERE x.opens IS NOT NULL
     ) SELECT (day+opens) AT TIME ZONE 'Asia/Beirut' AS start,(day+closes) AT TIME ZONE 'Asia/Beirut' AS finish FROM hours ORDER BY start`,
-      [w, l, iso(at)],
+      [w, l, iso(at), days],
     );
     // Merge overlapping configured windows so response minutes are never counted twice.
     const merged = [];
@@ -223,7 +223,7 @@ export class LocalBookingService {
     if (!professionals.length) fail(409, "SLOT_UNAVAILABLE");
     return { end, from, to, professionals };
   }
-  async availableProfessionals(x, service, professional, from, to, ignore) {
+  async availableProfessionals(x, service, professional, from, to, ignore, limit = null) {
     const candidates = (
       await x.c.query(
         `SELECT p.professional_id FROM mawid_core.professionals p JOIN mawid_core.eligibility e USING(workspace_id,location_id,professional_id)
@@ -231,8 +231,8 @@ export class LocalBookingService {
       AND EXISTS(SELECT 1 FROM mawid_core.professional_intervals i WHERE i.workspace_id=p.workspace_id AND i.location_id=p.location_id AND i.professional_id=p.professional_id AND i.kind='availability' AND i.period @> tstzrange($5,$6,'[)'))
       AND NOT EXISTS(SELECT 1 FROM mawid_core.professional_intervals i WHERE i.workspace_id=p.workspace_id AND i.professional_id=p.professional_id AND i.kind IN ('break','absence') AND i.period && tstzrange($5,$6,'[)'))
       AND NOT EXISTS(SELECT 1 FROM mawid_core.allocations a WHERE a.workspace_id=p.workspace_id AND a.professional_id=p.professional_id AND ($7::uuid IS NULL OR a.location_id<>p.location_id OR a.booking_id<>$7) AND a.period && tstzrange($5,$6,'[)') AND (a.kind='confirmed' OR a.expires_at>$8))
-      ORDER BY p.professional_id`,
-        [x.w, x.l, service, professional, iso(from), iso(to), ignore, iso(x.now)],
+      ORDER BY p.professional_id LIMIT $9`,
+        [x.w, x.l, service, professional, iso(from), iso(to), ignore, iso(x.now), limit],
       )
     ).rows;
     return candidates.map((r) => r.professional_id);
