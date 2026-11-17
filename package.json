@@ -11,6 +11,8 @@
     "test:booking": "node scripts/database/booking/verify.mjs",
     "dev": "vite dev",
     "build": "vite build",
+    "build:staging": "vite build --mode staging",
+    "dev:staging": "vite dev --mode staging",
     "build:dev": "vite build --mode development",
     "build:pages": "vite build --mode github-pages",
     "postbuild:pages": "node scripts/finalize-pages-build.mjs && node scripts/write-build-provenance.mjs",

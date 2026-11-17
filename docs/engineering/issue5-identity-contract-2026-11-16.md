@@ -3,6 +3,33 @@
 16 November 2026. Tracks [#5](https://github.com/saeed-alorm/mawid-pro/issues/5),
 FEAT-26 and FEAT-47, within the approved [P1 architecture](p1-architecture-decision-2026-11-14.md).
 
+## Shop permissions follow-up
+
+Saeed confirmed that the deployed MAWID staging page accepted a Gmail code,
+displayed **Email verified**, and returned to sign-in after sign-out. The
+permissions follow-up exercises the shared HTTP API with a disposable database.
+
+- PostgreSQL stores bindings keyed by the trusted issuer and verified Auth
+  subject. The ID binding and the currently active Auth session are read through
+  a separate selected-column login. Staff grants and customer profiles are
+  resolved through the bound actor ID.
+- A single low-privilege application login uses transaction-local identity.
+  Existing row-level policies and booking/notification checks apply current
+  shop memberships, location grants and customer ownership. The application
+  login has read-only access to identity bindings and staff memberships.
+- `GET /v1/workspaces` lists current staff grants, including the workspace name,
+  the location ID (`null` for a shop-wide grant) and explicit roles. Customers
+  get an empty staff workspace list. Neither email nor editable metadata can
+  attach a profile or grant a staff role.
+- `test:identity` runs the HTTP matrix through the pooled server role.
+  `test:identity-email` also uses real Supabase Auth and tests staff and customers
+  across two shops, different roles for the same staff account, revoked grants
+  and identity bindings, and reset of identity on a reused connection.
+
+The hosted staging Worker still serves the sign-in check. Applying database
+grants and migrations in hosted staging, staff invitations and recovery,
+connecting booking clients and two-device acceptance remain outstanding.
+
 ## Decisions and scope
 
 Saeed selected **Email OTP for first-pilot customer sign-in** on 16 November:
@@ -85,11 +112,11 @@ rejects an expired access token and rechecks the clock after a session lookup.
 This accounts for the observed Windows/Docker clock difference without extending
 the access-token deadline.
 
-Subject-to-application binding and per-actor database logins in these proofs are
-test-owned. They do not constitute a production identity mapping, live security
-acceptance, persistent staff provisioning or an application sign-in rollout.
-Current-session checks do not themselves define atomic ordering for every possible
-in-flight revocation race; that must be reviewed with the production session adapter.
+The first-slice proof used test-owned subject mappings and per-actor database
+logins. The follow-up above replaces those on the verified path with persisted
+bindings and a shared application login. Test grants remain fictional. Hosted
+identity binding, staff provisioning and revocation ordering across live service
+boundaries still need verification.
 
 Before closing #5: persist and verify the production actor/session mapping; implement
 staff invitations and recovery, distributed verification/resend/attempt limits and

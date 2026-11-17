@@ -7,7 +7,8 @@ import { startLocalDataServer } from "../api/http-server.mjs";
 import { LocalBookingService } from "../booking/service.mjs";
 import { LocalNotifications } from "../notifications/service.mjs";
 import { instant } from "../booking/time.mjs";
-import { VerifiedLocalDataService } from "./verified-local-data.mjs";
+import { VerifiedDataService } from "./verified-data.mjs";
+import { createVerifiedPool } from "./verified-pg-fixture.mjs";
 import { createAuthFixture, AUTH_IMAGE, MAIL_IMAGE, TEMPLATE_IMAGE } from "./auth-fixture.mjs";
 
 let fixture,
@@ -27,7 +28,7 @@ const check = async (name, fn) => {
 };
 const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const expect = (result, status, code) => {
-  assert.equal(result.status, status);
+  assert.equal(result.status, status, result.data?.error?.code);
   if (code) assert.equal(result.data.error.code, code);
   return result.data;
 };
@@ -66,14 +67,22 @@ async function signIn(email, principal, metadata = {}) {
   const r = await auth.post("/verify", { email, token: code, type: "email" });
   assert.equal(r.status, 200);
   assert.ok(r.data.access_token && r.data.refresh_token);
-  if (principal) auth.bind(r.data.user.id, principal);
+  if (principal) await auth.bind(r.data.user.id, principal);
   return { ...r.data, code };
+}
+
+async function workspaces(token) {
+  const response = await fetch(server.origin + "/v1/workspaces", {
+    headers: { authorization: "Bearer " + token },
+  });
+  return { status: response.status, data: await response.json() };
 }
 
 try {
   fixture = await createLocalFixture({ authorizationFixtures: true, bookingFixtures: true });
   auth = await createAuthFixture(fixture);
-  data = new VerifiedLocalDataService(fixture.configs, auth.gate);
+  const verifiedPool = await createVerifiedPool(fixture);
+  data = new VerifiedDataService(verifiedPool, auth.gate);
   booking = new LocalBookingService(data, fixture.bookingConfig);
   notifications = new LocalNotifications(data, booking, fixture.notificationConfig, {
     key: randomBytes(32),
@@ -84,7 +93,96 @@ try {
     notifications,
     log: (event) => logs.push(event),
   });
-  let customer, second, manager, admin, pending, recovered;
+  let customer, second, manager, managerB, admin, pending, recovered;
+
+  await check("real Auth identities discover only their current staff memberships", async () => {
+    manager = await signIn("manager-a@example.invalid", USERS.managerA);
+    managerB = await signIn("scope-shop-b@example.invalid", USERS.managerB);
+    const customerB = await signIn("scope-customer-b@example.invalid", USERS.customerB);
+
+    const expectedShop = (workspace_id, name) => [
+      { workspace_id, name, memberships: [{ location_id: null, roles: ["manager"] }] },
+    ];
+    assert.deepEqual(
+      expect(await workspaces(manager.access_token), 200).workspaces,
+      expectedShop(IDS.workspaceA, "Fictional A"),
+    );
+    assert.deepEqual(
+      expect(await workspaces(managerB.access_token), 200).workspaces,
+      expectedShop(IDS.workspaceB, "Fictional B"),
+    );
+    assert.deepEqual(expect(await workspaces(customerB.access_token), 200).workspaces, []);
+    expect(
+      await call(manager.access_token, "/profiles", undefined, IDS.workspaceB),
+      404,
+      "NOT_FOUND",
+    );
+    expect(await call(managerB.access_token), 404, "NOT_FOUND");
+    expect(await call(customerB.access_token, "/profiles", undefined, IDS.workspaceB), 200);
+    expect(await call(customerB.access_token), 404, "NOT_FOUND");
+
+    const grant = await fixture.admin.query(
+      `INSERT INTO mawid_core.memberships(workspace_id,actor_id,location_id,roles)
+       SELECT $1, actor_id, $2, ARRAY['professional']
+       FROM mawid_core.identity_bindings WHERE subject=$3
+       RETURNING membership_id`,
+      [IDS.workspaceA, IDS.locationA, managerB.user.id],
+    );
+    assert.deepEqual(expect(await workspaces(managerB.access_token), 200).workspaces, [
+      {
+        workspace_id: IDS.workspaceA,
+        name: "Fictional A",
+        memberships: [{ location_id: IDS.locationA, roles: ["professional"] }],
+      },
+      ...expectedShop(IDS.workspaceB, "Fictional B"),
+    ]);
+    expect(await call(managerB.access_token, "/locations/" + IDS.locationA + "/services"), 200);
+    expect(await call(managerB.access_token), 404, "NOT_FOUND");
+    await fixture.admin.query(
+      "UPDATE mawid_core.memberships SET revoked_at=clock_timestamp() WHERE workspace_id=$1 AND membership_id=$2",
+      [IDS.workspaceA, grant.rows[0].membership_id],
+    );
+    assert.deepEqual(
+      expect(await workspaces(managerB.access_token), 200).workspaces,
+      expectedShop(IDS.workspaceB, "Fictional B"),
+    );
+    expect(
+      await call(managerB.access_token, "/locations/" + IDS.locationA + "/services"),
+      404,
+      "NOT_FOUND",
+    );
+
+    await fixture.admin.query(
+      "UPDATE mawid_core.identity_bindings SET revoked_at=clock_timestamp() WHERE subject=$1",
+      [customerB.user.id],
+    );
+    expect(await workspaces(customerB.access_token), 401, "SESSION_REQUIRED");
+    expect(
+      await call(customerB.access_token, "/profiles", undefined, IDS.workspaceB),
+      401,
+      "SESSION_REQUIRED",
+    );
+  });
+
+  await check(
+    "the verified actor pool loses identity between requests and cannot grant permissions",
+    async () => {
+      const result = await verifiedPool.query(`
+      SELECT mawid_core.actor() AS actor,
+        (SELECT count(*)::int FROM mawid_core.identity_bindings) AS bindings,
+        (SELECT count(*)::int FROM mawid_core.memberships) AS memberships,
+        has_table_privilege('mawid_core.identity_bindings', 'INSERT,UPDATE,DELETE') AS binding_write,
+        has_table_privilege('mawid_core.memberships', 'INSERT,UPDATE,DELETE') AS membership_write
+    `);
+      assert.deepEqual(result.rows[0], {
+        actor: null,
+        bindings: 0,
+        memberships: 0,
+        binding_write: false,
+        membership_write: false,
+      });
+    },
+  );
   await check("a delivered six-digit Email OTP creates a verified provider session", async () => {
     customer = await signIn("customer-a@example.invalid", USERS.customerA);
     assert.match(customer.code, /^[0-9]{6}$/);
@@ -150,7 +248,6 @@ try {
     assert.ok(!reply.data.access_token);
   });
   await check("individual staff Email OTP sessions retain explicit additive roles", async () => {
-    manager = await signIn("manager-a@example.invalid", USERS.managerA);
     admin = await signIn("admin-a@example.invalid", USERS.adminA);
     expect(await call(manager.access_token, "/locations/" + IDS.locationA + "/services"), 200);
     pending = expect(await call(customer.access_token, bookingPath + "requests", request()), 201);
@@ -184,6 +281,11 @@ try {
       404,
       "NOT_FOUND",
     );
+    const bookingInA = bookingPath + "bookings/" + pending.booking_id + "/confirm";
+    const bookingInB = `/locations/${IDS.locationB}/booking-core/bookings/${pending.booking_id}/confirm`;
+    const action = { operation_id: randomUUID(), expected_version: pending.version };
+    expect(await call(managerB.access_token, bookingInA, action), 404, "NOT_FOUND");
+    expect(await call(managerB.access_token, bookingInB, action, IDS.workspaceB), 404, "NOT_FOUND");
     expect(
       await call(customer.access_token, "/exports", { customer_id: IDS.customerB }),
       404,
@@ -237,16 +339,17 @@ try {
     },
   );
   await check("revocation during a booking lock wait cannot commit a queued request", async () => {
-    await fixture.admin.query("SELECT pg_advisory_lock(hashtextextended($1,7))", [IDS.workspaceA]);
     const before = +(await fixture.admin.query("SELECT count(*) AS n FROM mawid_core.bookings"))
       .rows[0].n;
+    const lock = await fixture.admin.connect();
     let queued;
     try {
+      await lock.query("SELECT pg_advisory_lock(hashtextextended($1,7))", [IDS.workspaceA]);
       queued = call(second.access_token, bookingPath + "requests", request());
       let waiting = false;
       for (let i = 0; i < 50; i++) {
         waiting = (
-          await fixture.admin.query(
+          await lock.query(
             "SELECT EXISTS(SELECT 1 FROM pg_stat_activity WHERE usename='mawid_fixture_booking' AND wait_event='advisory') AS waiting",
           )
         ).rows[0].waiting;
@@ -259,9 +362,9 @@ try {
         204,
       );
     } finally {
-      await fixture.admin.query("SELECT pg_advisory_unlock(hashtextextended($1,7))", [
-        IDS.workspaceA,
-      ]);
+      // Keep the session checked out across the provider call. Disposing the
+      // connection releases the advisory lock even if the logout check failed.
+      lock.release(true);
     }
     expect(await queued, 401, "SESSION_REQUIRED");
     assert.equal(
@@ -320,9 +423,10 @@ try {
         token: "fictional-" + randomBytes(32).toString("hex"),
       };
       const digest = notifications.vault.digest(input.token);
-      await fixture.admin.query("SELECT pg_advisory_lock(hashtextextended($1,8))", [digest]);
+      const lock = await fixture.admin.connect();
       let queued;
       try {
+        await lock.query("SELECT pg_advisory_lock(hashtextextended($1,8))", [digest]);
         queued = call(
           recovered.access_token,
           "/locations/" + IDS.locationA + "/notifications/registrations",
@@ -331,7 +435,7 @@ try {
         let waiting = false;
         for (let i = 0; i < 50; i++) {
           waiting = (
-            await fixture.admin.query(
+            await lock.query(
               "SELECT EXISTS(SELECT 1 FROM pg_stat_activity WHERE usename='mawid_fixture_notify' AND wait_event='advisory') AS waiting",
             )
           ).rows[0].waiting;
@@ -344,7 +448,7 @@ try {
           204,
         );
       } finally {
-        await fixture.admin.query("SELECT pg_advisory_unlock(hashtextextended($1,8))", [digest]);
+        lock.release(true);
       }
       expect(await queued, 401, "SESSION_REQUIRED");
       assert.equal(
@@ -360,11 +464,16 @@ try {
   );
   assert.equal(logs.length, 0);
   const files = [
-    "session-gate.mjs",
-    "verified-local-data.mjs",
-    "auth-fixture.mjs",
-    "verify-email-otp.mjs",
-    "templates/email-otp.html",
+    "scripts/database/identity/session-gate.mjs",
+    "scripts/database/identity/verified-data.mjs",
+    "scripts/database/identity/verified-pg-fixture.mjs",
+    "scripts/database/identity/postgres-session-reader.mjs",
+    "scripts/database/identity/auth-fixture.mjs",
+    "scripts/database/identity/verify-email-otp.mjs",
+    "scripts/database/identity/templates/email-otp.html",
+    "scripts/database/api/http-server.mjs",
+    "scripts/database/api/data-service.mjs",
+    "supabase/migrations/20261116130000_verified_shop_identity.sql",
   ];
   writeFileSync(
     "database/email-otp-verification.json",
@@ -375,15 +484,13 @@ try {
         images: [IMAGE, AUTH_IMAGE, MAIL_IMAGE, TEMPLATE_IMAGE],
         checks,
         files: files.map((name) => ({
-          name: "scripts/database/identity/" + name,
-          sha256: createHash("sha256")
-            .update(readFileSync(new URL(name, import.meta.url)))
-            .digest("hex"),
+          name,
+          sha256: createHash("sha256").update(readFileSync(name)).digest("hex"),
         })),
         limits: [
           "Real Supabase Auth and SMTP catcher, fictional accounts/data, isolated local network only.",
           "Subject-to-application bindings are test-owned; no automatic email or metadata binding is authorized.",
-          "No hosted email delivery, production actor adapter, client sign-in screens, staff invitation or two-device APK acceptance is established.",
+          "This suite verifies the local API/database path. Hosted booking, staff invitations and two-device APK acceptance remain separate.",
         ],
       },
       null,

@@ -168,6 +168,22 @@ export async function startLocalDataServer(
         if (!user) throw new ApiError(401, "SESSION_REQUIRED");
         const url = new URL(req.url, origin);
         if (url.origin !== origin) throw new ApiError(400, "INVALID_REQUEST");
+        if (url.pathname === "/v1/workspaces" && req.method === "GET") {
+          const workspaces = await service.transaction(user, async (client) => {
+            const result = await client.query(`
+              SELECT o.workspace_id, o.name,
+                jsonb_agg(jsonb_build_object('location_id', m.location_id, 'roles', m.roles)
+                  ORDER BY m.location_id NULLS FIRST, m.membership_id) AS memberships
+              FROM mawid_core.organizations o
+              JOIN mawid_core.memberships m USING (workspace_id)
+              WHERE m.actor_id = mawid_core.actor() AND m.revoked_at IS NULL
+              GROUP BY o.workspace_id, o.name
+              ORDER BY o.name, o.workspace_id
+            `);
+            return result.rows;
+          });
+          return send(200, { workspaces });
+        }
         const match = /^\/v1\/workspaces\/([^/]+)(.*)$/.exec(url.pathname);
         if (!match) throw new ApiError(404, "NOT_FOUND");
         const workspace = validate(uuid, match[1]);
