@@ -14,7 +14,7 @@ function BookingRoute() {
   const { tenantId } = Route.useParams();
   const { service, employee } = Route.useSearch();
   return (
-    <BookingBoundary>
+    <BookingBoundary initialProfessional={employee}>
       <BookingPage tenantId={tenantId} initialService={service} initialEmployee={employee} />
     </BookingBoundary>
   );

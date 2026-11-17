@@ -112,6 +112,10 @@ function WorkingDays({ employee }: { employee: Employee }) {
   );
 }
 
+function employeeImage(employees: Employee[], serviceId: string, fallback: string) {
+  return employees.find((employee) => employee.serviceIds.includes(serviceId))?.photo ?? fallback;
+}
+
 function EmployeeProfileDialog({
   employee,
   onClose,
@@ -141,6 +145,9 @@ function EmployeeProfileDialog({
               </div>
             </DialogHeader>
             <p className="text-sm leading-6 text-muted-foreground">{tv(employee.bio)}</p>
+            <p className="text-sm text-muted-foreground">
+              {lang === "ar" ? "غير مقيّم" : "Unrated"}
+            </p>
             <div>
               <p className="mb-2 text-sm font-semibold">{t("specializations")}</p>
               <div className="flex flex-wrap gap-2">
@@ -232,76 +239,10 @@ export function CustomerSalonPage({ tenantId }: { tenantId: string }) {
           </div>
         </section>
 
-        <section className="mx-auto grid max-w-6xl gap-4 px-4 py-7 sm:grid-cols-2 sm:px-6">
-          <div className="flex items-start gap-3 rounded-2xl border bg-card p-4 shadow-card">
-            <MapPin className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
-            <div>
-              <p className="font-semibold">{t("location")}</p>
-              <p className="mt-1 text-sm text-muted-foreground">{tv(salon.address)}</p>
-            </div>
-          </div>
-          <div className="flex items-start gap-3 rounded-2xl border bg-card p-4 shadow-card">
-            <Clock3 className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
-            <div>
-              <p className="font-semibold">{t("opening_hours")}</p>
-              <p className="mt-1 text-sm text-muted-foreground">{tv(salon.hours)}</p>
-            </div>
-          </div>
-        </section>
-
-        <section className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
-          <div className="max-w-xl">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">
-              {dir === "rtl" ? "ما نقدّمه" : "What we offer"}
-            </p>
-            <h2 className="mt-2 text-3xl font-semibold">{t("our_services")}</h2>
-          </div>
-          <div className="mt-7 space-y-8">
-            {categories.map((category) => {
-              const label = tv(category);
-              const items = tenantServices.filter((service) => tv(service.category) === label);
-              return (
-                <div key={label}>
-                  <div className="mb-3 flex items-center gap-2">
-                    <Scissors className="h-4 w-4 text-gold" />
-                    <h3 className="font-semibold">{label}</h3>
-                  </div>
-                  <div className="grid gap-3 md:grid-cols-2">
-                    {items.map((service) => (
-                      <a
-                        key={service.id}
-                        href={appPath(`/customer/${tenantId}/book?service=${service.id}`)}
-                        className="group rounded-2xl border bg-card p-5 shadow-card transition hover:border-primary/40 hover:shadow-md"
-                      >
-                        <div className="flex items-start justify-between gap-4">
-                          <div>
-                            <p className="font-semibold group-hover:text-primary">
-                              {tv(service.name)}
-                            </p>
-                            <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                              {tv(service.description)}
-                            </p>
-                          </div>
-                          <Badge variant="secondary" className="shrink-0">
-                            {service.duration} {t("minutes")}
-                          </Badge>
-                        </div>
-                      </a>
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-
         <section className="border-y bg-card/55">
           <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
             <div className="flex items-end justify-between gap-4">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">
-                  {dir === "rtl" ? "اختصاصيون موثوقون" : "Trusted professionals"}
-                </p>
                 <h2 className="mt-2 text-3xl font-semibold">{t("our_team")}</h2>
               </div>
             </div>
@@ -329,6 +270,9 @@ export function CustomerSalonPage({ tenantId }: { tenantId: string }) {
                       <CardContent className="p-5">
                         <p className="text-lg font-semibold">{tv(employee.name)}</p>
                         <p className="mt-1 text-sm font-medium text-primary">{tv(employee.role)}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {dir === "rtl" ? "غير مقيّم" : "Unrated"}
+                        </p>
                         <p className="mt-3 line-clamp-3 text-sm leading-6 text-muted-foreground">
                           {tv(employee.bio)}
                         </p>
@@ -352,6 +296,95 @@ export function CustomerSalonPage({ tenantId }: { tenantId: string }) {
                 );
               })}
             </div>
+          </div>
+        </section>
+
+        <section className="mx-auto grid max-w-6xl gap-4 px-4 py-7 sm:grid-cols-2 sm:px-6">
+          <div className="flex items-start gap-3 rounded-2xl border bg-card p-4 shadow-card">
+            <MapPin className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+            <div>
+              <p className="font-semibold">{t("location")}</p>
+              <p className="mt-1 text-sm text-muted-foreground">{tv(salon.address)}</p>
+            </div>
+          </div>
+          <div className="flex items-start gap-3 rounded-2xl border bg-card p-4 shadow-card">
+            <Clock3 className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+            <div>
+              <p className="font-semibold">{t("opening_hours")}</p>
+              <p className="mt-1 text-sm text-muted-foreground">{tv(salon.hours)}</p>
+            </div>
+          </div>
+        </section>
+
+        <section className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
+          <div className="max-w-xl">
+            <h2 className="mt-2 text-3xl font-semibold">{t("our_services")}</h2>
+          </div>
+          <div className="mt-7 space-y-8">
+            {categories.map((category) => {
+              const label = tv(category);
+              const items = tenantServices.filter((service) => tv(service.category) === label);
+              return (
+                <div key={label}>
+                  <div className="mb-3 flex items-center gap-2">
+                    <Scissors className="h-4 w-4 text-gold" />
+                    <h3 className="font-semibold">{label}</h3>
+                  </div>
+                  <div className="grid gap-3 md:grid-cols-2">
+                    {items.map((service) => (
+                      <a
+                        key={service.id}
+                        href={appPath(`/customer/${tenantId}/book?service=${service.id}`)}
+                        className="group rounded-2xl border bg-card p-5 shadow-card transition hover:border-primary/40 hover:shadow-md"
+                      >
+                        <div className="flex items-start justify-between gap-4">
+                          <img
+                            src={employeeImage(employees, service.id, salon.cover)}
+                            alt=""
+                            className="hidden size-20 shrink-0 rounded-lg object-cover sm:block"
+                            loading="lazy"
+                          />
+                          <div className="flex-1">
+                            <p className="font-semibold group-hover:text-primary">
+                              {tv(service.name)}
+                            </p>
+                            <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                              {tv(service.description)}
+                            </p>
+                          </div>
+                          <Badge variant="secondary" className="shrink-0">
+                            {service.duration} {t("minutes")}
+                          </Badge>
+                        </div>
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
+        <section className="mx-auto max-w-6xl px-4 pb-12 sm:px-6" aria-labelledby="salon-gallery">
+          <h2 id="salon-gallery" className="text-3xl font-semibold">
+            {dir === "rtl" ? "معرض الصور" : "Gallery"}
+          </h2>
+          <div className="mt-5 grid gap-3 sm:grid-cols-[2fr_1fr_1fr]">
+            <img
+              src={salon.cover}
+              alt={dir === "rtl" ? "مساحة الصالون التجريبي" : "Fictional salon interior"}
+              className="h-56 w-full rounded-xl object-cover"
+              loading="lazy"
+            />
+            {employees.slice(0, 2).map((employee) => (
+              <img
+                key={employee.id}
+                src={employee.photo}
+                alt={tv(employee.name)}
+                className="h-56 w-full rounded-xl object-cover object-top"
+                loading="lazy"
+              />
+            ))}
           </div>
         </section>
       </main>

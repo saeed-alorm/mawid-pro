@@ -12,6 +12,18 @@ export type ServerBooking = {
   can_cancel: boolean;
   cancellation_is_late?: boolean;
   overdue?: boolean;
+  segments?: VisitSegment[];
+};
+export type VisitPreference = { service_id: string; professional_id?: string | undefined };
+export type VisitSegment = {
+  position: number;
+  service_id: string;
+  requested_professional_id: string | null;
+  assigned_professional_id: string | null;
+  requested_start: string;
+  requested_end: string;
+  assigned_start: string | null;
+  assigned_end: string | null;
 };
 export type BookingView = {
   actor_id: string;
@@ -30,7 +42,7 @@ export type BookingView = {
   server_time: string;
   review_at: string;
 };
-export type ServerSlot = { start: string; date: string; time: string; offset: string };
+export type ServerSlot = { start: string; segments: VisitSegment[] };
 export type InboxItem = {
   notification_id: string;
   booking_id: string;
@@ -65,6 +77,7 @@ export class BookingClient {
     input: unknown,
     private transport: typeof fetch = globalThis.fetch.bind(globalThis),
     private storage: Pick<Storage, "getItem" | "setItem" | "removeItem"> = sessionStorage,
+    private area: "booking-core" | "visit-core" = "booking-core",
   ) {
     const s = input as Session;
     const id = /^[a-f0-9]{8}(-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i;
@@ -93,7 +106,10 @@ export class BookingClient {
     return `${s.origin}|${s.workspace_id}|${s.location_id}|${this.actor}`;
   }
   private get intentKey() {
-    return `${key}:${this.scope}`;
+    return this.storageKey(this.scope);
+  }
+  private storageKey(scope: string) {
+    return this.area === "visit-core" ? `${key}:visit:${scope}` : `${key}:${scope}`;
   }
   get pending(): boolean {
     return this.intent()?.scope === this.scope;
@@ -105,7 +121,7 @@ export class BookingClient {
   async request<T>(
     path: string,
     body?: Record<string, unknown>,
-    area: "booking-core" | "notifications" = "booking-core",
+    area: "booking-core" | "visit-core" | "notifications" = this.area,
   ): Promise<T> {
     const s = this.session;
     if (Date.now() >= Date.parse(s.expires_at)) throw new BookingFailure("SESSION_EXPIRED", 401);
@@ -175,7 +191,7 @@ export class BookingClient {
     this.busy = true;
     try {
       const result = await this.request<ServerBooking>(intent.path, intent.body);
-      this.storage.removeItem(`${key}:${intent.scope}`);
+      this.storage.removeItem(this.storageKey(intent.scope));
       return result;
     } catch (e) {
       if (
@@ -185,7 +201,7 @@ export class BookingClient {
         ![401, 403, 404, 408, 429].includes(e.status) &&
         e.code !== "OPERATION_RETIRED"
       )
-        this.storage.removeItem(`${key}:${intent.scope}`);
+        this.storage.removeItem(this.storageKey(intent.scope));
       throw e;
     } finally {
       this.busy = false;

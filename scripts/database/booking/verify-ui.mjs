@@ -262,7 +262,7 @@ try {
         .getAttribute("value");
       await customer.getByLabel("Available time", { exact: true }).selectOption(next);
       await customer.route(
-        "**/booking-core/requests",
+        "**/visit-core/requests",
         async (route) => {
           await route.fetch();
           await route.abort("connectionreset");
