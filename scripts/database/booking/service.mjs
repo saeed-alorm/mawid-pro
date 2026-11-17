@@ -55,10 +55,16 @@ export class LocalBookingService {
     await this.pool.end();
   }
   async run(user, w, l, fn) {
-    const actor = await this.data.transaction(
+    const identity = await this.data.transaction(
       user,
-      async (c) => (await c.query("SELECT mawid_core.actor() AS actor")).rows[0].actor,
+      async (c) =>
+        (
+          await c.query(
+            "SELECT mawid_core.actor() AS actor,pg_has_role(session_user,'mawid_verified_actor','USAGE') AS verified",
+          )
+        ).rows[0],
     );
+    const { actor, verified } = identity;
     const c = await this.pool.connect();
     try {
       await c.query("BEGIN");
@@ -97,6 +103,7 @@ export class LocalBookingService {
         w,
         l,
         actor,
+        verified,
         now,
         roles: members.flatMap((x) => x.roles),
         customers: customers.map((x) => x.customer_id),
@@ -152,10 +159,22 @@ export class LocalBookingService {
       [x.w, b.location_id, event, b.booking_id, b.version, x.actor, action, iso(x.now)],
     );
     const reminder = scheduleVisit && action === "request" ? b.response_due_at : null;
+    const review =
+      scheduleVisit &&
+      b.state === "confirmed" &&
+      ["confirm", "accept", "walk-in", "reschedule"].includes(action)
+        ? iso(+b.assigned_end + 120000)
+        : null;
     await x.c.query(
       `INSERT INTO mawid_core.outbox(workspace_id,event_id,deliver_after,scheduled_kind,scheduled_due_at)
        VALUES($1,$2,$3,$4,$5)`,
-      [x.w, event, iso(deliver), reminder ? "pending_reminder" : null, reminder],
+      [
+        x.w,
+        event,
+        iso(deliver),
+        reminder ? "pending_reminder" : review ? "review_invitation" : null,
+        reminder ?? review,
+      ],
     );
   }
   async expire(x) {

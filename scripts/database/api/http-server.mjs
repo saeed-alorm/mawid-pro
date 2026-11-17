@@ -254,7 +254,7 @@ export async function startLocalDataServer(
           throw new ApiError(404, "NOT_FOUND");
         }
         const visitRoute =
-          /^\/locations\/([^/]+)\/visit-core\/(view|slots|availability|requests|walk-ins|caller-intake|callers|visits\/([^/]+)(?:\/(confirm|propose|assign|reschedule|accept|decline|withdraw|cancel))?)$/.exec(
+          /^\/locations\/([^/]+)\/visit-core\/(view|slots|availability|requests|walk-ins|caller-intake|callers|visits\/([^/]+)(?:\/(confirm|propose|assign|reschedule|accept|decline|withdraw|cancel|reviews|reviews-feedback))?)$/.exec(
             tail,
           );
         if (booking && visitRoute) {
@@ -276,6 +276,41 @@ export async function startLocalDataServer(
             return send(200, await visits.lookupCallers(user, workspace, location, q));
           }
           params(url, z.object({}).strict());
+          if (req.method === "GET" && ["reviews", "reviews-feedback"].includes(visitRoute[4]))
+            return send(
+              200,
+              await visits.review(
+                user,
+                workspace,
+                location,
+                identifier,
+                null,
+                visitRoute[4] === "reviews-feedback",
+              ),
+            );
+          if (req.method === "POST" && visitRoute[4] === "reviews") {
+            const input = await jsonBody(
+              req,
+              z
+                .object({
+                  operation_id: uuid,
+                  reviews: z
+                    .array(
+                      z
+                        .object({
+                          professional_id: uuid,
+                          score: z.number().int().min(1).max(5),
+                          feedback: z.string().trim().min(1).max(1000).optional(),
+                        })
+                        .strict(),
+                    )
+                    .min(1)
+                    .max(8),
+                })
+                .strict(),
+            );
+            return send(200, await visits.review(user, workspace, location, identifier, input));
+          }
           if (req.method === "GET" && identifier && !visitRoute[4])
             return send(200, await visits.read(user, workspace, location, identifier));
           if (req.method !== "POST") throw new ApiError(404, "NOT_FOUND");

@@ -202,6 +202,20 @@ export class VisitBookings {
     return this.core.run(user, w, l, async (x) => {
       await this.core.expire(x);
       const base = await this.core.catalog(x);
+      const { rows: ratings } = await x.c.query(
+        `SELECT professional_id,round(avg(score),2)::float AS rating_average,count(*)::int AS rating_count
+         FROM mawid_core.visit_reviews WHERE workspace_id=$1 AND location_id=$2 GROUP BY professional_id`,
+        [w, l],
+      );
+      const ratingByProfessional = new Map(
+        ratings.map((rating) => [rating.professional_id, rating]),
+      );
+      base.professionals = base.professionals.map((p) => ({
+        ...p,
+        rating_average: null,
+        rating_count: 0,
+        ...ratingByProfessional.get(p.professional_id),
+      }));
       const { rows } = await x.c.query(
         `SELECT b.* FROM mawid_core.bookings b
          WHERE b.workspace_id=$1 AND b.location_id=$2 AND ($3::uuid IS NULL OR b.booking_id>$3)
@@ -240,6 +254,71 @@ export class VisitBookings {
         [w, l, query, phone],
       );
       return { items: rows };
+    });
+  }
+
+  async review(user, w, l, bookingId, input = null, feedback = false) {
+    return this.core.run(user, w, l, async (x) => {
+      const b = (
+        await x.c.query(`SELECT * FROM mawid_core.bookings WHERE ${scope} FOR UPDATE`, [
+          w,
+          l,
+          bookingId,
+        ])
+      ).rows[0];
+      if (!b) this.fail(404, "NOT_FOUND");
+      const existing = async () =>
+        (
+          await x.c.query(
+            `SELECT professional_id,score,feedback FROM mawid_core.visit_reviews WHERE ${scope} ORDER BY professional_id`,
+            [w, l, bookingId],
+          )
+        ).rows;
+      if (feedback) {
+        if (!partner(x)) this.fail(404, "NOT_FOUND");
+        return { reviews: await existing() };
+      }
+      if (!x.verified || x.roles.length || !x.customers.includes(b.customer_id))
+        this.fail(404, "NOT_FOUND");
+      if (b.state !== "confirmed" || x.now < +b.assigned_end + 120000)
+        this.fail(409, "REVIEW_UNAVAILABLE");
+      const professionalIds = [
+        ...new Set((await segmentsFor(x, b)).map((s) => s.assigned_professional_id)),
+      ].sort();
+      const stored = await existing();
+      if (!input) return { professional_ids: professionalIds, submitted: stored.length > 0 };
+      const reviews = input.reviews
+        .map((r) => ({ ...r, feedback: r.feedback ?? null }))
+        .sort((a, b) => a.professional_id.localeCompare(b.professional_id));
+      if (
+        professionalIds.length !== reviews.length ||
+        professionalIds.some((id, index) => id !== reviews[index].professional_id)
+      )
+        this.fail(422, "REVIEW_PROFESSIONALS");
+      const attempt = [w, x.actor, input.operation_id];
+      const hash = createHash("sha256")
+        .update(JSON.stringify(sortKeys({ bookingId, l, reviews })))
+        .digest("hex");
+      const old = (
+        await x.c.query(
+          "SELECT input_hash FROM mawid_core.operation_references WHERE workspace_id=$1 AND actor_id=$2 AND operation_id=$3",
+          attempt,
+        )
+      ).rows[0];
+      if (old && old.input_hash !== hash) this.fail(409, "IDEMPOTENCY_CONFLICT");
+      if (old && stored.length) return { submitted: true };
+      if (stored.length) this.fail(409, "REVIEW_ALREADY_SUBMITTED");
+      for (const r of reviews)
+        await x.c.query(
+          `INSERT INTO mawid_core.visit_reviews(workspace_id,location_id,booking_id,professional_id,score,feedback)
+         VALUES($1,$2,$3,$4,$5,$6)`,
+          [w, l, bookingId, r.professional_id, r.score, r.feedback],
+        );
+      await x.c.query(
+        "INSERT INTO mawid_core.operation_references(workspace_id,actor_id,operation_id,operation,input_hash) VALUES($1,$2,$3,'review',$4)",
+        [...attempt, hash],
+      );
+      return { submitted: true };
     });
   }
 

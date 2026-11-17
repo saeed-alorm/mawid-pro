@@ -192,6 +192,7 @@ export class LocalNotifications {
         AND ($5 OR b.customer_id=ANY($6::uuid[]) OR ${segmentProfessionals()} && $7::uuid[])
         AND (n.kind<>'pending_reminder' OR ($5 AND b.state='pending'))
         AND ($8 OR (b.segment_count=1 AND n.kind<>'review_invitation'))
+        AND (n.kind<>'review_invitation' OR (n.actor_id=$3 AND b.customer_id=ANY($6::uuid[])))
         GROUP BY n.notification_id,e.booking_id,e.version,b.state ORDER BY n.created_at DESC,n.notification_id LIMIT 50`,
           [
             w,
@@ -229,6 +230,11 @@ export class LocalNotifications {
         )
       ).rows[0];
       if (!n || n.actor_id !== actor || !canRead(a, n)) denied();
+      if (
+        n.kind === "review_invitation" &&
+        actor !== (await this.reviewRecipient(c, { ...n, workspace_id: w, location_id: l }))
+      )
+        denied();
       if (!visitContract && (n.segment_count !== 1 || n.kind === "review_invitation")) denied();
       if (
         n.kind === "pending_reminder" &&
@@ -284,12 +290,12 @@ export class LocalNotifications {
             b.customer_id,b.state,b.version AS current_version
          FROM mawid_core.outbox o JOIN mawid_core.booking_events e USING(workspace_id,event_id)
          JOIN mawid_core.bookings b USING(workspace_id,location_id,booking_id)
-         WHERE o.scheduled_kind='pending_reminder' AND o.scheduled_due_at<=$1 AND o.scheduled_processed_at IS NULL
+         WHERE o.scheduled_due_at<=$1 AND o.scheduled_processed_at IS NULL
          ORDER BY o.scheduled_due_at,o.workspace_id,o.event_id LIMIT $2 FOR UPDATE OF o SKIP LOCKED`,
         [now, limit],
       );
       for (const e of rows) {
-        if (e.state === "pending") {
+        if (e.scheduled_kind === "pending_reminder" && e.state === "pending") {
           const recipients = (
             await c.query(
               `SELECT DISTINCT actor_id FROM mawid_core.memberships
@@ -300,6 +306,13 @@ export class LocalNotifications {
           ).rows;
           for (const { actor_id } of recipients)
             await this.enqueue(c, e, actor_id, e.scheduled_kind);
+        } else if (
+          e.scheduled_kind === "review_invitation" &&
+          e.state === "confirmed" &&
+          e.version === e.current_version
+        ) {
+          const recipient = await this.reviewRecipient(c, e);
+          if (recipient) await this.enqueue(c, e, recipient, e.scheduled_kind);
         }
         await c.query(
           "UPDATE mawid_core.outbox SET scheduled_processed_at=$3 WHERE workspace_id=$1 AND event_id=$2",
@@ -307,6 +320,19 @@ export class LocalNotifications {
         );
       }
     });
+  }
+  async reviewRecipient(c, e) {
+    const { rows } = await c.query(
+      `SELECT p.actor_id FROM mawid_core.customer_profiles p
+       WHERE p.workspace_id=$1 AND p.customer_id=$3 AND p.anonymized_at IS NULL
+       AND EXISTS(SELECT 1 FROM mawid_core.identity_bindings i
+         WHERE i.actor_id=p.actor_id AND i.revoked_at IS NULL)
+       AND NOT EXISTS(SELECT 1 FROM mawid_core.memberships m
+         WHERE m.workspace_id=$1 AND m.actor_id=p.actor_id
+         AND (m.location_id IS NULL OR m.location_id=$2) AND m.revoked_at IS NULL)`,
+      [e.workspace_id, e.location_id, e.customer_id],
+    );
+    return rows[0]?.actor_id;
   }
   async materialize(limit = 20) {
     return this.transaction(async (c) => {
@@ -400,6 +426,11 @@ export class LocalNotifications {
       )
         return { skip: "ACCESS_REVOKED" };
       if (row.action === "request" && !a.roles.some((r) => ["manager", "admin"].includes(r)))
+        return { skip: "ACCESS_REVOKED" };
+      if (
+        row.kind === "review_invitation" &&
+        (row.state !== "confirmed" || row.actor_id !== (await this.reviewRecipient(c, row)))
+      )
         return { skip: "ACCESS_REVOKED" };
       if (
         row.kind === "pending_reminder"

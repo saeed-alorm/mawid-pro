@@ -35,6 +35,8 @@ export type BookingView = {
     display_name: string;
     active: boolean;
     service_ids: string[];
+    rating_average?: number | null;
+    rating_count?: number;
   }[];
   customers: { customer_id: string; display_name: string }[];
   bookings: ServerBooking[];
@@ -48,6 +50,7 @@ export type InboxItem = {
   booking_id: string;
   state: string;
   own: boolean;
+  kind?: "booking" | "pending_reminder" | "review_invitation";
   pushes: { status: string; transport: string }[];
 };
 type Session = {
@@ -82,8 +85,12 @@ export class BookingClient {
     const s = input as Session;
     const id = /^[a-f0-9]{8}(-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i;
     const origin = new URL(s.origin);
+    const validToken =
+      s.mode === "fictional-signed-local-only"
+        ? s.token?.length <= 4096 && /^[\w-]+\.[\w-]+\.[\w-]+$/.test(s.token)
+        : s.mode === "fictional-local-only" && /^[A-Za-z0-9_-]{43}$/.test(s.token);
     if (
-      s.mode !== "fictional-local-only" ||
+      !validToken ||
       origin.hostname !== "127.0.0.1" ||
       origin.protocol !== "http:" ||
       origin.username ||
@@ -95,7 +102,6 @@ export class BookingClient {
       !id.test(s.workspace_id) ||
       !id.test(s.location_id) ||
       !id.test(s.installation_id) ||
-      !/^[A-Za-z0-9_-]{43}$/.test(s.token) ||
       !Number.isFinite(Date.parse(s.expires_at))
     )
       throw new BookingFailure("INVALID_LOCAL_SESSION");

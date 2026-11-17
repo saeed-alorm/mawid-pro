@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import {
   BookingClient,
   BookingFailure,
@@ -62,6 +62,13 @@ export function ServerBookingPage({
     [start, setStart] = useState("");
   const [slots, setSlots] = useState<ServerSlot[]>([]);
   const [selected, setSelected] = useState<ServerBooking | null>(null);
+  const [review, setReview] = useState<{
+    booking_id: string;
+    professional_ids: string[];
+    submitted: boolean;
+  } | null>(null);
+  const [scores, setScores] = useState<Record<string, number>>({});
+  const [feedback, setFeedback] = useState<Record<string, string>>({});
   const formatTime = (value: string) =>
     new Intl.DateTimeFormat(lang === "ar" ? "ar-LB" : "en-GB", {
       timeZone: "Asia/Beirut",
@@ -73,13 +80,13 @@ export function ServerBookingPage({
     setSlots([]);
     setStart("");
   };
-  const clearCaller = () => {
+  const clearCaller = useCallback(() => {
     setCustomer("");
     setCallerName("");
     setCallerPhone("");
     setQuery("");
     setMatches([]);
-  };
+  }, []);
   const editDraft = (index: number, next: VisitPreference) =>
     updateDraft(draft.map((segment, i) => (i === index ? next : segment)));
   const loadVisit = (booking: ServerBooking, assigned: boolean) => {
@@ -94,36 +101,42 @@ export function ServerBookingPage({
       })),
     );
   };
-  const refresh = async (preserveMessage = false) => {
-    const c = client.current,
-      e = epoch.current,
-      r = ++read.current;
-    if (!c) return;
-    try {
-      const result = await c.view();
-      if (e === epoch.current && r === read.current) {
-        setView(result);
-        setSelected(null);
+  const refresh = useCallback(
+    async (preserveMessage = false) => {
+      const c = client.current,
+        e = epoch.current,
+        r = ++read.current;
+      if (!c) return;
+      try {
+        const result = await c.view();
+        if (e === epoch.current && r === read.current) {
+          setView(result);
+          setSelected(null);
+        }
+      } catch (error) {
+        if (e === epoch.current && r === read.current) {
+          setView(null);
+          clearCaller();
+          setInbox([]);
+          setReview(null);
+          setScores({});
+          setFeedback({});
+          setSlots([]);
+          setSelected(null);
+          if (!preserveMessage)
+            setMessage(error instanceof BookingFailure ? error.code : "ACCESS_UNAVAILABLE");
+        }
+        return;
       }
-    } catch (error) {
-      if (e === epoch.current && r === read.current) {
-        setView(null);
-        clearCaller();
-        setInbox([]);
-        setSlots([]);
-        setSelected(null);
-        if (!preserveMessage)
-          setMessage(error instanceof BookingFailure ? error.code : "ACCESS_UNAVAILABLE");
+      try {
+        const result = await c.inbox();
+        if (e === epoch.current && r === read.current) setInbox(result.items);
+      } catch {
+        if (e === epoch.current && r === read.current) setInbox([]);
       }
-      return;
-    }
-    try {
-      const result = await c.inbox();
-      if (e === epoch.current && r === read.current) setInbox(result.items);
-    } catch {
-      if (e === epoch.current && r === read.current) setInbox([]);
-    }
-  };
+    },
+    [clearCaller],
+  );
   useEffect(() => {
     setHydrated(true);
     const generation = epoch;
@@ -137,7 +150,7 @@ export function ServerBookingPage({
       window.removeEventListener("online", resume);
       document.removeEventListener("visibilitychange", resume);
     };
-  }, []);
+  }, [refresh]);
   const act = async (task: (c: BookingClient) => Promise<unknown>) => {
     const c = client.current,
       e = epoch.current;
@@ -329,7 +342,11 @@ export function ServerBookingPage({
                 .map((item) => (
                   <article key={item.professional_id} className="rounded-xl border bg-card p-4">
                     <h2 className="text-lg font-semibold">{item.display_name}</h2>
-                    <p className="text-sm text-muted-foreground">{say("Unrated", "غير مقيّم")}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {item.rating_count && item.rating_average != null
+                        ? `${new Intl.NumberFormat(lang).format(item.rating_average)} / 5 · ${new Intl.NumberFormat(lang).format(item.rating_count)} ${say("reviews", "تقييمات")}`
+                        : say("Unrated", "غير مقيّم")}
+                    </p>
                     <p className="mb-3 text-sm">
                       {view.services
                         .filter((service) => item.service_ids.includes(service.service_id))
@@ -667,23 +684,105 @@ export function ServerBookingPage({
             {inbox.map((item) => (
               <article key={item.notification_id} className="rounded border p-3">
                 <p>
-                  {item.state} · {item.pushes.map((p) => `${p.transport}: ${p.status}`).join(", ")}
+                  {item.kind === "review_invitation"
+                    ? say("Review your visit", "قيّم زيارتك")
+                    : item.kind === "pending_reminder"
+                      ? say("Pending visit reminder", "تذكير بزيارة معلّقة")
+                      : item.state}{" "}
+                  · {item.pushes.map((p) => `${p.transport}: ${p.status}`).join(", ")}
                 </p>
                 {item.own && (
                   <Button
                     disabled={busy}
                     onClick={() =>
                       void act(async (c) => {
-                        await c.open(item.notification_id);
+                        const current = await c.open(item.notification_id);
+                        if (item.kind === "review_invitation") {
+                          const result = await c.request<{
+                            professional_ids: string[];
+                            submitted: boolean;
+                          }>(`visits/${current.booking_id}/reviews`);
+                          setScores({});
+                          setFeedback({});
+                          setReview({ booking_id: current.booking_id, ...result });
+                        }
                       })
                     }
                   >
-                    {say("Open current booking state", "فتح حالة الحجز الحالية")}
+                    {item.kind === "review_invitation"
+                      ? say("Open review", "فتح التقييم")
+                      : say("Open current booking state", "فتح حالة الحجز الحالية")}
                   </Button>
                 )}
               </article>
             ))}
           </section>
+          {review && !staff && (
+            <section aria-labelledby="review-heading" className="space-y-4 rounded-xl border p-4">
+              <h2 id="review-heading" className="text-lg font-semibold">
+                {say("Review your visit", "قيّم زيارتك")}
+              </h2>
+              {review.submitted ? (
+                <p>{say("Review submitted", "تم إرسال التقييم")}</p>
+              ) : (
+                <>
+                  {review.professional_ids.map((id) => (
+                    <fieldset className="grid gap-2 rounded-lg border p-3" key={id}>
+                      <legend className="px-1 font-medium">
+                        {view.professionals.find((p) => p.professional_id === id)?.display_name}
+                      </legend>
+                      <label className="grid gap-1">
+                        {say("Score", "التقييم")}
+                        <select
+                          className="rounded-md border bg-background p-2"
+                          value={scores[id] ?? ""}
+                          onChange={(event) =>
+                            setScores({ ...scores, [id]: Number(event.target.value) })
+                          }
+                        >
+                          <option value="">—</option>
+                          {[1, 2, 3, 4, 5].map((score) => (
+                            <option key={score} value={score}>
+                              {score} / 5
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label className="grid gap-1">
+                        {say("Feedback for management (optional)", "ملاحظات للإدارة (اختيارية)")}
+                        <textarea
+                          className="rounded-md border bg-background p-2"
+                          maxLength={1000}
+                          value={feedback[id] ?? ""}
+                          onChange={(event) =>
+                            setFeedback({ ...feedback, [id]: event.target.value })
+                          }
+                        />
+                      </label>
+                    </fieldset>
+                  ))}
+                  <Button
+                    disabled={busy || review.professional_ids.some((id) => !scores[id])}
+                    onClick={() =>
+                      void act(async (c) => {
+                        await c.mutate(`visits/${review.booking_id}/reviews`, {
+                          reviews: review.professional_ids.map((id) => ({
+                            professional_id: id,
+                            score: scores[id],
+                            ...(feedback[id]?.trim() ? { feedback: feedback[id].trim() } : {}),
+                          })),
+                        });
+                        setReview({ ...review, submitted: true });
+                        setFeedback({});
+                      })
+                    }
+                  >
+                    {say("Submit review", "إرسال التقييم")}
+                  </Button>
+                </>
+              )}
+            </section>
+          )}
           <section className="space-y-3" aria-label="Server bookings">
             {view.bookings.map((b) => {
               const segments = b.segments ?? [];
