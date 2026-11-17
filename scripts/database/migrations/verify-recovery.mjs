@@ -33,7 +33,7 @@ const synthetic = (number, label, sql) => ({
 const seedFingerprint = async () =>
   (
     await q(
-      "WITH original AS (SELECT 'profiles' AS kind,jsonb_build_array(workspace_id,customer_id,external_key,actor_id,display_name,contact,anonymized_at) AS payload FROM mawid_core.customer_profiles WHERE customer_id=ANY($1::uuid[]) UNION ALL SELECT 'bookings',to_jsonb(b) FROM mawid_core.bookings b WHERE booking_id=ANY($2::uuid[]) UNION ALL SELECT 'services',to_jsonb(s) FROM mawid_core.services s UNION ALL SELECT 'professionals',to_jsonb(p) FROM mawid_core.professionals p UNION ALL SELECT 'openings',to_jsonb(o) FROM mawid_core.opening_intervals o UNION ALL SELECT 'locations',to_jsonb(l) FROM mawid_core.locations l) SELECT encode(sha256(convert_to(jsonb_agg(jsonb_build_array(kind,payload) ORDER BY kind,payload::text)::text,'UTF8')),'hex') AS hash FROM original",
+      "WITH original AS (SELECT 'profiles' AS kind,jsonb_build_array(workspace_id,customer_id,external_key,actor_id,display_name,contact,anonymized_at) AS payload FROM mawid_core.customer_profiles WHERE customer_id=ANY($1::uuid[]) UNION ALL SELECT 'bookings',to_jsonb(b)-ARRAY['segment_count','intake_source','entered_by'] FROM mawid_core.bookings b WHERE booking_id=ANY($2::uuid[]) UNION ALL SELECT 'services',to_jsonb(s) FROM mawid_core.services s UNION ALL SELECT 'professionals',to_jsonb(p) FROM mawid_core.professionals p UNION ALL SELECT 'openings',to_jsonb(o) FROM mawid_core.opening_intervals o UNION ALL SELECT 'locations',to_jsonb(l) FROM mawid_core.locations l) SELECT encode(sha256(convert_to(jsonb_agg(jsonb_build_array(kind,payload) ORDER BY kind,payload::text)::text,'UTF8')),'hex') AS hash FROM original",
       [
         [IDS.customerA, IDS.customerB],
         [IDS.bookingA, IDS.bookingB],
@@ -100,6 +100,10 @@ try {
     assert.equal(result.previously_applied, 1);
     assert.equal(result.applied.length, source.length - 1);
     assert.equal(await seedFingerprint(), initial);
+    assert.deepEqual(
+      await q("SELECT booking_id,position FROM mawid_core.visit_segments ORDER BY booking_id"),
+      [IDS.bookingA, IDS.bookingB].map((booking_id) => ({ booking_id, position: 1 })),
+    );
   });
   await check("an already-applied exact manifest is a no-op", async () =>
     assert.deepEqual((await applyLocalMigrations(fixture.admin, source)).applied, []),
@@ -351,6 +355,10 @@ try {
     assert.equal((await history()).length, interruptedManifest.length);
     assert.deepEqual((await applyLocalMigrations(fixture.admin, interruptedManifest)).applied, []);
     assert.equal(await seedFingerprint(), initial);
+    assert.deepEqual(
+      await q("SELECT booking_id,position FROM mawid_core.visit_segments ORDER BY booking_id"),
+      [IDS.bookingA, IDS.bookingB].map((booking_id) => ({ booking_id, position: 1 })),
+    );
     assert.ok((await readProfiles()).items.some((row) => row.customer_id === IDS.customerA));
   });
   const empty = await freshDatabase();

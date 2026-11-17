@@ -2,7 +2,7 @@ import { createServer } from "node:http";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { parseImport, exportCsv } from "../csv.mjs";
-import { BookingError } from "../booking/service.mjs";
+import { BookingError, LEGACY_VISIT_UPDATE_REQUIRED } from "../booking/service.mjs";
 import { SessionError } from "../identity/session-gate.mjs";
 
 const uuid = z.string().regex(/^[a-f0-9]{8}(-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i);
@@ -194,7 +194,7 @@ export async function startLocalDataServer(
           );
         if (notifications && noticeRoute) {
           const location = validate(uuid, noticeRoute[1]);
-          params(url, z.object({}).strict());
+          if (!noticeRoute[2].startsWith("inbox")) params(url, z.object({}).strict());
           if (req.method === "POST" && noticeRoute[2] === "registrations") {
             const input = await jsonBody(
               req,
@@ -224,16 +224,146 @@ export async function startLocalDataServer(
                 validate(uuid, noticeRoute[3]),
               ),
             );
-          if (req.method === "GET" && noticeRoute[2] === "inbox")
-            return send(200, await notifications.inbox(user, workspace, location));
+          if (req.method === "GET" && noticeRoute[2] === "inbox") {
+            const { contract } = params(
+              url,
+              z.object({ contract: z.literal("2").optional() }).strict(),
+            );
+            return send(
+              200,
+              await notifications.inbox(user, workspace, location, contract === "2"),
+            );
+          }
           if (req.method === "POST" && noticeRoute[4]) {
+            const { contract } = params(
+              url,
+              z.object({ contract: z.literal("2").optional() }).strict(),
+            );
             await jsonBody(req, z.object({}).strict());
             return send(
               200,
-              await notifications.open(user, workspace, location, validate(uuid, noticeRoute[4])),
+              await notifications.open(
+                user,
+                workspace,
+                location,
+                validate(uuid, noticeRoute[4]),
+                contract === "2",
+              ),
             );
           }
           throw new ApiError(404, "NOT_FOUND");
+        }
+        const visitRoute =
+          /^\/locations\/([^/]+)\/visit-core\/(view|slots|availability|requests|walk-ins|caller-intake|callers|visits\/([^/]+)(?:\/(confirm|propose|assign|reschedule|accept|decline|withdraw|cancel|reviews|reviews-feedback))?)$/.exec(
+            tail,
+          );
+        if (booking && visitRoute) {
+          const location = validate(uuid, visitRoute[1]);
+          const identifier = visitRoute[3] ? validate(uuid, visitRoute[3]) : null;
+          const part = visitRoute[2];
+          const visits = booking.visits;
+          const segments = z
+            .array(z.object({ service_id: uuid, professional_id: uuid.optional() }).strict())
+            .min(1)
+            .max(8);
+          const start = z.string().max(40);
+          if (req.method === "GET" && part === "view") {
+            const { after } = params(url, z.object({ after: uuid.optional() }).strict());
+            return send(200, await visits.view(user, workspace, location, after));
+          }
+          if (req.method === "GET" && part === "callers") {
+            const { q } = params(url, z.object({ q: z.string().trim().min(2).max(120) }).strict());
+            return send(200, await visits.lookupCallers(user, workspace, location, q));
+          }
+          params(url, z.object({}).strict());
+          if (visitRoute[4] === "reviews-feedback" && req.method !== "GET")
+            throw new ApiError(404, "NOT_FOUND");
+          if (req.method === "GET" && ["reviews", "reviews-feedback"].includes(visitRoute[4]))
+            return send(
+              200,
+              await visits.review(
+                user,
+                workspace,
+                location,
+                identifier,
+                null,
+                visitRoute[4] === "reviews-feedback",
+              ),
+            );
+          if (req.method === "POST" && visitRoute[4] === "reviews") {
+            const input = await jsonBody(
+              req,
+              z
+                .object({
+                  operation_id: uuid,
+                  reviews: z
+                    .array(
+                      z
+                        .object({
+                          professional_id: uuid,
+                          score: z.number().int().min(1).max(5),
+                          feedback: z.string().trim().min(1).max(1000).optional(),
+                        })
+                        .strict(),
+                    )
+                    .min(1)
+                    .max(8),
+                })
+                .strict(),
+            );
+            return send(200, await visits.review(user, workspace, location, identifier, input));
+          }
+          if (req.method === "GET" && identifier && !visitRoute[4])
+            return send(200, await visits.read(user, workspace, location, identifier));
+          if (req.method !== "POST") throw new ApiError(404, "NOT_FOUND");
+          if (part === "slots" || part === "availability") {
+            const input = await jsonBody(
+              req,
+              z.object(part === "slots" ? { segments } : { segments, start }).strict(),
+            );
+            return send(
+              200,
+              await visits.availability(user, workspace, location, input, part === "slots"),
+            );
+          }
+          if (part === "caller-intake") {
+            const input = await jsonBody(
+              req,
+              z
+                .object({
+                  operation_id: uuid,
+                  source: z.enum(["phone", "whatsapp", "walk-in"]),
+                  customer_id: uuid.optional(),
+                  caller: z
+                    .object({
+                      name: z.string().trim().min(1).max(120),
+                      phone: z.string().trim().min(4).max(30).optional(),
+                    })
+                    .strict()
+                    .optional(),
+                  segments,
+                  start,
+                  assignments: z.array(uuid.nullable()).min(1).max(8).optional(),
+                })
+                .strict()
+                .refine((fields) => Boolean(fields.customer_id) !== Boolean(fields.caller)),
+            );
+            return send(201, await visits.mutate(user, workspace, location, "walk-in", input));
+          }
+          const action =
+            part === "requests" ? "request" : part === "walk-ins" ? "walk-in" : visitRoute[4];
+          if (!action) throw new ApiError(404, "NOT_FOUND");
+          const fields = { operation_id: uuid };
+          if (identifier) fields.expected_version = z.string().regex(/^[1-9][0-9]{0,14}$/);
+          if (["request", "walk-in"].includes(action))
+            Object.assign(fields, { customer_id: uuid, segments, start });
+          if (["propose", "reschedule"].includes(action)) fields.start = start;
+          if (["walk-in", "confirm", "assign", "propose", "reschedule"].includes(action))
+            fields.assignments = z.array(uuid.nullable()).min(1).max(8).optional();
+          const input = await jsonBody(req, z.object(fields).strict());
+          const result = await visits.mutate(user, workspace, location, action, input, identifier);
+          if (result.error) throw new ApiError(result.status, result.error.code);
+          return send(identifier ? 200 : 201, result);
         }
         const bookingRoute =
           /^\/locations\/([^/]+)\/booking-core\/(view|slots|availability|requests|walk-ins|bookings\/([^/]+)(?:\/(confirm|propose|assign|accept|decline|withdraw|cancel))?)$/.exec(
@@ -325,13 +455,28 @@ export async function startLocalDataServer(
           const location = validate(uuid, locationRoute[1]);
           const kind = locationRoute[2];
           const { after, limit } = params(url, page);
+          if (kind === "bookings" && booking) {
+            await booking.run(user, workspace, location, (x) =>
+              booking.requireLegacyVisitSupport(x),
+            );
+          }
           const rows = await service.transaction(user, async (client) => {
             await service.assertWorkspace(client, workspace);
-            if (kind === "bookings") await service.assertBookingRead(client, workspace, location);
-            else await service.assertLocation(client, workspace, location);
+            if (kind === "bookings") {
+              await service.assertBookingRead(client, workspace, location);
+              if (!booking) {
+                const {
+                  rows: [row],
+                } = await client.query(
+                  "SELECT EXISTS(SELECT 1 FROM mawid_core.bookings WHERE workspace_id=$1 AND location_id=$2 AND segment_count>1) AS unsupported",
+                  [workspace, location],
+                );
+                if (row.unsupported) throw new ApiError(409, LEGACY_VISIT_UPDATE_REQUIRED);
+              }
+            } else await service.assertLocation(client, workspace, location);
             const text =
               kind === "bookings"
-                ? "SELECT booking_id,customer_id,location_id,service_id,requested_start,requested_end,assigned_start,assigned_end,state,version,cancelled_at FROM mawid_core.bookings WHERE workspace_id=$1 AND location_id=$2 AND ($3::uuid IS NULL OR booking_id>$3) ORDER BY booking_id LIMIT $4"
+                ? "SELECT booking_id,customer_id,location_id,service_id,requested_start,requested_end,assigned_start,assigned_end,state,version,cancelled_at FROM mawid_core.bookings WHERE workspace_id=$1 AND location_id=$2 AND segment_count=1 AND ($3::uuid IS NULL OR booking_id>$3) ORDER BY booking_id LIMIT $4"
                 : catalogs[kind];
             return (await client.query(text, [workspace, location, after ?? null, limit + 1])).rows;
           });
@@ -439,17 +584,23 @@ export async function startLocalDataServer(
         }
         if (method === "GET" && jobRoute?.[1] === "exports" && jobRoute[3] === "/download") {
           const job = validate(uuid, jobRoute[2]);
-          const { format } = params(
+          const { format, contract } = params(
             url,
-            z.object({ format: z.enum(["json", "csv"]).default("json") }).strict(),
+            z
+              .object({
+                format: z.enum(["json", "csv"]).default("json"),
+                contract: z.enum(["1", "2"]).default("1"),
+              })
+              .strict(),
           );
           const result = await service.transaction(
             user,
             async (client) =>
               (
-                await client.query("SELECT mawid_core.download_export($1,$2) AS payload", [
+                await client.query("SELECT mawid_core.download_visit_export($1,$2,$3) AS payload", [
                   workspace,
                   job,
+                  Number(contract),
                 ])
               ).rows[0].payload,
           );
@@ -470,6 +621,29 @@ export async function startLocalDataServer(
             ...result.profiles.map((row) => ({ record_type: "profile", ...row })),
             ...result.bookings.map((row) => ({ record_type: "booking", ...row })),
           ];
+          if (contract === "2") {
+            columns.push(
+              "position",
+              "service_id",
+              "requested_professional_id",
+              "assigned_professional_id",
+              "requested_end",
+              "assigned_end",
+              "buffer_before_seconds",
+              "buffer_after_seconds",
+            );
+            for (const booking of result.bookings) {
+              rows.push(
+                ...booking.segments.map((segment) => ({
+                  record_type: "visit_segment",
+                  booking_id: booking.booking_id,
+                  customer_id: booking.customer_id,
+                  location_id: booking.location_id,
+                  ...segment,
+                })),
+              );
+            }
+          }
           res.writeHead(200, {
             "content-type": "text/csv; charset=utf-8",
             "content-disposition": 'attachment; filename="mawid-export.csv"',
@@ -485,7 +659,14 @@ export async function startLocalDataServer(
           log({ request_id: requestId, code: safe.apiCode, status: safe.status });
         if (!res.headersSent)
           send(safe.status, {
-            error: { code: safe.apiCode, message: safe.apiCode, request_id: requestId },
+            error: {
+              code: safe.apiCode,
+              message:
+                safe.apiCode === LEGACY_VISIT_UPDATE_REQUIRED
+                  ? "Update your app to view and manage multi-service visits."
+                  : safe.apiCode,
+              request_id: requestId,
+            },
           });
         else res.end();
       }

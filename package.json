@@ -4,6 +4,9 @@
   "sideEffects": false,
   "type": "module",
   "scripts": {
+    "test:visit-migration": "node scripts/database/booking/verify-visit-migration.mjs",
+    "test:visits": "node scripts/database/booking/verify-visits.mjs",
+    "test:reviews": "node scripts/database/booking/verify-reviews.mjs",
     "test:meeting-policy": "node scripts/database/booking/verify-meeting-policy.mjs && node scripts/database/booking/verify-meeting-policy.mjs --verified-identity",
     "test:identity": "node --test scripts/database/identity/session-gate.test.mjs && node scripts/database/api/verify-authorization.mjs --verified-identity",
     "test:identity-email": "node scripts/database/identity/verify-email-otp.mjs",

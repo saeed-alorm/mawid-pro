@@ -6,7 +6,13 @@ import { z } from "zod";
 // Deliberate development-only USB pairing. This file never accepts Admin SDK
 // credentials or prints the short-lived actor session copied to private storage.
 try {
-  const [sessionFile, deviceArgument] = process.argv.slice(2);
+  const [sessionFile, deviceArgument, application = "com.mawid.demo", ...extra] =
+    process.argv.slice(2);
+  if (
+    extra.length ||
+    !/^com\.mawid\.(?:demo|management|customer\.[a-z][a-z0-9_]{0,62})$/.test(application)
+  )
+    throw Error();
   if (!sessionFile || !path.isAbsolute(sessionFile)) throw Error();
   for (let dir = path.dirname(sessionFile); ; dir = path.dirname(dir)) {
     if (existsSync(path.join(dir, ".git"))) throw Error();
@@ -49,7 +55,7 @@ try {
   const device = deviceArgument || (devices.length === 1 ? devices[0] : null);
   if (!device || !devices.includes(device)) throw Error();
   const base = ["-s", device];
-  const info = execFileSync(adb, [...base, "shell", "dumpsys", "package", "com.mawid.demo"], {
+  const info = execFileSync(adb, [...base, "shell", "dumpsys", "package", application], {
     encoding: "utf8",
     timeout: 10000,
   });
@@ -66,7 +72,7 @@ try {
       "shell",
       "-T",
       "run-as",
-      "com.mawid.demo",
+      application,
       "tee",
       "code_cache/mawid-notification-session.private.json",
     ],
@@ -79,7 +85,7 @@ try {
       "shell",
       "-T",
       "run-as",
-      "com.mawid.demo",
+      application,
       "cat",
       "code_cache/mawid-notification-session.private.json",
     ],

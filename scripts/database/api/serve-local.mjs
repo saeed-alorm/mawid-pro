@@ -11,6 +11,7 @@ import { LocalNotifications } from "../notifications/service.mjs";
 import { SimulatedSender } from "../notifications/policy.mjs";
 import { FcmSender } from "../notifications/fcm.mjs";
 import { startNotificationLoop } from "../notifications/scheduler.mjs";
+import { createSignedSessionFixture } from "../identity/signed-session-fixture.mjs";
 
 let fixture, service, server, maintenance, directory, booking, notifications, notificationLoop;
 let closing = false;
@@ -41,13 +42,18 @@ async function close() {
 }
 try {
   const args = process.argv.slice(2);
-  if (args.length > 1 || (args.length === 1 && args[0] !== "--check"))
+  if (args.length > 1 || (args.length === 1 && !["--check", "--signed"].includes(args[0])))
     throw new Error("INVALID_LOCAL_ARGUMENTS");
+  const signed = args[0] === "--signed";
   fixture = await createLocalFixture({ authorizationFixtures: true, bookingFixtures: true });
-  service = new LocalDataService(fixture.configs);
+  const issuer = signed
+    ? await createSignedSessionFixture(fixture)
+    : new LocalDataService(fixture.configs);
+  service = signed ? issuer.service : issuer;
   booking = new LocalBookingService(service, fixture.bookingConfig);
   const transport = process.env.MAWID_NOTIFICATION_TRANSPORT ?? "simulated";
   if (!["simulated", "fcm"].includes(transport)) throw Error("INVALID_NOTIFICATION_TRANSPORT");
+  if (signed && transport !== "simulated") throw Error("SIGNED_FIXTURE_SIMULATED_ONLY");
   const sender = transport === "fcm" ? await FcmSender.fromADC() : new SimulatedSender();
   notifications = new LocalNotifications(service, booking, fixture.notificationConfig, {
     key: randomBytes(32),
@@ -59,10 +65,12 @@ try {
   });
   notificationLoop = startNotificationLoop(notifications);
   const sessions = Object.fromEntries(
-    Object.entries({ ...USERS, ...AUTH_USERS }).map(([name, user]) => [
-      name,
-      service.issueSession(user),
-    ]),
+    await Promise.all(
+      Object.entries({ ...USERS, ...AUTH_USERS }).map(async ([name, user]) => [
+        name,
+        await issuer.issueSession(user, signed ? 300000 : 900000),
+      ]),
+    ),
   );
   if (args[0] === "--check") {
     const response = await fetch(server.origin + "/v1/workspaces/" + IDS.workspaceA + "/profiles", {
@@ -87,11 +95,12 @@ try {
     // Keep fictional bearer tokens outside the Vite/source root as well as outside Git.
     directory = await mkdtemp(path.join(tmpdir(), "mawid-local-data-"));
     const sessionFile = path.join(directory, "sessions.json");
+    const mode = signed ? "fictional-signed-local-only" : "fictional-local-only";
     await writeFile(
       sessionFile,
       JSON.stringify(
         {
-          mode: "fictional-local-only",
+          mode,
           origin: server.origin,
           ids: IDS,
           sessions,
@@ -108,7 +117,7 @@ try {
     await writeFile(
       appFile,
       JSON.stringify({
-        mode: "fictional-local-only",
+        mode,
         origin: server.origin,
         workspace_id: IDS.workspaceA,
         location_id: IDS.locationA,
@@ -123,7 +132,7 @@ try {
     console.log("Fictional local data API: " + server.origin);
     console.log("Temporary fictional sessions: " + sessionFile);
     console.log(
-      "Sessions expire in 15 minutes. Ctrl+C removes this disposable database and session file.",
+      `Sessions expire in ${signed ? 5 : 15} minutes. Ctrl+C removes this disposable database and session file.`,
     );
     process.once("SIGINT", () => void close());
     process.once("SIGTERM", () => void close());
@@ -131,8 +140,11 @@ try {
       if (message === "mawid-local-shutdown") void close();
     });
   }
-} catch {
-  console.error("LOCAL_DATA_API_START_FAILED");
+} catch (error) {
+  const code = [error?.code, error?.message].find(
+    (value) => typeof value === "string" && /^[A-Z0-9_]{1,64}$/.test(value),
+  );
+  console.error("LOCAL_DATA_API_START_FAILED", code ?? "UNEXPECTED_ERROR");
   await close();
   process.exitCode = 1;
 }

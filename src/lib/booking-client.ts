@@ -12,6 +12,18 @@ export type ServerBooking = {
   can_cancel: boolean;
   cancellation_is_late?: boolean;
   overdue?: boolean;
+  segments?: VisitSegment[];
+};
+export type VisitPreference = { service_id: string; professional_id?: string | undefined };
+export type VisitSegment = {
+  position: number;
+  service_id: string;
+  requested_professional_id: string | null;
+  assigned_professional_id: string | null;
+  requested_start: string;
+  requested_end: string;
+  assigned_start: string | null;
+  assigned_end: string | null;
 };
 export type BookingView = {
   actor_id: string;
@@ -23,6 +35,8 @@ export type BookingView = {
     display_name: string;
     active: boolean;
     service_ids: string[];
+    rating_average?: number | null;
+    rating_count?: number;
   }[];
   customers: { customer_id: string; display_name: string }[];
   bookings: ServerBooking[];
@@ -30,12 +44,13 @@ export type BookingView = {
   server_time: string;
   review_at: string;
 };
-export type ServerSlot = { start: string; date: string; time: string; offset: string };
+export type ServerSlot = { start: string; segments: VisitSegment[] };
 export type InboxItem = {
   notification_id: string;
   booking_id: string;
   state: string;
   own: boolean;
+  kind?: "booking" | "pending_reminder" | "review_invitation";
   pushes: { status: string; transport: string }[];
 };
 type Session = {
@@ -65,12 +80,17 @@ export class BookingClient {
     input: unknown,
     private transport: typeof fetch = globalThis.fetch.bind(globalThis),
     private storage: Pick<Storage, "getItem" | "setItem" | "removeItem"> = sessionStorage,
+    private area: "booking-core" | "visit-core" = "booking-core",
   ) {
     const s = input as Session;
     const id = /^[a-f0-9]{8}(-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i;
     const origin = new URL(s.origin);
+    const validToken =
+      s.mode === "fictional-signed-local-only"
+        ? s.token?.length <= 4096 && /^[\w-]+\.[\w-]+\.[\w-]+$/.test(s.token)
+        : s.mode === "fictional-local-only" && /^[A-Za-z0-9_-]{43}$/.test(s.token);
     if (
-      s.mode !== "fictional-local-only" ||
+      !validToken ||
       origin.hostname !== "127.0.0.1" ||
       origin.protocol !== "http:" ||
       origin.username ||
@@ -82,7 +102,6 @@ export class BookingClient {
       !id.test(s.workspace_id) ||
       !id.test(s.location_id) ||
       !id.test(s.installation_id) ||
-      !/^[A-Za-z0-9_-]{43}$/.test(s.token) ||
       !Number.isFinite(Date.parse(s.expires_at))
     )
       throw new BookingFailure("INVALID_LOCAL_SESSION");
@@ -93,7 +112,10 @@ export class BookingClient {
     return `${s.origin}|${s.workspace_id}|${s.location_id}|${this.actor}`;
   }
   private get intentKey() {
-    return `${key}:${this.scope}`;
+    return this.storageKey(this.scope);
+  }
+  private storageKey(scope: string) {
+    return this.area === "visit-core" ? `${key}:visit:${scope}` : `${key}:${scope}`;
   }
   get pending(): boolean {
     return this.intent()?.scope === this.scope;
@@ -105,7 +127,7 @@ export class BookingClient {
   async request<T>(
     path: string,
     body?: Record<string, unknown>,
-    area: "booking-core" | "notifications" = "booking-core",
+    area: "booking-core" | "visit-core" | "notifications" = this.area,
   ): Promise<T> {
     const s = this.session;
     if (Date.now() >= Date.parse(s.expires_at)) throw new BookingFailure("SESSION_EXPIRED", 401);
@@ -134,11 +156,16 @@ export class BookingClient {
     }
   }
   inbox() {
-    return this.request<{ items: InboxItem[] }>("inbox", undefined, "notifications");
+    return this.request<{ items: InboxItem[] }>(
+      this.area === "visit-core" ? "inbox?contract=2" : "inbox",
+      undefined,
+      "notifications",
+    );
   }
   open(id: string) {
     if (!/^[a-f0-9-]{36}$/i.test(id)) throw new BookingFailure("INVALID_NOTIFICATION");
-    return this.request<ServerBooking>(`inbox/${id}/open`, {}, "notifications");
+    const contract = this.area === "visit-core" ? "?contract=2" : "";
+    return this.request<ServerBooking>(`inbox/${id}/open${contract}`, {}, "notifications");
   }
   async view(): Promise<BookingView> {
     const first = await this.request<BookingView>("view");
@@ -175,7 +202,7 @@ export class BookingClient {
     this.busy = true;
     try {
       const result = await this.request<ServerBooking>(intent.path, intent.body);
-      this.storage.removeItem(`${key}:${intent.scope}`);
+      this.storage.removeItem(this.storageKey(intent.scope));
       return result;
     } catch (e) {
       if (
@@ -185,7 +212,7 @@ export class BookingClient {
         ![401, 403, 404, 408, 429].includes(e.status) &&
         e.code !== "OPERATION_RETIRED"
       )
-        this.storage.removeItem(`${key}:${intent.scope}`);
+        this.storage.removeItem(this.storageKey(intent.scope));
       throw e;
     } finally {
       this.busy = false;
