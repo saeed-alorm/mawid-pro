@@ -115,6 +115,93 @@ try {
     },
   );
   await check(
+    "destination session binding is complete or entirely absent at the database boundary",
+    async () => {
+      await assert.rejects(
+        fixture.admin.query(
+          "UPDATE mawid_core.push_destinations SET identity_issuer='https://fixture.example.invalid/auth/v1',identity_subject=$1,identity_session=$2,identity_binding_version=NULL WHERE destination_id=$3",
+          [id(101), randomUUID(), registration.destination_id],
+        ),
+        (e) => e.code === "23514" && e.constraint === "push_destination_identity_complete",
+      );
+      await assert.rejects(
+        fixture.admin.query(
+          "UPDATE mawid_core.push_destinations SET identity_binding_version=1 WHERE destination_id=$1",
+          [registration.destination_id],
+        ),
+        (e) => e.code === "23514" && e.constraint === "push_destination_identity_complete",
+      );
+      await assert.rejects(
+        fixture.admin.query(
+          "INSERT INTO mawid_core.push_destinations(destination_id,workspace_id,location_id,actor_id,installation_id,application_id,environment,locale,token_ciphertext,token_digest,identity_issuer,identity_subject,identity_session) VALUES($1,$2,$3,$4,$5,'com.mawid.demo','development','en','',repeat('0',64),'https://fixture.example.invalid/auth/v1',$4,$6)",
+          [randomUUID(), W, L, id(101), randomUUID(), randomUUID()],
+        ),
+        (e) => e.code === "23514" && e.constraint === "push_destination_identity_complete",
+      );
+    },
+  );
+  await check(
+    "native packages are scoped by application and environment and cannot grant roles",
+    async () => {
+      const management = destination({
+        application_id: "com.mawid.management",
+        token: "synthetic-native-management-registration",
+      });
+      const customer = destination({
+        application_id: "com.mawid.customer.platinum",
+        token: "synthetic-native-customer-registration",
+      });
+      assert.equal((await call("registrations", "managerA", management)).status, 200);
+      assert.equal((await call("registrations", "customerA", customer)).status, 200);
+      assert.equal(
+        (
+          await call("registrations", "customerA", {
+            ...management,
+            token: "synthetic-customer-cannot-be-management",
+          })
+        ).status,
+        404,
+      );
+      assert.equal(
+        (
+          await call("registrations", "managerA", {
+            ...customer,
+            token: "synthetic-manager-cannot-be-customer",
+          })
+        ).status,
+        404,
+      );
+      assert.equal(
+        (await call("registrations", "managerA", { ...management, environment: "production" }))
+          .status,
+        422,
+      );
+      assert.equal(
+        (
+          await call(
+            `registrations/${install}?application_id=com.mawid.management&environment=development`,
+            "managerA",
+            undefined,
+            "DELETE",
+          )
+        ).status,
+        200,
+      );
+      const { rows } = await fixture.admin.query(
+        "SELECT application_id,revoked_at FROM mawid_core.push_destinations WHERE actor_id=$1 AND installation_id=$2",
+        [id(101), install],
+      );
+      assert.ok(rows.find((r) => r.application_id === "com.mawid.management").revoked_at);
+      assert.equal(rows.find((r) => r.application_id === "com.mawid.demo").revoked_at, null);
+      await call(
+        `registrations/${install}?application_id=com.mawid.customer.platinum&environment=development`,
+        "customerA",
+        undefined,
+        "DELETE",
+      );
+    },
+  );
+  await check(
     "after-hours outbox waits until deliver_after; booking remains committed and non-reserving",
     async () => {
       b = await request();

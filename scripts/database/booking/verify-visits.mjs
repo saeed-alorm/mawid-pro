@@ -237,11 +237,36 @@ try {
       )
     ).rows.map((row) => row.actor_id);
   now = +due - 1;
+  for (const user of [USERS.managerA, USERS.adminA])
+    await notices.register(user, w, l, {
+      installation_id: randomUUID(),
+      application_id: "com.mawid.management",
+      environment: "development",
+      locale: "en",
+      token: "synthetic-reminder-management-" + user,
+    });
+  await notices.register(USERS.customerA, w, l, {
+    installation_id: randomUUID(),
+    application_id: "com.mawid.customer.platinum",
+    environment: "development",
+    locale: "en",
+    token: "synthetic-reminder-customer-destination",
+  });
   await notices.runOnce();
   assert.deepEqual(await reminderActors(), []);
   now = +due;
   await Promise.all([notices.runOnce(), secondWorker.runOnce()]);
   assert.deepEqual(await reminderActors(), [id(101), id(105)]);
+  const reminderDestinations = (
+    await fixture.admin.query(
+      `SELECT p.application_id,n.actor_id FROM mawid_core.push_deliveries d JOIN mawid_core.notification_inbox n USING(notification_id) JOIN mawid_core.booking_events e USING(workspace_id,event_id) JOIN mawid_core.push_destinations p USING(destination_id) WHERE e.booking_id=$1 AND n.kind='pending_reminder' ORDER BY n.actor_id`,
+      [fresh.body.booking_id],
+    )
+  ).rows;
+  assert.deepEqual(
+    reminderDestinations,
+    [id(101), id(105)].map((actor_id) => ({ application_id: "com.mawid.management", actor_id })),
+  );
   await secondWorker.runOnce();
   assert.deepEqual(await reminderActors(), [id(101), id(105)]);
   const at = (hour) => start.replace("08:00", hour);

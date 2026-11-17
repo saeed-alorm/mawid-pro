@@ -58,6 +58,20 @@ const invites = async () =>
     (n) => n.kind === "review_invitation",
   );
 try {
+  await result(USERS.customerA, "notifications/registrations", 200, {
+    installation_id: randomUUID(),
+    application_id: "com.mawid.customer.platinum",
+    environment: "development",
+    locale: "en",
+    token: "synthetic-signed-customer-review-destination",
+  });
+  await result(USERS.managerA, "notifications/registrations", 200, {
+    installation_id: randomUUID(),
+    application_id: "com.mawid.management",
+    environment: "development",
+    locale: "en",
+    token: "synthetic-signed-management-review-destination",
+  });
   const segment = { service_id: service, professional_id: professional };
   const pending = await result(USERS.customerA, "visit-core/requests", 201, {
     customer_id: customer,
@@ -128,6 +142,39 @@ try {
   now++;
   await notifications.runOnce();
   assert.equal((await invites()).length, 1);
+  const reviewNotice = (await invites())[0];
+  const reviewDestinations = (
+    await fixture.admin.query(
+      `SELECT p.application_id,d.* FROM mawid_core.push_deliveries d JOIN mawid_core.notification_inbox n USING(notification_id) JOIN mawid_core.push_destinations p USING(destination_id) WHERE n.notification_id=$1`,
+      [reviewNotice.notification_id],
+    )
+  ).rows;
+  assert.deepEqual(
+    reviewDestinations.map((d) => d.application_id),
+    ["com.mawid.customer.platinum"],
+  );
+  assert.equal(
+    (await notifications.prepare(reviewDestinations[0])).application_id,
+    "com.mawid.customer.platinum",
+  );
+  await result(
+    USERS.customerA,
+    `notifications/inbox/${reviewNotice.notification_id}/open?contract=2`,
+    200,
+    {},
+  );
+  await result(
+    AUTH_USERS.otherCustomerA,
+    `notifications/inbox/${reviewNotice.notification_id}/open?contract=2`,
+    404,
+    {},
+  );
+  await result(
+    USERS.managerA,
+    `notifications/inbox/${reviewNotice.notification_id}/open?contract=2`,
+    404,
+    {},
+  );
   const cancelTarget = await result(USERS.customerA, "visit-core/requests", 201, {
     customer_id: customer,
     operation_id: randomUUID(),
@@ -241,6 +288,12 @@ try {
   const erased = await result(USERS.managerA, reviewPath + "-feedback", 200);
   assert.equal(erased.reviews[0].feedback, null);
   await result(USERS.customerA, reviewPath, 404);
+  await result(
+    USERS.customerA,
+    `notifications/inbox/${reviewNotice.notification_id}/open?contract=2`,
+    404,
+    {},
+  );
   await fixture.admin.query(
     "UPDATE mawid_core.memberships SET revoked_at=clock_timestamp() WHERE workspace_id=$1 AND actor_id=$2",
     [w, IDS.managerActorA],

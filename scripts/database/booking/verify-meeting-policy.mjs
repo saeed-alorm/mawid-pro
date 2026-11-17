@@ -361,6 +361,28 @@ try {
       );
     }
   });
+  await check(
+    "only partners receive the current salon late-cancellation count and fourth-event flag",
+    async () => {
+      for (let i = 0; i < 3; i++)
+        await fixture.admin.query(
+          "INSERT INTO mawid_core.bookings(workspace_id,location_id,customer_id,service_id,requested_start,requested_end,assigned_start,assigned_end,state,cancelled_at,cancellation_actor) VALUES($1,$2,$3,$4,clock_timestamp()+interval '20 minutes',clock_timestamp()+interval '50 minutes',clock_timestamp()+interval '20 minutes',clock_timestamp()+interval '50 minutes','cancelled',clock_timestamp(),'customer')",
+          [W, L, C, S],
+        );
+      for (const partner of partners) {
+        const customer = expect(await call(partner, "visit-core/view"), 200).customers.find(
+          (c) => c.customer_id === C,
+        );
+        assert.equal(customer.late_cancellation_count, 4);
+        assert.equal(customer.late_cancellation_flagged, true);
+      }
+      const customer = expect(await call(USERS.customerA, "visit-core/view"), 200).customers[0];
+      assert.equal(customer.late_cancellation_count, undefined);
+      assert.equal(customer.late_cancellation_flagged, undefined);
+      for (const employee of employees)
+        assert.deepEqual(expect(await call(employee, "visit-core/view"), 200).customers, []);
+    },
+  );
   const sources = [
     "supabase/migrations/20261117132037_professional_scope_late_cancellation.sql",
     "scripts/database/api/fixture.mjs",

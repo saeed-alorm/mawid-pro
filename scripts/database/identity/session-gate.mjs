@@ -172,7 +172,27 @@ export class VerifiedSessions {
       this.#handles.delete(handle);
       throw new SessionError();
     }
-    const { issuer, subject, principal } = identity;
-    return { issuer, subject, principal };
+    const { issuer, subject, sessionId, principal, bindingVersion } = identity;
+    return { issuer, subject, sessionId, principal, bindingVersion };
+  }
+
+  // Trusted persisted destination identity, never an HTTP authentication path.
+  async notificationSessionActive({ issuer, subject, sessionId, principal, bindingVersion }) {
+    if (
+      issuer !== this.#issuer ||
+      !uuid.test(subject ?? "") ||
+      !uuid.test(sessionId ?? "") ||
+      !uuid.test(principal ?? "") ||
+      !positive(bindingVersion)
+    )
+      return false;
+    return !!(await this.#current({
+      issuer,
+      subject,
+      sessionId,
+      principal,
+      bindingVersion,
+      tokenExpiresAt: Number.MAX_SAFE_INTEGER,
+    }));
   }
 }

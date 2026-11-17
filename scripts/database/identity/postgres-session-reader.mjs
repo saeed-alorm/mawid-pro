@@ -3,19 +3,22 @@ import { setVerifiedIdentity } from "./verified-data.mjs";
 
 // The reader login has selected-column access to Auth metadata and the scoped
 // identity binding. Provisioning those grants is an operator responsibility.
-export function postgresSessionReader(pool, { issuer, maximumSessionMs }) {
+export function postgresSessionReader(pool, { issuer, maximumSessionMs, hostedStaging = false }) {
+  const source = hostedStaging
+    ? "mawid_core.staging_auth_session()"
+    : `(SELECT s.id AS session_id,s.user_id AS subject,s.created_at,s.updated_at,s.not_after,u.banned_until,u.deleted_at,u.email_confirmed_at FROM auth.sessions s JOIN auth.users u ON u.id=s.user_id)`;
   return async ({ issuer: requested, subject, sessionId }) => {
     if (requested !== issuer) return null;
     const row = await dataTransaction(pool, async (client) => {
+      await client.query("SET TRANSACTION READ ONLY");
       await setVerifiedIdentity(client, { issuer, subject });
       await client.query("SELECT set_config('mawid.verified_session',$1,true)", [sessionId]);
       const result = await client.query(
         `SELECT s.created_at, s.updated_at, s.not_after,
-            u.banned_until, u.deleted_at, u.email_confirmed_at,
+            s.banned_until, s.deleted_at, s.email_confirmed_at,
             b.actor_id, b.binding_version, b.revoked_at AS binding_revoked_at
-          FROM auth.sessions s JOIN auth.users u ON u.id=s.user_id
-          JOIN mawid_core.identity_bindings b ON b.subject=u.id AND b.issuer=$3
-          WHERE s.id=$1 AND s.user_id=$2`,
+          FROM ${source} s JOIN mawid_core.identity_bindings b ON b.subject=s.subject AND b.issuer=$3
+          WHERE s.session_id=$1 AND s.subject=$2`,
         [sessionId, subject, issuer],
       );
       return result.rows[0];

@@ -4,8 +4,8 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { decodeJwt } from "jose";
 import { createLocalFixture, IDS, USERS, IMAGE } from "../api/fixture.mjs";
 import { startLocalDataServer } from "../api/http-server.mjs";
-import { LocalBookingService } from "../booking/service.mjs";
-import { LocalNotifications } from "../notifications/service.mjs";
+import { BookingService } from "../booking/service.mjs";
+import { Notifications } from "../notifications/service.mjs";
 import { instant } from "../booking/time.mjs";
 import { VerifiedDataService } from "./verified-data.mjs";
 import { createVerifiedPool } from "./verified-pg-fixture.mjs";
@@ -83,8 +83,8 @@ try {
   auth = await createAuthFixture(fixture);
   const verifiedPool = await createVerifiedPool(fixture);
   data = new VerifiedDataService(verifiedPool, auth.gate);
-  booking = new LocalBookingService(data, fixture.bookingConfig);
-  notifications = new LocalNotifications(data, booking, fixture.notificationConfig, {
+  booking = new BookingService(data, fixture.bookingConfig);
+  notifications = new Notifications(data, booking, fixture.notificationConfig, {
     key: randomBytes(32),
     sender: { send: async () => ({ accepted: true }), transport: "simulated" },
   });
@@ -190,6 +190,62 @@ try {
     const reply = await call(customer.access_token);
     assert.equal(expect(reply, 200).items[0].customer_id, IDS.customerA);
   });
+  await check(
+    "native session projection and notification destinations use real current Auth state",
+    async () => {
+      const url =
+        server.origin + `/v1/session?workspace_id=${IDS.workspaceA}&location_id=${IDS.locationA}`;
+      const projection = await fetch(url, {
+        headers: { authorization: "Bearer " + customer.access_token },
+      });
+      assert.equal(projection.status, 200);
+      const scope = await projection.json();
+      assert.deepEqual(scope.roles, []);
+      assert.deepEqual(scope.customer_ids, [IDS.customerA]);
+      const install = randomUUID();
+      const noticePath = "/locations/" + IDS.locationA + "/notifications/";
+      const registration = expect(
+        await call(customer.access_token, noticePath + "registrations", {
+          installation_id: install,
+          application_id: "com.mawid.customer.platinum",
+          environment: "development",
+          locale: "en",
+          token: "synthetic-real-auth-customer-push-token",
+        }),
+        200,
+      );
+      const row = (
+        await fixture.admin.query(
+          "SELECT * FROM mawid_core.push_destinations WHERE destination_id=$1",
+          [registration.destination_id],
+        )
+      ).rows[0];
+      assert.equal(row.identity_subject, customer.user.id);
+      assert.equal(row.identity_session, decodeJwt(customer.access_token).session_id);
+      assert.equal(
+        await data.notificationSessionActive({
+          issuer: row.identity_issuer,
+          subject: row.identity_subject,
+          sessionId: row.identity_session,
+          principal: row.actor_id,
+          bindingVersion: row.identity_binding_version,
+        }),
+        true,
+      );
+      expect(
+        await call(customer.access_token, noticePath + "registrations", {
+          installation_id: install,
+          application_id: "com.mawid.management",
+          environment: "development",
+          locale: "en",
+          token: "synthetic-role-escalation-push-token",
+        }),
+        404,
+        "NOT_FOUND",
+      );
+      // Leave this destination active: later real provider logout must fence it.
+    },
+  );
   await check(
     "the restricted session reader has no unbound access after a pooled request",
     async () => {
@@ -331,6 +387,33 @@ try {
         204,
       );
       expect(await call(customer.access_token), 401, "SESSION_REQUIRED");
+      await notifications.materialize();
+      const revokedJob = (
+        await fixture.admin.query(
+          `SELECT d.* FROM mawid_core.push_deliveries d JOIN mawid_core.push_destinations p USING(destination_id) WHERE p.identity_subject=$1 LIMIT 1`,
+          [customer.user.id],
+        )
+      ).rows[0];
+      assert.ok(revokedJob, "a committed booking must leave an actual dispatch job");
+      assert.equal((await notifications.prepare(revokedJob)).skip, "ACCESS_REVOKED");
+      const row = (
+        await fixture.admin.query(
+          "SELECT * FROM mawid_core.push_destinations WHERE identity_subject=$1",
+          [customer.user.id],
+        )
+      ).rows[0];
+      assert.equal(
+        await data.notificationSessionActive({
+          issuer: row.identity_issuer,
+          subject: row.identity_subject,
+          sessionId: row.identity_session,
+          principal: row.actor_id,
+          bindingVersion: row.identity_binding_version,
+        }),
+        false,
+      );
+      assert.ok(row.revoked_at);
+      assert.equal(row.token_ciphertext, "");
       expect(await call(second.access_token), 200);
       const refresh = await auth.post("/token?grant_type=refresh_token", {
         refresh_token: customer.refresh_token,

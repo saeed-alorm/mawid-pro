@@ -1,6 +1,7 @@
 import { Pool } from "pg";
 import { randomUUID, createHash } from "node:crypto";
 import { VisitBookings } from "./visits.mjs";
+import { VerifiedDataService } from "../identity/verified-data.mjs";
 import {
   instant,
   responseDeadline,
@@ -25,14 +26,11 @@ const iso = (n) => new Date(n).toISOString();
 const canonical = (value) => JSON.stringify(value, Object.keys(value).sort());
 
 // This pool is a trusted server worker, not an actor credential or a public SQL API.
-export class LocalBookingService {
-  constructor(data, config) {
-    if (
-      config?.host !== "127.0.0.1" ||
-      config.user !== "mawid_fixture_booking" ||
-      !/^mawid_local_data_[a-f0-9]+$/.test(config.database)
-    )
-      throw new Error("INVALID_BOOKING_CONFIG");
+const fixtureAuthority = Symbol("local-booking-fixture");
+export class BookingService {
+  constructor(data, config, authority) {
+    if (authority !== fixtureAuthority && !(data instanceof VerifiedDataService))
+      throw new Error("VERIFIED_DATA_REQUIRED");
     this.data = data;
     this.visits = new VisitBookings(this, fail);
     this.pool = new Pool({
@@ -48,7 +46,7 @@ export class LocalBookingService {
     const {
       rows: [r],
     } = await this.pool.query(
-      "SELECT rolname,rolsuper OR rolbypassrls OR rolcreatedb OR rolcreaterole AS privileged,pg_has_role(current_user,'mawid_local_booking','MEMBER') AS worker,pg_has_role(current_user,'mawid_local_actor','MEMBER') AS actor FROM pg_roles WHERE rolname=session_user",
+      "SELECT rolname,rolsuper OR rolbypassrls OR rolcreatedb OR rolcreaterole OR rolreplication AS privileged,pg_has_role(current_user,'mawid_local_booking','MEMBER') AS worker,pg_has_role(current_user,'mawid_local_actor','MEMBER') OR pg_has_role(current_user,'mawid_local_notify','MEMBER') OR pg_has_role(current_user,'mawid_local_maintenance','MEMBER') AS actor FROM pg_roles WHERE rolname=session_user",
     );
     if (!r || r.privileged || !r.worker || r.actor) throw new Error("UNSAFE_BOOKING_WORKER");
   }
@@ -104,6 +102,7 @@ export class LocalBookingService {
         w,
         l,
         actor,
+        user,
         verified,
         now,
         roles: members.flatMap((x) => x.roles),
@@ -367,6 +366,27 @@ export class LocalBookingService {
     const { w, l } = x;
     const query = async (sql, values = [w, l]) => (await x.c.query(sql, values)).rows;
     const profileStaff = x.roles.some((r) => ["manager", "admin"].includes(r));
+    const customers = await query(
+      "SELECT customer_id,display_name FROM mawid_core.customer_profiles WHERE workspace_id=$1 AND anonymized_at IS NULL AND ($2::boolean OR customer_id=ANY($3::uuid[])) ORDER BY customer_id LIMIT 200",
+      [w, profileStaff, x.customers],
+    );
+    if (profileStaff) {
+      const counts = await this.data.transaction(
+        x.user,
+        async (client) =>
+          (
+            await client.query(
+              "SELECT customer_id,mawid_core.cancellation_count($1,customer_id)::integer AS count FROM unnest($2::uuid[]) AS customer_id",
+              [w, customers.map((c) => c.customer_id)],
+            )
+          ).rows,
+      );
+      for (const customer of customers) {
+        customer.late_cancellation_count =
+          counts.find((c) => c.customer_id === customer.customer_id)?.count ?? 0;
+        customer.late_cancellation_flagged = customer.late_cancellation_count >= 4;
+      }
+    }
     return {
       actor_id: x.actor,
       roles: x.roles,
@@ -377,10 +397,7 @@ export class LocalBookingService {
       professionals: await query(
         "SELECT p.professional_id,p.display_name,p.active,ARRAY(SELECT e.service_id FROM mawid_core.eligibility e WHERE e.workspace_id=p.workspace_id AND e.location_id=p.location_id AND e.professional_id=p.professional_id) AS service_ids FROM mawid_core.professionals p WHERE workspace_id=$1 AND location_id=$2 ORDER BY professional_id LIMIT 200",
       ),
-      customers: await query(
-        "SELECT customer_id,display_name FROM mawid_core.customer_profiles WHERE workspace_id=$1 AND anonymized_at IS NULL AND ($2::boolean OR customer_id=ANY($3::uuid[])) ORDER BY customer_id LIMIT 200",
-        [w, profileStaff, x.customers],
-      ),
+      customers,
       server_time: iso(x.now),
       beirut_date: new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Beirut" }).format(x.now),
       review_at: iso(nextReview(await this.periods(x, x.now), x.now)),
@@ -618,5 +635,17 @@ export class LocalBookingService {
       );
       return result;
     });
+  }
+}
+
+export class LocalBookingService extends BookingService {
+  constructor(data, config) {
+    if (
+      config?.host !== "127.0.0.1" ||
+      config.user !== "mawid_fixture_booking" ||
+      !/^mawid_local_data_[a-f0-9]+$/.test(config.database)
+    )
+      throw new Error("INVALID_BOOKING_CONFIG");
+    super(data, config, fixtureAuthority);
   }
 }
