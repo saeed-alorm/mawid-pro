@@ -1,6 +1,13 @@
 import { Pool } from "pg";
 import { randomUUID, createHash } from "node:crypto";
-import { instant, responseDeadline, nextReview, holdExpiry, canSelfCancel } from "./time.mjs";
+import {
+  instant,
+  responseDeadline,
+  nextReview,
+  holdExpiry,
+  canSelfCancel,
+  isLateCancellation,
+} from "./time.mjs";
 
 export class BookingError extends Error {
   constructor(status, code) {
@@ -91,6 +98,14 @@ export class LocalBookingService {
         now,
         roles: members.flatMap((x) => x.roles),
         customers: customers.map((x) => x.customer_id),
+        professionals: members.some((m) => m.roles.includes("professional"))
+          ? (
+              await c.query(
+                "SELECT professional_id FROM mawid_core.professional_bindings WHERE workspace_id=$1 AND location_id=$2 AND actor_id=$3 AND revoked_at IS NULL FOR SHARE",
+                [w, l, actor],
+              )
+            ).rows.map((r) => r.professional_id)
+          : [],
       };
       const result = await fn(ctx);
       await this.data.assertSession?.(user);
@@ -232,15 +247,24 @@ export class LocalBookingService {
         (x.customers.includes(b.customer_id)
           ? canSelfCancel(x.now, +new Date(b.assigned_start))
           : x.roles.includes("admin")),
+      cancellation_is_late:
+        b.state === "confirmed" && isLateCancellation(x.now, +new Date(b.assigned_start)),
       server_time: iso(x.now),
       timezone: "Asia/Beirut",
     };
-    if (x.roles.some((r) => ["admin", "manager", "professional"].includes(r))) {
+    if (x.roles.some((r) => ["admin", "manager"].includes(r))) {
       result.response_due_at = b.response_due_at;
       result.overdue =
         b.state === "pending" && b.response_due_at != null && +new Date(b.response_due_at) <= x.now;
     }
     return result;
+  }
+  canRead(x, b) {
+    return (
+      x.roles.some((r) => ["admin", "manager"].includes(r)) ||
+      x.customers.includes(b.customer_id) ||
+      x.professionals.includes(b.assigned_professional_id ?? b.requested_professional_id)
+    );
   }
   async availability(user, w, l, input) {
     return this.run(user, w, l, async (x) => {
@@ -266,11 +290,11 @@ export class LocalBookingService {
     return this.run(user, w, l, async (x) => {
       await this.expire(x);
       const query = async (sql, values = [w, l]) => (await x.c.query(sql, values)).rows;
-      const staff = x.roles.length > 0;
+      const staff = x.roles.some((r) => ["admin", "manager"].includes(r));
       const profileStaff = x.roles.some((r) => ["manager", "admin"].includes(r));
       const rows = await query(
-        "SELECT * FROM mawid_core.bookings WHERE workspace_id=$1 AND location_id=$2 AND ($3::uuid IS NULL OR booking_id>$3) AND ($4::boolean OR customer_id=ANY($5::uuid[])) ORDER BY booking_id LIMIT 51",
-        [w, l, after, staff, x.customers],
+        "SELECT * FROM mawid_core.bookings WHERE workspace_id=$1 AND location_id=$2 AND ($3::uuid IS NULL OR booking_id>$3) AND ($4::boolean OR customer_id=ANY($5::uuid[]) OR coalesce(assigned_professional_id,requested_professional_id)=ANY($6::uuid[])) ORDER BY booking_id LIMIT 51",
+        [w, l, after, staff, x.customers, x.professionals],
       );
       return {
         actor_id: x.actor,
@@ -344,7 +368,7 @@ export class LocalBookingService {
           [w, l, id],
         )
       ).rows[0];
-      if (!b || (!x.roles.length && !x.customers.includes(b.customer_id))) fail(404, "NOT_FOUND");
+      if (!b || !this.canRead(x, b)) fail(404, "NOT_FOUND");
       return this.project(x, b);
     });
   }
@@ -359,8 +383,7 @@ export class LocalBookingService {
             )
           ).rows[0]
         : null;
-      if (id && (!b || (!x.roles.length && !x.customers.includes(b.customer_id))))
-        fail(404, "NOT_FOUND");
+      if (id && (!b || !this.canRead(x, b))) fail(404, "NOT_FOUND");
       const own = x.customers.includes(b?.customer_id ?? input.customer_id);
       if (["request", "accept", "withdraw"].includes(action) && !own) fail(403, "ACTION_DENIED");
       if (

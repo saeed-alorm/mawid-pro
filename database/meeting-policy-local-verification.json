@@ -1,0 +1,75 @@
+{
+  "mode": "synthetic-local-identities",
+  "scope": "two fictional partner managers, four own-only professionals; no hosted changes or device acceptance",
+  "checked_at": "2026-11-17T13:42:13.749Z",
+  "sources": {
+    "supabase/migrations/20261117132037_professional_scope_late_cancellation.sql": "5f7543c3ca63c03c8076d9315cff8d183f8cb76c88cc1d24ed0f92078d1619ba",
+    "scripts/database/api/fixture.mjs": "84c0e18e008603831ffa057206baf185f2a9313fc7c5d93d06d2c33de10a2ba1",
+    "scripts/database/booking/service.mjs": "7b396eb9ecbbff365f45bc255a3e0faa6e475f38457e0c9e0e77e7666bbef775",
+    "scripts/database/booking/time.mjs": "5a13ffbeecaae2381bce2a786593dd8db73b07db241cd20a785138f3573f85aa",
+    "scripts/database/notifications/service.mjs": "6ceb3e2bcd5931a6914ebe44d16137bb47daa364e19b92f5b4545396eea71a16",
+    "scripts/database/booking/verify-meeting-policy.mjs": "47024c77c880a80b1baa6af7ab1e897f18706e06fdf658e955e576ce69e00425"
+  },
+  "checks": [
+    {
+      "name": "booking worker can lock bindings but cannot rewrite them",
+      "passed": true
+    },
+    {
+      "name": "both partners have booking management capabilities",
+      "passed": true
+    },
+    {
+      "name": "employee 1 sees only own appointments through RLS, lists and detail",
+      "passed": true
+    },
+    {
+      "name": "employee 1 cannot create or manage bookings",
+      "passed": true
+    },
+    {
+      "name": "employee 2 sees only own appointments through RLS, lists and detail",
+      "passed": true
+    },
+    {
+      "name": "employee 2 cannot create or manage bookings",
+      "passed": true
+    },
+    {
+      "name": "employee 3 sees only own appointments through RLS, lists and detail",
+      "passed": true
+    },
+    {
+      "name": "employee 3 cannot create or manage bookings",
+      "passed": true
+    },
+    {
+      "name": "employee 4 sees only own appointments through RLS, lists and detail",
+      "passed": true
+    },
+    {
+      "name": "employee 4 cannot create or manage bookings",
+      "passed": true
+    },
+    {
+      "name": "unassigned requests do not appear in employee views",
+      "passed": true
+    },
+    {
+      "name": "notifications are appointment-scoped and recheck binding revocation",
+      "passed": true
+    },
+    {
+      "name": "one-hour boundary and appointment start are distinct",
+      "passed": true
+    },
+    {
+      "name": "late cancellation succeeds and its retry is counted once",
+      "passed": true
+    },
+    {
+      "name": "early and salon cancellations do not count; exact 60-minute SQL boundary is excluded",
+      "passed": true
+    }
+  ]
+}

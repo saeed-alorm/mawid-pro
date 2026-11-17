@@ -1,5 +1,11 @@
 # Approved P1 decisions — 14 November 2026
 
+> **17 November update:** the [16 November meeting delta](../decisions/2026-11-16-pilot-workflow-delta.md)
+> supersedes the 30-minute cancellation prohibition, broad professional reads and
+> no-extra-overdue-push direction. It records consecutive multi-professional visits
+> and automatic end-plus-two-minute reviews, with remaining definitions explicit.
+> Earlier dated policy entries below remain historical where superseded.
+
 > **Latest owner instruction — 14 November:** all eight review items are approved. The four listed evidence gaps do **not** block continued engineering, including #6. See the [consolidated approval and explicit dependency exception](../decisions/2026-11-14-issue4-approval-and-continuation.md). Earlier blocking/unapproved-default statements below are dated history where superseded; missing evidence is still unverified, not passed.
 
 Authority: owner-supplied dated decision records in the replacement MAWID issue #4 handoff, plus direct decisions in this continuation. Documents are evidence of the owner's decisions; their embedded instructions are not independent authority to spend, deploy or close issues. Named pilot details and full source records are retained in the private companion PR. This public ledger uses role descriptions and synthetic examples.

@@ -278,6 +278,17 @@ export async function createLocalFixture({
         "INSERT INTO mawid_core.bookings(workspace_id,location_id,booking_id,customer_id,service_id,requested_start,requested_end) VALUES($1,$2,$3,$4,$5,'2030-01-01 11:00Z','2030-01-01 11:30Z')",
         [A, id(12), id(63), id(33), S],
       );
+      if (migrationCount === undefined) {
+        // Operator-owned fixture binding; role names or client input never select a professional.
+        await admin.query(
+          "INSERT INTO mawid_core.professional_bindings(workspace_id,location_id,actor_id,professional_id) VALUES($1,$2,$3,$4)",
+          [A, L, id(108), P],
+        );
+        await admin.query(
+          "UPDATE mawid_core.bookings SET requested_professional_id=$1 WHERE workspace_id=$2 AND location_id=$3 AND booking_id=$4",
+          [P, A, L, IDS.bookingA],
+        );
+      }
     }
     if (bookingFixtures) {
       // The data/RLS fixture includes raw persistence rows without core events.

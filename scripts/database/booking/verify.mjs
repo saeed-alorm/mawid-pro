@@ -5,7 +5,14 @@ import { createLocalFixture, IDS, USERS, AUTH_USERS } from "../api/fixture.mjs";
 import { LocalDataService } from "../api/data-service.mjs";
 import { LocalBookingService } from "./service.mjs";
 import { startLocalDataServer } from "../api/http-server.mjs";
-import { instant, responseDeadline, nextReview, holdExpiry, canSelfCancel } from "./time.mjs";
+import {
+  instant,
+  responseDeadline,
+  nextReview,
+  holdExpiry,
+  canSelfCancel,
+  isLateCancellation,
+} from "./time.mjs";
 
 const results = [];
 async function check(name, fn) {
@@ -90,13 +97,20 @@ try {
       assert.equal(nextReview(p, 6 * 60000), 14 * 3600000);
     },
   );
-  await check("offer hold crosses midnight and self-cancel includes exactly 30 minutes", () => {
-    const close = Date.parse("2027-01-10T23:55:00+02:00");
-    assert.equal(holdExpiry(close, close + 7200000), close + 3600000);
-    assert.equal(holdExpiry(close, close + 60000), close + 60000);
-    assert.equal(canSelfCancel(0, 1800000), true);
-    assert.equal(canSelfCancel(1, 1800000), false);
-  });
+  await check(
+    "offer hold crosses midnight; pre-start cancellation is allowed and only the final hour is late",
+    () => {
+      const close = Date.parse("2027-01-10T23:55:00+02:00");
+      assert.equal(holdExpiry(close, close + 7200000), close + 3600000);
+      assert.equal(holdExpiry(close, close + 60000), close + 60000);
+      assert.equal(canSelfCancel(0, 1800000), true);
+      assert.equal(canSelfCancel(1, 1800000), true);
+      assert.equal(canSelfCancel(1800000, 1800000), false);
+      assert.equal(isLateCancellation(0, 3600000), false);
+      assert.equal(isLateCancellation(1, 3600000), true);
+      assert.equal(isLateCancellation(3600000, 3600000), false);
+    },
+  );
   fixture = await createLocalFixture({ authorizationFixtures: true, bookingFixtures: true });
   data = new LocalDataService(fixture.configs);
   booking = new LocalBookingService(data, fixture.bookingConfig);
@@ -421,11 +435,23 @@ try {
     },
   );
   await check(
-    "four confirmed customer cancellations count once each without banning new requests",
+    "four late customer cancellations count once each without banning new requests",
     async () => {
       for (let i = 0; i < 4; i++) {
         let item = await expect(call("requests", "customerA", request(18)), 201);
         item = await expect(call(`bookings/${item.booking_id}/confirm`, "adminA", act(item)), 200);
+        // Move this fixture's confirmed interval inside the final hour, atomically
+        // preserving the same allocation invariant enforced for real mutations.
+        await fixture.admin.query("BEGIN");
+        await fixture.admin.query(
+          "UPDATE mawid_core.bookings SET assigned_start=date_trunc('minute',clock_timestamp())+interval '30 minutes',assigned_end=date_trunc('minute',clock_timestamp())+interval '60 minutes' WHERE booking_id=$1",
+          [item.booking_id],
+        );
+        await fixture.admin.query(
+          "UPDATE mawid_core.allocations a SET period=tstzrange(b.assigned_start,b.assigned_end,'[)') FROM mawid_core.bookings b WHERE a.booking_id=b.booking_id AND b.booking_id=$1",
+          [item.booking_id],
+        );
+        await fixture.admin.query("COMMIT");
         const payload = act(item);
         const outcome = await expect(
           call(`bookings/${item.booking_id}/cancel`, "customerA", payload),

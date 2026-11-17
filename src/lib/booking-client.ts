@@ -10,6 +10,7 @@ export type ServerBooking = {
   assigned_local: { date: string; time: string; offset: string } | null;
   offer_expires_at: string | null;
   can_cancel: boolean;
+  cancellation_is_late?: boolean;
   overdue?: boolean;
 };
 export type BookingView = {

@@ -1,5 +1,16 @@
 # Feature traceability index
 
+**17 November meeting follow-up:** [workflow delta](../decisions/2026-11-16-pilot-workflow-delta.md).
+FEAT-09/10/11/17/26 cover partner controls, professional own-only reads, caller intake
+and the revised cancellation policy; FEAT-14 now needs an explicitly defined
+consecutive multi-professional visit slice under #4/#6/#7/#13. FEAT-06 retains
+employee-first booking entry. FEAT-08 covers the gallery; FEAT-32/34 the scheduled
+pending/review notifications. Reviews have a dedicated additive engineering record
+[#31](https://github.com/saeed-alorm/mawid-pro/issues/31), with no renumbering of
+FEAT-01–50. FEAT-28/29/33/35/36 carry the requested insights, campaigns, loyalty and
+discounts through #13/#14; their first-pilot scope and business rules remain open.
+Recorded requirements are not a blanket phase promotion or shipped-feature claim.
+
 **Notion synchronization — 8 November 2026:** MAWID HQ access was restored and the [confirmed Notion decision](https://www.notion.so/412f53c2a11d818cbeb7e4307356bef8) was saved under HQ. It records Saeed's actual 8 November confirmation/source, FEAT-01 and FEAT-24 scope, engineering links and unresolved feasibility. No separate feature pages/database were found; no feature-page URLs or parallel engineering tracker are invented. Earlier 404 results remain historical evidence.
 
 Source: supplied Plan-Context.json, prepared 7 November 2026. IDs and phase assignments are unchanged. FEAT-01 and FEAT-24 scope was clarified by [Saeed's confirmed 8 November distribution decision](../decisions/2026-11-08-product-distribution.md); implementation and store approval remain unverified. These are planned capabilities, not shipped product claims.

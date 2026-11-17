@@ -1,5 +1,12 @@
 # MAWID | موعد
 
+[16 November workflow changes](docs/decisions/2026-11-16-pilot-workflow-delta.md):
+partner-only booking management, own-only employee reads and permitted late
+cancellation with a strict 60-minute counting boundary are the first local slice.
+Run `npm run test:meeting-policy` for synthetic and signed-fixture verification.
+Consecutive multi-professional visits, timed reminders and reviews remain tracked
+work, not features enabled by this policy change.
+
 [Web demo](https://saeed-alorm.github.io/mawid-pro/) · [Product HQ](https://www.notion.so/40cf53c2a11d80c493fede8991643fea) · [Engineering readiness](docs/github-readiness.md) · [Feature traceability](docs/engineering/feature-index.md)
 
 The public web demo is a bilingual, browser-local salon booking prototype. Identity/OTP

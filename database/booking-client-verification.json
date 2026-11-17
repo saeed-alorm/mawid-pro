@@ -2,7 +2,7 @@
   "mode": "fictional-local-only",
   "notification_transport": "simulated",
   "device_acceptance": false,
-  "generated_at": "2026-11-15T15:17:26.592Z",
+  "generated_at": "2026-11-17T13:41:09.074Z",
   "checks": [
     {
       "name": "view and slots authorize customer scope, deny cross-shop access and omit staff-only metadata",
@@ -29,14 +29,22 @@
       "passed": true
     },
     {
+      "name": "customer UI warns about late cancellation and still allows it",
+      "passed": true
+    },
+    {
+      "name": "professional UI is read-only and has no booking creation or decision controls",
+      "passed": true
+    },
+    {
       "name": "revoked customer refresh clears all cached bookings in the actual UI",
       "passed": true
     }
   ],
   "sha256": {
-    "scripts/database/booking/service.mjs": "b5edf0237995b9966a07f93b84c98adb09ab21d24a509e5df4401315edbceac8",
-    "scripts/database/api/http-server.mjs": "55492d133cd8ecfc32caad538d73304c3e0ea955e7565ae954903c52f4660570",
-    "src/lib/booking-client.ts": "61250e03285aded668c26a5140db17c2cbe0bc90c89c8dfe6129617aa9a44fa4",
-    "src/components/server-booking.tsx": "4e225f9f9b8a428f37e0845be67b1a05451aa5048d6af1cb4212840d4e8c126d"
+    "scripts/database/booking/service.mjs": "7b396eb9ecbbff365f45bc255a3e0faa6e475f38457e0c9e0e77e7666bbef775",
+    "scripts/database/api/http-server.mjs": "100d7fc8af94f096e9b9513350bef47c3511d6c9a6329725f73aa71b8cac21c5",
+    "src/lib/booking-client.ts": "31017bafcb4a7e7060d8eef314e9e321bbada8a33e292e69e6117884445ed41a",
+    "src/components/server-booking.tsx": "be309aeb6e71b62e3174b1fd3bc8373be13fa057abb315430abc4047dff61610"
   }
 }

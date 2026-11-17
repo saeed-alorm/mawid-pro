@@ -794,6 +794,13 @@ try {
         ";",
     );
   }
+  // Cancellation flags now count only cancellations made inside the final hour.
+  // Keep the original window/actor fixtures, with explicit assigned-time evidence.
+  query(
+    "UPDATE mawid_core.bookings SET assigned_start=cancelled_at+interval '30 minutes',assigned_end=cancelled_at+interval '60 minutes' WHERE booking_id IN (" +
+      Array.from({ length: 7 }, (_, n) => q(id(200 + n))).join(",") +
+      ");",
+  );
   check("fourth-cancellation flag counts one booking once within salon rolling 90 days", () =>
     assert.equal(
       query("SELECT mawid_core.cancellation_count(" + q(W) + "," + q(C) + ");", manager),
