@@ -212,12 +212,12 @@ export class VisitBookings {
            )) ORDER BY b.booking_id LIMIT 51`,
         [w, l, after, partner(x), x.customers, x.professionals],
       );
+      const bookings = [];
+      for (const b of rows.slice(0, 50)) bookings.push(this.project(x, b, await segmentsFor(x, b)));
       return {
         ...base,
         contract_version: 2,
-        bookings: await Promise.all(
-          rows.slice(0, 50).map(async (b) => this.project(x, b, await segmentsFor(x, b))),
-        ),
+        bookings,
         next_after: rows.length > 50 ? rows[49].booking_id : null,
       };
     });
@@ -490,7 +490,7 @@ export class VisitBookings {
             );
         }
       }
-      await this.core.event(x, b, action, action === "request" ? deliver : now);
+      await this.core.event(x, b, action, action === "request" ? deliver : now, true);
       const result = this.project(x, b, await segmentsFor(x, b));
       await c.query(
         "INSERT INTO mawid_core.operation_references(workspace_id,actor_id,operation_id,operation,input_hash) VALUES($1,$2,$3,$4,$5)",

@@ -145,15 +145,17 @@ export class LocalBookingService {
     }
     return merged;
   }
-  async event(x, b, action, deliver = x.now) {
+  async event(x, b, action, deliver = x.now, scheduleVisit = false) {
     const event = randomUUID();
     await x.c.query(
       "INSERT INTO mawid_core.booking_events(workspace_id,location_id,event_id,booking_id,version,actor_id,action,occurred_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8)",
       [x.w, b.location_id, event, b.booking_id, b.version, x.actor, action, iso(x.now)],
     );
+    const reminder = scheduleVisit && action === "request" ? b.response_due_at : null;
     await x.c.query(
-      "INSERT INTO mawid_core.outbox(workspace_id,event_id,deliver_after) VALUES($1,$2,$3)",
-      [x.w, event, iso(deliver)],
+      `INSERT INTO mawid_core.outbox(workspace_id,event_id,deliver_after,scheduled_kind,scheduled_due_at)
+       VALUES($1,$2,$3,$4,$5)`,
+      [x.w, event, iso(deliver), reminder ? "pending_reminder" : null, reminder],
     );
   }
   async expire(x) {

@@ -150,11 +150,16 @@ export class BookingClient {
     }
   }
   inbox() {
-    return this.request<{ items: InboxItem[] }>("inbox", undefined, "notifications");
+    return this.request<{ items: InboxItem[] }>(
+      this.area === "visit-core" ? "inbox?contract=2" : "inbox",
+      undefined,
+      "notifications",
+    );
   }
   open(id: string) {
     if (!/^[a-f0-9-]{36}$/i.test(id)) throw new BookingFailure("INVALID_NOTIFICATION");
-    return this.request<ServerBooking>(`inbox/${id}/open`, {}, "notifications");
+    const contract = this.area === "visit-core" ? "?contract=2" : "";
+    return this.request<ServerBooking>(`inbox/${id}/open${contract}`, {}, "notifications");
   }
   async view(): Promise<BookingView> {
     const first = await this.request<BookingView>("view");

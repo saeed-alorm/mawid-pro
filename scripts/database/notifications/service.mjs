@@ -10,7 +10,15 @@ const binding = (d) => [d.workspace_id, d.location_id, d.actor_id, d.destination
 const canRead = (access, b) =>
   access.roles.some((r) => ["admin", "manager"].includes(r)) ||
   access.customers.includes(b.customer_id) ||
-  access.professionals.includes(b.assigned_professional_id ?? b.requested_professional_id);
+  b.professional_ids.some((id) => access.professionals.includes(id));
+
+const segmentProfessionals = (booking = "b") => `ARRAY(
+  SELECT DISTINCT coalesce(s.assigned_professional_id,s.requested_professional_id)
+  FROM mawid_core.visit_segments s
+  WHERE (s.workspace_id,s.location_id,s.booking_id)=
+    (${booking}.workspace_id,${booking}.location_id,${booking}.booking_id)
+    AND coalesce(s.assigned_professional_id,s.requested_professional_id) IS NOT NULL
+)`;
 
 export class LocalNotifications {
   constructor(data, booking, config, { key, sender, now = Date.now, random = Math.random } = {}) {
@@ -169,19 +177,21 @@ export class LocalNotifications {
     }, user);
     return { registered: false };
   }
-  async inbox(user, w, l) {
+  async inbox(user, w, l, visitContract = false) {
     const actor = await this.actor(user);
     return this.transaction(async (c) => {
       const a = await this.scope(c, actor, w, l);
       const rows = (
         await c.query(
-          `SELECT n.notification_id,n.actor_id,e.booking_id,e.version,b.state,
+          `SELECT n.notification_id,n.actor_id,n.kind,e.booking_id,e.version,b.state,
         n.opened_at,COALESCE(jsonb_agg(jsonb_build_object('status',d.status,'attempts',d.attempts,'error_code',d.safe_error_code,'transport',d.transport)) FILTER(WHERE d.delivery_id IS NOT NULL),'[]') AS pushes
         FROM mawid_core.notification_inbox n JOIN mawid_core.booking_events e USING(workspace_id,event_id)
         JOIN mawid_core.bookings b USING(workspace_id,location_id,booking_id)
         LEFT JOIN mawid_core.push_deliveries d USING(notification_id)
         WHERE n.workspace_id=$1 AND e.location_id=$2 AND (n.actor_id=$3 OR $4)
-        AND ($5 OR b.customer_id=ANY($6::uuid[]) OR coalesce(b.assigned_professional_id,b.requested_professional_id)=ANY($7::uuid[]))
+        AND ($5 OR b.customer_id=ANY($6::uuid[]) OR ${segmentProfessionals()} && $7::uuid[])
+        AND (n.kind<>'pending_reminder' OR ($5 AND b.state='pending'))
+        AND ($8 OR (b.segment_count=1 AND n.kind<>'review_invitation'))
         GROUP BY n.notification_id,e.booking_id,e.version,b.state ORDER BY n.created_at DESC,n.notification_id LIMIT 50`,
           [
             w,
@@ -191,6 +201,7 @@ export class LocalNotifications {
             a.roles.some((r) => ["manager", "admin"].includes(r)),
             a.customers,
             a.professionals,
+            visitContract,
           ],
         )
       ).rows;
@@ -204,19 +215,26 @@ export class LocalNotifications {
       };
     }, user);
   }
-  async open(user, w, l, notification) {
+  async open(user, w, l, notification, visitContract = false) {
     const actor = await this.actor(user);
     const row = await this.transaction(async (c) => {
       const a = await this.scope(c, actor, w, l);
       const n = (
         await c.query(
-          `SELECT n.actor_id,e.booking_id,b.customer_id,b.assigned_professional_id,b.requested_professional_id FROM mawid_core.notification_inbox n
+          `SELECT n.actor_id,n.kind,e.booking_id,b.customer_id,b.state,b.segment_count,
+          ${segmentProfessionals()} AS professional_ids FROM mawid_core.notification_inbox n
         JOIN mawid_core.booking_events e USING(workspace_id,event_id) JOIN mawid_core.bookings b USING(workspace_id,location_id,booking_id)
         WHERE n.notification_id=$1 AND n.workspace_id=$2 AND e.location_id=$3`,
           [notification, w, l],
         )
       ).rows[0];
       if (!n || n.actor_id !== actor || !canRead(a, n)) denied();
+      if (!visitContract && (n.segment_count !== 1 || n.kind === "review_invitation")) denied();
+      if (
+        n.kind === "pending_reminder" &&
+        (n.state !== "pending" || !a.roles.some((role) => ["admin", "manager"].includes(role)))
+      )
+        denied();
       await c.query(
         "UPDATE mawid_core.notification_inbox SET opened_at=COALESCE(opened_at,clock_timestamp()) WHERE notification_id=$1",
         [notification],
@@ -224,13 +242,77 @@ export class LocalNotifications {
       return n;
     }, user);
     // Fresh server booking projection authorizes again, including expired offers.
-    return this.booking.read(user, w, l, row.booking_id);
+    return visitContract
+      ? this.booking.visits.read(user, w, l, row.booking_id)
+      : this.booking.read(user, w, l, row.booking_id);
+  }
+  async enqueue(c, e, actor, kind, stale = false) {
+    const n = (
+      await c.query(
+        `INSERT INTO mawid_core.notification_inbox(workspace_id,event_id,actor_id,kind)
+       VALUES($1,$2,$3,$4) ON CONFLICT(workspace_id,event_id,actor_id,kind)
+       DO UPDATE SET event_id=EXCLUDED.event_id RETURNING notification_id`,
+        [e.workspace_id, e.event_id, actor, kind],
+      )
+    ).rows[0];
+    const destinations = (
+      await c.query(
+        "SELECT destination_id FROM mawid_core.push_destinations WHERE workspace_id=$1 AND location_id=$2 AND actor_id=$3 AND revoked_at IS NULL AND updated_at>$4",
+        [e.workspace_id, e.location_id, actor, new Date(this.now() - 90 * 86400000)],
+      )
+    ).rows;
+    if (!destinations.length) destinations.push({ destination_id: null });
+    for (const d of destinations)
+      await c.query(
+        "INSERT INTO mawid_core.push_deliveries(notification_id,destination_id,status,safe_error_code,next_attempt_at,transport) VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT(notification_id,destination_id) DO NOTHING",
+        [
+          n.notification_id,
+          d.destination_id,
+          stale ? "skipped" : d.destination_id ? "pending" : "no_destination",
+          stale ? "SUPERSEDED" : d.destination_id ? null : "NO_DESTINATION",
+          new Date(this.now()),
+          this.transport,
+        ],
+      );
+  }
+
+  async materializeScheduled(limit = 20) {
+    return this.transaction(async (c) => {
+      const now = new Date(this.now());
+      const { rows } = await c.query(
+        `SELECT o.workspace_id,o.event_id,o.scheduled_kind,e.location_id,e.booking_id,e.version,
+            b.customer_id,b.state,b.version AS current_version
+         FROM mawid_core.outbox o JOIN mawid_core.booking_events e USING(workspace_id,event_id)
+         JOIN mawid_core.bookings b USING(workspace_id,location_id,booking_id)
+         WHERE o.scheduled_kind='pending_reminder' AND o.scheduled_due_at<=$1 AND o.scheduled_processed_at IS NULL
+         ORDER BY o.scheduled_due_at,o.workspace_id,o.event_id LIMIT $2 FOR UPDATE OF o SKIP LOCKED`,
+        [now, limit],
+      );
+      for (const e of rows) {
+        if (e.state === "pending") {
+          const recipients = (
+            await c.query(
+              `SELECT DISTINCT actor_id FROM mawid_core.memberships
+             WHERE workspace_id=$1 AND (location_id IS NULL OR location_id=$2)
+               AND revoked_at IS NULL AND roles && ARRAY['admin','manager']`,
+              [e.workspace_id, e.location_id],
+            )
+          ).rows;
+          for (const { actor_id } of recipients)
+            await this.enqueue(c, e, actor_id, e.scheduled_kind);
+        }
+        await c.query(
+          "UPDATE mawid_core.outbox SET scheduled_processed_at=$3 WHERE workspace_id=$1 AND event_id=$2",
+          [e.workspace_id, e.event_id, now],
+        );
+      }
+    });
   }
   async materialize(limit = 20) {
     return this.transaction(async (c) => {
       const events = (
         await c.query(
-          `SELECT o.workspace_id,o.event_id,e.location_id,e.booking_id,e.actor_id,e.action,e.version,b.customer_id,b.state,b.version AS current_version,coalesce(b.assigned_professional_id,b.requested_professional_id) AS professional_id
+          `SELECT o.workspace_id,o.event_id,e.location_id,e.booking_id,e.actor_id,e.action,e.version,b.customer_id,b.state,b.version AS current_version,${segmentProfessionals()} AS professional_ids
         FROM mawid_core.outbox o JOIN mawid_core.booking_events e USING(workspace_id,event_id) JOIN mawid_core.bookings b USING(workspace_id,location_id,booking_id)
         WHERE o.materialized_at IS NULL AND o.deliver_after<=$1 ORDER BY o.deliver_after,o.workspace_id,o.event_id LIMIT $2 FOR UPDATE OF o SKIP LOCKED`,
           [new Date(this.now()), limit],
@@ -245,41 +327,22 @@ export class LocalNotifications {
           SELECT actor_id FROM mawid_core.memberships WHERE workspace_id=$1 AND revoked_at IS NULL AND (location_id IS NULL OR location_id=$2) AND roles && ARRAY['admin','manager']
           UNION SELECT p.actor_id FROM mawid_core.professional_bindings p
             JOIN mawid_core.memberships m ON m.workspace_id=p.workspace_id AND m.actor_id=p.actor_id
-            WHERE p.workspace_id=$1 AND p.location_id=$2 AND p.professional_id=$6 AND p.revoked_at IS NULL
+            WHERE p.workspace_id=$1 AND p.location_id=$2 AND p.professional_id=ANY($6::uuid[]) AND p.revoked_at IS NULL
               AND m.revoked_at IS NULL AND (m.location_id IS NULL OR m.location_id=$2)
               AND 'professional'=ANY(m.roles) AND $4<>'request'
           UNION SELECT actor_id FROM mawid_core.customer_profiles WHERE workspace_id=$1 AND customer_id=$3 AND actor_id IS NOT NULL AND anonymized_at IS NULL AND $4<>'request'
         ) r WHERE actor_id<>$5`,
-            [e.workspace_id, e.location_id, e.customer_id, e.action, e.actor_id, e.professional_id],
+            [
+              e.workspace_id,
+              e.location_id,
+              e.customer_id,
+              e.action,
+              e.actor_id,
+              e.professional_ids,
+            ],
           )
         ).rows;
-        for (const { actor_id } of recipients) {
-          const n = (
-            await c.query(
-              "INSERT INTO mawid_core.notification_inbox(workspace_id,event_id,actor_id) VALUES($1,$2,$3) ON CONFLICT(workspace_id,event_id,actor_id) DO UPDATE SET event_id=EXCLUDED.event_id RETURNING notification_id",
-              [e.workspace_id, e.event_id, actor_id],
-            )
-          ).rows[0];
-          const destinations = (
-            await c.query(
-              "SELECT destination_id FROM mawid_core.push_destinations WHERE workspace_id=$1 AND location_id=$2 AND actor_id=$3 AND revoked_at IS NULL AND updated_at>$4",
-              [e.workspace_id, e.location_id, actor_id, new Date(this.now() - 90 * 86400000)],
-            )
-          ).rows;
-          if (!destinations.length) destinations.push({ destination_id: null });
-          for (const d of destinations)
-            await c.query(
-              "INSERT INTO mawid_core.push_deliveries(notification_id,destination_id,status,safe_error_code,next_attempt_at,transport) VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT(notification_id,destination_id) DO NOTHING",
-              [
-                n.notification_id,
-                d.destination_id,
-                stale ? "skipped" : d.destination_id ? "pending" : "no_destination",
-                stale ? "SUPERSEDED" : d.destination_id ? null : "NO_DESTINATION",
-                new Date(this.now()),
-                this.transport,
-              ],
-            );
-        }
+        for (const { actor_id } of recipients) await this.enqueue(c, e, actor_id, "booking", stale);
         await c.query(
           "UPDATE mawid_core.outbox SET materialized_at=$3,status=$4,safe_error_code=$5 WHERE workspace_id=$1 AND event_id=$2",
           [
@@ -319,7 +382,7 @@ export class LocalNotifications {
     return this.transaction(async (c) => {
       const row = (
         await c.query(
-          `SELECT n.actor_id,n.notification_id,n.workspace_id,n.event_id,e.location_id,e.version,e.action,b.customer_id,b.state,b.version AS current_version,b.assigned_professional_id,b.requested_professional_id,
+          `SELECT n.actor_id,n.notification_id,n.workspace_id,n.event_id,n.kind,e.location_id,e.version,e.action,b.customer_id,b.state,b.version AS current_version,${segmentProfessionals()} AS professional_ids,
         p.destination_id,p.application_id,p.environment,p.locale,p.token_ciphertext,p.version AS destination_version,p.revoked_at,p.updated_at
         FROM mawid_core.notification_inbox n JOIN mawid_core.booking_events e USING(workspace_id,event_id)
         JOIN mawid_core.bookings b USING(workspace_id,location_id,booking_id)
@@ -338,7 +401,12 @@ export class LocalNotifications {
         return { skip: "ACCESS_REVOKED" };
       if (row.action === "request" && !a.roles.some((r) => ["manager", "admin"].includes(r)))
         return { skip: "ACCESS_REVOKED" };
-      if (row.version !== row.current_version) return { skip: "SUPERSEDED" };
+      if (
+        row.kind === "pending_reminder"
+          ? row.state !== "pending"
+          : row.version !== row.current_version
+      )
+        return { skip: "SUPERSEDED" };
       if (row.application_id !== "com.mawid.demo" || row.environment !== "development")
         return { skip: "ENVIRONMENT_MISMATCH" };
       return row;
@@ -406,11 +474,13 @@ export class LocalNotifications {
         WHEN bool_or(d.status IN ('pending','sending')) THEN 'pending'
         WHEN bool_or(d.status IN ('failed','no_destination')) THEN 'failed'
         WHEN bool_or(d.status='accepted') THEN 'accepted' ELSE 'skipped' END AS status
-        FROM mawid_core.notification_inbox n JOIN mawid_core.push_deliveries d USING(notification_id) GROUP BY n.workspace_id,n.event_id) s
+        FROM mawid_core.notification_inbox n JOIN mawid_core.push_deliveries d USING(notification_id)
+        WHERE n.kind='booking' GROUP BY n.workspace_id,n.event_id) s
       WHERE o.workspace_id=s.workspace_id AND o.event_id=s.event_id`);
   }
   async runOnce() {
     await this.materialize();
+    await this.materializeScheduled();
     let processed = 0;
     for (; processed < 5; processed++) {
       const job = await this.claim();

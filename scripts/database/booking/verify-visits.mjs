@@ -4,10 +4,21 @@ import { createLocalFixture, IDS, USERS, id } from "../api/fixture.mjs";
 import { LocalDataService } from "../api/data-service.mjs";
 import { startLocalDataServer } from "../api/http-server.mjs";
 import { LocalBookingService } from "./service.mjs";
+import { LocalNotifications } from "../notifications/service.mjs";
+import { SimulatedSender } from "../notifications/policy.mjs";
 
 const fixture = await createLocalFixture({ bookingFixtures: true });
 const data = new LocalDataService(fixture.configs);
 const booking = new LocalBookingService(data, fixture.bookingConfig);
+let now = Date.now();
+const workerOptions = { key: Buffer.alloc(32, 1), now: () => now, sender: new SimulatedSender() };
+const notices = new LocalNotifications(data, booking, fixture.notificationConfig, workerOptions);
+const secondWorker = new LocalNotifications(
+  data,
+  booking,
+  fixture.notificationConfig,
+  workerOptions,
+);
 const server = await startLocalDataServer(data, { booking });
 const { workspaceA: w, locationA: l, professional: a, service: first, customerA: customer } = IDS;
 const b = id(42);
@@ -146,11 +157,42 @@ try {
     403,
   );
   assert.equal((await request(USERS.managerB, "/visit-core/callers?q=Fictional")).status, 404);
+  const fresh = await request(USERS.customerA, "/visit-core/requests", {
+    ...draft,
+    start: start.replace("08:00", "11:00"),
+    operation_id: randomUUID(),
+  });
+  assert.equal(fresh.status, 201, JSON.stringify(fresh));
+  const due = (
+    await fixture.admin.query(
+      "SELECT response_due_at FROM mawid_core.bookings WHERE booking_id=$1",
+      [fresh.body.booking_id],
+    )
+  ).rows[0].response_due_at;
+  const reminderActors = async () =>
+    (
+      await fixture.admin.query(
+        `SELECT n.actor_id FROM mawid_core.notification_inbox n
+     JOIN mawid_core.booking_events e USING(workspace_id,event_id)
+     WHERE e.booking_id=$1 AND n.kind='pending_reminder' ORDER BY n.actor_id`,
+        [fresh.body.booking_id],
+      )
+    ).rows.map((row) => row.actor_id);
+  now = +due - 1;
+  await notices.runOnce();
+  assert.deepEqual(await reminderActors(), []);
+  now = +due;
+  await Promise.all([notices.runOnce(), secondWorker.runOnce()]);
+  assert.deepEqual(await reminderActors(), [id(101), id(105)]);
+  await secondWorker.runOnce();
+  assert.deepEqual(await reminderActors(), [id(101), id(105)]);
   console.log(
     "Visit chain, second-segment conflict, replay, buffers and atomic cancellation verified.",
   );
 } finally {
   await server.close();
+  await notices.close();
+  await secondWorker.close();
   await booking.close();
   await data.close();
   await fixture.close();

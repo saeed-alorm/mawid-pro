@@ -194,7 +194,7 @@ export async function startLocalDataServer(
           );
         if (notifications && noticeRoute) {
           const location = validate(uuid, noticeRoute[1]);
-          params(url, z.object({}).strict());
+          if (!noticeRoute[2].startsWith("inbox")) params(url, z.object({}).strict());
           if (req.method === "POST" && noticeRoute[2] === "registrations") {
             const input = await jsonBody(
               req,
@@ -224,13 +224,31 @@ export async function startLocalDataServer(
                 validate(uuid, noticeRoute[3]),
               ),
             );
-          if (req.method === "GET" && noticeRoute[2] === "inbox")
-            return send(200, await notifications.inbox(user, workspace, location));
+          if (req.method === "GET" && noticeRoute[2] === "inbox") {
+            const { contract } = params(
+              url,
+              z.object({ contract: z.literal("2").optional() }).strict(),
+            );
+            return send(
+              200,
+              await notifications.inbox(user, workspace, location, contract === "2"),
+            );
+          }
           if (req.method === "POST" && noticeRoute[4]) {
+            const { contract } = params(
+              url,
+              z.object({ contract: z.literal("2").optional() }).strict(),
+            );
             await jsonBody(req, z.object({}).strict());
             return send(
               200,
-              await notifications.open(user, workspace, location, validate(uuid, noticeRoute[4])),
+              await notifications.open(
+                user,
+                workspace,
+                location,
+                validate(uuid, noticeRoute[4]),
+                contract === "2",
+              ),
             );
           }
           throw new ApiError(404, "NOT_FOUND");
