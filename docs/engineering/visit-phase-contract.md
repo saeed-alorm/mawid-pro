@@ -20,19 +20,19 @@ Both partner managers control bookings. Other employees only view their own appo
 
 | Deliverable | Status | Evidence or remaining work |
 | --- | --- | --- |
-| A. Contract, data and compatibility | Implemented and verified locally | Historical ID/allocation/event/retry preservation, legacy filtering, v2 export, retention and migration/recovery fixtures |
+| A. Contract, data and compatibility | Implemented and verified locally | Historical ID/allocation/event/retry preservation, explicit legacy upgrade response, v2 export, retention and migration/recovery fixtures |
 | B. Server booking | Implemented and verified locally | Complete-chain validation, second-segment conflicts and races, scope, holds, expiry, rescheduling and replay |
 | C. Caller intake | Implemented and verified locally | Location-scoped lookup, app-less caller creation and exact retry replay |
 | D. Booking and calendar UI | Implemented and verified locally | Connected visit form, employee-first Arabic/RTL booking, management visit schedule and read-only employees |
 | E. Durable jobs | Implemented and verified locally | Opening-time reminder, two current partners, competing workers and recipient rechecks |
 | F. Reviews | Implemented and verified locally | Signed ownership, final-end timing, booking revision checks, distinct scores, scoped feedback, aggregate and erasure |
-| G. Private Android | Implemented, with install and connected emulator checks verified | Separate customer and management packages loaded authorized data from the same fictional fixture. Native approval and physical-device acceptance remain unverified |
+| G. Private Android | Verified on the API 35 emulator | The customer APK requested a two-segment visit, the management APK approved the whole visit once, and the customer APK displayed the confirmation after reconnecting. Physical two-device acceptance remains open |
 
 Only local fictional fixtures are in scope. Hosted identity-to-booking and live-pilot acceptance remain tracked under their existing issue homes.
 
 ## Contract versions
 
-Single-service clients keep `booking-core`. Its detail and lists omit multi-service visits. The new `visit-core` provides visit-shaped read projections and accepts ordered `segments` for requests, slots and staff intake. Any is represented by an omitted preferred professional. Explicit staff assignments use a positional array, and mutations carry `expected_version` when editing an existing visit and `operation_id` for retry. Use `contract=2` for visit-aware notification links and export downloads. The visits API uses a bounded eight-segment visit and a seven-day picker. The advisory picker and every confirmed transaction validate the complete chain.
+Single-service clients keep `booking-core`. A legacy appointment list with a visible multi-service visit returns HTTP 409 and `MULTI_SERVICE_VISITS_REQUIRE_UPDATE` so a partial schedule cannot look complete. Direct v1 reads and edits of an authorized multi-service visit return the same upgrade response. `visit-core` provides visit-shaped read projections and accepts ordered `segments` for requests, slots and staff intake. Any is represented by an omitted preferred professional. Explicit staff assignments use a positional array, and mutations carry `expected_version` when editing an existing visit and `operation_id` for retry. Use `contract=2` for visit-aware notification links and export downloads. The visits API accepts up to eight segments and has a seven-day picker. The advisory picker and every confirmed transaction validate the complete chain.
 
 Approval at the requested time preserves the requested sequence. Staff use a proposal if a different assignment changes the timing or a specific preference. A partner reschedule of a confirmed visit changes the entire schedule and releases the earlier allocations only after the replacement passes validation. The server recalculates timing and uses the existing workspace transaction lock and allocation exclusion constraint.
 

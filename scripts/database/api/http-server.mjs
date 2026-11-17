@@ -2,7 +2,7 @@ import { createServer } from "node:http";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { parseImport, exportCsv } from "../csv.mjs";
-import { BookingError } from "../booking/service.mjs";
+import { BookingError, LEGACY_VISIT_UPDATE_REQUIRED } from "../booking/service.mjs";
 import { SessionError } from "../identity/session-gate.mjs";
 
 const uuid = z.string().regex(/^[a-f0-9]{8}(-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i);
@@ -276,6 +276,8 @@ export async function startLocalDataServer(
             return send(200, await visits.lookupCallers(user, workspace, location, q));
           }
           params(url, z.object({}).strict());
+          if (visitRoute[4] === "reviews-feedback" && req.method !== "GET")
+            throw new ApiError(404, "NOT_FOUND");
           if (req.method === "GET" && ["reviews", "reviews-feedback"].includes(visitRoute[4]))
             return send(
               200,
@@ -453,10 +455,25 @@ export async function startLocalDataServer(
           const location = validate(uuid, locationRoute[1]);
           const kind = locationRoute[2];
           const { after, limit } = params(url, page);
+          if (kind === "bookings" && booking) {
+            await booking.run(user, workspace, location, (x) =>
+              booking.requireLegacyVisitSupport(x),
+            );
+          }
           const rows = await service.transaction(user, async (client) => {
             await service.assertWorkspace(client, workspace);
-            if (kind === "bookings") await service.assertBookingRead(client, workspace, location);
-            else await service.assertLocation(client, workspace, location);
+            if (kind === "bookings") {
+              await service.assertBookingRead(client, workspace, location);
+              if (!booking) {
+                const {
+                  rows: [row],
+                } = await client.query(
+                  "SELECT EXISTS(SELECT 1 FROM mawid_core.bookings WHERE workspace_id=$1 AND location_id=$2 AND segment_count>1) AS unsupported",
+                  [workspace, location],
+                );
+                if (row.unsupported) throw new ApiError(409, LEGACY_VISIT_UPDATE_REQUIRED);
+              }
+            } else await service.assertLocation(client, workspace, location);
             const text =
               kind === "bookings"
                 ? "SELECT booking_id,customer_id,location_id,service_id,requested_start,requested_end,assigned_start,assigned_end,state,version,cancelled_at FROM mawid_core.bookings WHERE workspace_id=$1 AND location_id=$2 AND segment_count=1 AND ($3::uuid IS NULL OR booking_id>$3) ORDER BY booking_id LIMIT $4"
@@ -642,7 +659,14 @@ export async function startLocalDataServer(
           log({ request_id: requestId, code: safe.apiCode, status: safe.status });
         if (!res.headersSent)
           send(safe.status, {
-            error: { code: safe.apiCode, message: safe.apiCode, request_id: requestId },
+            error: {
+              code: safe.apiCode,
+              message:
+                safe.apiCode === LEGACY_VISIT_UPDATE_REQUIRED
+                  ? "Update your app to view and manage multi-service visits."
+                  : safe.apiCode,
+              request_id: requestId,
+            },
           });
         else res.end();
       }

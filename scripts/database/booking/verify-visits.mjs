@@ -91,14 +91,30 @@ try {
   assert.equal(pending.body.segments.length, 2);
   assert.deepEqual(await request(USERS.customerA, "/visit-core/requests", input), pending);
   assert.equal(await count(pending.body.booking_id), 0);
+  const legacyDetail = "/booking-core/bookings/" + pending.body.booking_id;
+  for (const [user, route] of [
+    [USERS.customerA, legacyDetail],
+    [USERS.customerA, "/booking-core/view"],
+    [USERS.managerA, "/booking-core/view"],
+    [USERS.managerA, "/bookings"],
+  ]) {
+    const legacy = await request(user, route);
+    assert.equal(legacy.status, 409, JSON.stringify(legacy));
+    assert.equal(legacy.body.error.code, "MULTI_SERVICE_VISITS_REQUIRE_UPDATE");
+    assert.match(legacy.body.error.message, /update .*multi-service/i);
+  }
+  assert.equal((await request(USERS.customerB, legacyDetail)).status, 404);
+  const legacyWrite = await request(USERS.managerA, legacyDetail + "/cancel", {
+    operation_id: randomUUID(),
+    expected_version: pending.body.version,
+  });
+  assert.equal(legacyWrite.status, 409);
+  assert.equal(legacyWrite.body.error.code, "MULTI_SERVICE_VISITS_REQUIRE_UPDATE");
+  const feedbackWrite = await action(USERS.managerA, pending.body, "reviews-feedback");
+  assert.equal(feedbackWrite.status, 404, JSON.stringify(feedbackWrite));
   assert.equal(
-    (await request(USERS.customerA, "/booking-core/bookings/" + pending.body.booking_id)).status,
-    404,
-  );
-  const legacy = await request(USERS.managerA, "/booking-core/view");
-  assert.equal(
-    legacy.body.bookings.some((visit) => visit.booking_id === pending.body.booking_id),
-    false,
+    (await request(USERS.customerA, "/visit-core/visits/" + pending.body.booking_id)).body.version,
+    pending.body.version,
   );
   const job = await request(USERS.customerA, "/exports", { customer_id: customer });
   assert.equal(job.status, 201, JSON.stringify(job));

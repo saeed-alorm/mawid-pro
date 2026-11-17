@@ -17,6 +17,7 @@ export class BookingError extends Error {
     this.apiCode = code;
   }
 }
+export const LEGACY_VISIT_UPDATE_REQUIRED = "MULTI_SERVICE_VISITS_REQUIRE_UPDATE";
 const fail = (status, code) => {
   throw new BookingError(status, code);
 };
@@ -300,6 +301,31 @@ export class LocalBookingService {
       x.professionals.includes(b.assigned_professional_id ?? b.requested_professional_id)
     );
   }
+  async requireLegacyVisitSupport(x, id = null) {
+    const {
+      rows: [row],
+    } = await x.c.query(
+      `SELECT EXISTS (
+        SELECT 1 FROM mawid_core.bookings b
+        WHERE b.workspace_id=$1 AND b.location_id=$2 AND b.segment_count>1
+          AND ($3::uuid IS NULL OR b.booking_id=$3)
+          AND ($4::boolean OR b.customer_id=ANY($5::uuid[]) OR EXISTS (
+            SELECT 1 FROM mawid_core.visit_segments s
+            WHERE (s.workspace_id,s.location_id,s.booking_id)=(b.workspace_id,b.location_id,b.booking_id)
+              AND coalesce(s.assigned_professional_id,s.requested_professional_id)=ANY($6::uuid[])
+          ))
+      ) AS unsupported`,
+      [
+        x.w,
+        x.l,
+        id,
+        x.roles.some((r) => ["admin", "manager"].includes(r)),
+        x.customers,
+        x.professionals,
+      ],
+    );
+    if (row.unsupported) fail(409, LEGACY_VISIT_UPDATE_REQUIRED);
+  }
   async availability(user, w, l, input) {
     return this.run(user, w, l, async (x) => {
       const slot = await this.slot(
@@ -322,6 +348,7 @@ export class LocalBookingService {
   // role, package, local catalog or notification payload grants access.
   async view(user, w, l, after = null) {
     return this.run(user, w, l, async (x) => {
+      await this.requireLegacyVisitSupport(x);
       await this.expire(x);
       const query = async (sql, values = [w, l]) => (await x.c.query(sql, values)).rows;
       const staff = x.roles.some((r) => ["admin", "manager"].includes(r));
@@ -402,6 +429,7 @@ export class LocalBookingService {
   }
   async read(user, w, l, id) {
     return this.run(user, w, l, async (x) => {
+      await this.requireLegacyVisitSupport(x, id);
       await this.expire(x);
       const b = (
         await x.c.query(
@@ -415,6 +443,7 @@ export class LocalBookingService {
   }
   async mutate(user, w, l, action, input, id = null) {
     return this.run(user, w, l, async (x) => {
+      if (id) await this.requireLegacyVisitSupport(x, id);
       const { c, actor } = x;
       let b = id
         ? (
