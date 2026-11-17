@@ -101,7 +101,7 @@ try {
   }
   assert.ok(ready, "development UI started");
   browser = await chromium.launch({ headless: true });
-  const open = async (as, staff = false) => {
+  const open = async (as, staff = false, search = "") => {
     const context = await browser.newContext({ viewport: { width: 430, height: 932 } });
     const page = await context.newPage();
     page.on("pageerror", (error) => console.error("UI_JS_ERROR", error.message.slice(0, 400)));
@@ -109,7 +109,7 @@ try {
       if (response.status() >= 400)
         console.error("UI_HTTP_ERROR", response.status(), new URL(response.url()).pathname);
     });
-    await page.goto(url + (staff ? "/manage/demo/bookings" : "/customer/demo/book"));
+    await page.goto(url + (staff ? "/manage/demo/bookings" : "/customer/demo/book") + search);
     const input = {
       mode: "fictional-local-only",
       origin: server.origin,
@@ -417,6 +417,36 @@ try {
       ])
         await expect(employee.getByRole("button", { name, exact: true })).toHaveCount(0);
       await employee.context().close();
+    },
+  );
+  await check(
+    "employee-first Arabic booking retains the first preference and adds an independent service",
+    async () => {
+      const arabic = await open("customerA", false, `?employee=${P}`);
+      await arabic.getByRole("button", { name: "AR", exact: true }).click();
+      await expect(arabic.locator("main")).toHaveAttribute("dir", "rtl");
+      await arabic.getByLabel("الخدمة", { exact: true }).selectOption(S);
+      await expect(arabic.getByLabel("الاختصاصي", { exact: true })).toHaveValue(P);
+      await arabic.getByRole("button", { name: "إضافة خدمة", exact: true }).click();
+      await arabic.getByLabel("الخدمة 2", { exact: true }).selectOption(S);
+      await expect(arabic.getByLabel("الاختصاصي 2", { exact: true })).toHaveValue("");
+      await arabic.getByRole("button", { name: "تحديث الأوقات المتاحة", exact: true }).click();
+      const option = arabic.getByLabel("الوقت المتاح", { exact: true }).locator("option").nth(1);
+      await option.waitFor({ state: "attached" });
+      await arabic
+        .getByLabel("الوقت المتاح", { exact: true })
+        .selectOption(await option.getAttribute("value"));
+      await expect(arabic.getByText(/مدة الزيارة الإجمالية/)).toBeVisible();
+      await arabic.getByRole("button", { name: "إرسال الطلب", exact: true }).click();
+      await arabic.getByRole("status").filter({ hasText: "قبل الخادم الإجراء" }).waitFor();
+      const recent = (await api("customerA", "visit-core/view")).value.bookings.find(
+        (visit) => visit.segments.length === 2,
+      );
+      assert.deepEqual(
+        recent.segments.map((segment) => segment.requested_professional_id),
+        [P, null],
+      );
+      await arabic.context().close();
     },
   );
   await check("revoked customer refresh clears all cached bookings in the actual UI", async () => {

@@ -69,6 +69,10 @@ export function ServerBookingPage({
   } | null>(null);
   const [scores, setScores] = useState<Record<string, number>>({});
   const [feedback, setFeedback] = useState<Record<string, string>>({});
+  const [staffFeedback, setStaffFeedback] = useState<{
+    booking_id: string;
+    reviews: { professional_id: string; score: number; feedback: string | null }[];
+  } | null>(null);
   const formatTime = (value: string) =>
     new Intl.DateTimeFormat(lang === "ar" ? "ar-LB" : "en-GB", {
       timeZone: "Asia/Beirut",
@@ -80,12 +84,16 @@ export function ServerBookingPage({
     setSlots([]);
     setStart("");
   };
-  const clearCaller = useCallback(() => {
+  const clearPrivateFields = useCallback(() => {
     setCustomer("");
     setCallerName("");
     setCallerPhone("");
     setQuery("");
     setMatches([]);
+    setReview(null);
+    setStaffFeedback(null);
+    setScores({});
+    setFeedback({});
   }, []);
   const editDraft = (index: number, next: VisitPreference) =>
     updateDraft(draft.map((segment, i) => (i === index ? next : segment)));
@@ -116,11 +124,8 @@ export function ServerBookingPage({
       } catch (error) {
         if (e === epoch.current && r === read.current) {
           setView(null);
-          clearCaller();
+          clearPrivateFields();
           setInbox([]);
-          setReview(null);
-          setScores({});
-          setFeedback({});
           setSlots([]);
           setSelected(null);
           if (!preserveMessage)
@@ -135,7 +140,7 @@ export function ServerBookingPage({
         if (e === epoch.current && r === read.current) setInbox([]);
       }
     },
-    [clearCaller],
+    [clearPrivateFields],
   );
   useEffect(() => {
     setHydrated(true);
@@ -206,6 +211,14 @@ export function ServerBookingPage({
   const assignments = draft.map((segment) => segment.professional_id ?? null);
   const canSchedule = draft.every((segment) => segment.service_id && segment.professional_id);
   const preview = slots.find((slot) => slot.start === start)?.segments;
+  const displayedVisits = view?.bookings.slice() ?? [];
+  if (staff) {
+    const firstTime = (visit: ServerBooking) => {
+      const first = visit.segments?.[0];
+      return first?.assigned_start ?? first?.requested_start ?? "";
+    };
+    displayedVisits.sort((a, b) => firstTime(a).localeCompare(firstTime(b)));
+  }
   const sequence = (segments: VisitSegment[], view: BookingView, scheduled = false) => (
     <ol className="divide-y rounded-lg border">
       {segments.map((segment) => {
@@ -275,8 +288,7 @@ export function ServerBookingPage({
             setSlots([]);
             setSelected(null);
             updateDraft([{ service_id: "", professional_id: initialProfessional }]);
-            clearCaller();
-            setCustomer("");
+            clearPrivateFields();
             setMessage("");
             try {
               if (file.size > 16384) throw new Error();
@@ -313,6 +325,7 @@ export function ServerBookingPage({
               client.current = null;
               setView(null);
               setInbox([]);
+              clearPrivateFields();
               setSlots([]);
               setSelected(null);
               setBusy(false);
@@ -702,6 +715,7 @@ export function ServerBookingPage({
                             professional_ids: string[];
                             submitted: boolean;
                           }>(`visits/${current.booking_id}/reviews`);
+                          if (client.current !== c) return;
                           setScores({});
                           setFeedback({});
                           setReview({ booking_id: current.booking_id, ...result });
@@ -772,6 +786,7 @@ export function ServerBookingPage({
                             ...(feedback[id]?.trim() ? { feedback: feedback[id].trim() } : {}),
                           })),
                         });
+                        if (client.current !== c) return;
                         setReview({ ...review, submitted: true });
                         setFeedback({});
                       })
@@ -784,7 +799,10 @@ export function ServerBookingPage({
             </section>
           )}
           <section className="space-y-3" aria-label="Server bookings">
-            {view.bookings.map((b) => {
+            {staff && (
+              <h2 className="text-xl font-semibold">{say("Visit schedule", "جدول الزيارات")}</h2>
+            )}
+            {displayedVisits.map((b) => {
               const segments = b.segments ?? [];
               return (
                 <article key={b.booking_id} className="space-y-3 rounded-xl border p-4">
@@ -809,6 +827,30 @@ export function ServerBookingPage({
                     </h3>
                   )}
                   {sequence(segments, view, true)}
+                  {staffFeedback?.booking_id === b.booking_id && partner && (
+                    <div className="space-y-2 border-t pt-3">
+                      <h3 className="font-semibold">{say("Review feedback", "ملاحظات التقييم")}</h3>
+                      {staffFeedback.reviews.length ? (
+                        <ul className="space-y-2">
+                          {staffFeedback.reviews.map((item) => (
+                            <li key={item.professional_id} className="break-words text-sm">
+                              {
+                                view.professionals.find(
+                                  (person) => person.professional_id === item.professional_id,
+                                )?.display_name
+                              }
+                              {" · "}
+                              {item.score} / 5{item.feedback && <p>{item.feedback}</p>}
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="text-sm">
+                          {say("No reviews submitted", "لا توجد تقييمات مرسلة")}
+                        </p>
+                      )}
+                    </div>
+                  )}
                   {b.state === "pending" && (
                     <p>
                       {say(
@@ -847,6 +889,23 @@ export function ServerBookingPage({
                     {staff && partner && b.state === "confirmed" && (
                       <Button variant="outline" disabled={busy} onClick={() => loadVisit(b, true)}>
                         {say("Choose a new time", "اختيار موعد جديد")}
+                      </Button>
+                    )}
+                    {staff && partner && b.state === "confirmed" && (
+                      <Button
+                        variant="ghost"
+                        disabled={busy}
+                        onClick={() =>
+                          void act(async (c) => {
+                            const result = await c.request<{
+                              reviews: NonNullable<typeof staffFeedback>["reviews"];
+                            }>(`visits/${b.booking_id}/reviews-feedback`);
+                            if (client.current !== c) return;
+                            setStaffFeedback({ booking_id: b.booking_id, ...result });
+                          })
+                        }
+                      >
+                        {say("View feedback", "عرض الملاحظات")}
                       </Button>
                     )}
                     {!staff && b.state === "proposed" && (

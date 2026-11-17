@@ -325,6 +325,42 @@ try {
       );
     },
   );
+  await check("whole visits expose only each of four employees’ own ordered segments", async () => {
+    await fixture.admin.query(
+      "UPDATE mawid_core.professional_bindings SET revoked_at=NULL WHERE workspace_id=$1 AND actor_id=$2",
+      [W, id(108)],
+    );
+    const draft = {
+      operation_id: randomUUID(),
+      customer_id: C,
+      start: start(14),
+      segments: professionals.map((professional_id) => ({ service_id: S, professional_id })),
+    };
+    const pending = expect(await call(USERS.customerA, "visit-core/requests", draft), 201);
+    const path = `visit-core/visits/${pending.booking_id}`;
+    const confirmed = expect(await call(partners[1], path + "/confirm", action(pending)), 200);
+    for (const partner of partners)
+      assert.equal(expect(await call(partner, path), 200).segments.length, 4);
+    assert.equal(expect(await call(USERS.customerA, path), 200).segments.length, 4);
+    for (const [index, user] of employees.entries()) {
+      const own = expect(await call(user, path), 200);
+      assert.deepEqual(
+        own.segments.map((s) => [s.position, s.assigned_professional_id]),
+        [[index + 1, professionals[index]]],
+      );
+      assert.equal(own.customer_id, undefined);
+      assert.equal(own.assigned_start, undefined);
+      expect(await call(user, path + "/cancel", action(confirmed)), 403);
+      expect(
+        await call(user, "visit-core/caller-intake", {
+          ...draft,
+          operation_id: randomUUID(),
+          source: "phone",
+        }),
+        403,
+      );
+    }
+  });
   const sources = [
     "supabase/migrations/20261117132037_professional_scope_late_cancellation.sql",
     "scripts/database/api/fixture.mjs",

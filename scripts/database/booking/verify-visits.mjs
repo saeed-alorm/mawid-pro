@@ -24,7 +24,8 @@ const { workspaceA: w, locationA: l, professional: a, service: first, customerA:
 const b = id(42);
 const second = id(52);
 const start = new Date(Date.now() + 86400000).toISOString().slice(0, 10) + "T08:00:00Z";
-const base = "/v1/workspaces/" + w + "/locations/" + l;
+const workspaceBase = "/v1/workspaces/" + w;
+const base = workspaceBase + "/locations/" + l;
 const draft = {
   customer_id: customer,
   start,
@@ -34,14 +35,17 @@ const draft = {
   ],
 };
 const request = async (user, suffix, body) => {
-  const response = await fetch(server.origin + base + suffix, {
-    method: body ? "POST" : "GET",
-    headers: {
-      authorization: "Bearer " + data.issueSession(user).token,
-      "content-type": "application/json",
+  const response = await fetch(
+    server.origin + (suffix.startsWith("/exports") ? workspaceBase : base) + suffix,
+    {
+      method: body ? "POST" : "GET",
+      headers: {
+        authorization: "Bearer " + data.issueSession(user).token,
+        "content-type": "application/json",
+      },
+      body: body ? JSON.stringify(body) : undefined,
     },
-    body: body ? JSON.stringify(body) : undefined,
-  });
+  );
   return { status: response.status, body: await response.json() };
 };
 const action = (user, visit, verb, fields = {}) =>
@@ -95,6 +99,17 @@ try {
   assert.equal(
     legacy.body.bookings.some((visit) => visit.booking_id === pending.body.booking_id),
     false,
+  );
+  const job = await request(USERS.customerA, "/exports", { customer_id: customer });
+  assert.equal(job.status, 201, JSON.stringify(job));
+  const download = "/exports/" + job.body.job_id + "/download";
+  const exportV1 = await request(USERS.customerA, download);
+  const exportV2 = await request(USERS.customerA, download + "?contract=2");
+  assert.ok(exportV1.body.bookings.every((entry) => entry.booking_id !== pending.body.booking_id));
+  assert.equal(
+    exportV2.body.bookings.find((entry) => entry.booking_id === pending.body.booking_id).segments
+      .length,
+    2,
   );
 
   const competing = await request(USERS.managerA, "/visit-core/walk-ins", {
@@ -186,6 +201,76 @@ try {
   assert.deepEqual(await reminderActors(), [id(101), id(105)]);
   await secondWorker.runOnce();
   assert.deepEqual(await reminderActors(), [id(101), id(105)]);
+  const at = (hour) => start.replace("08:00", hour);
+  const pendingAt = (hour) =>
+    request(USERS.customerA, "/visit-core/requests", {
+      ...draft,
+      start: at(hour),
+      operation_id: randomUUID(),
+    });
+  const candidates = await Promise.all([pendingAt("12:00"), pendingAt("12:00")]);
+  for (const candidate of candidates) assert.equal(candidate.status, 201);
+  const race = await Promise.all([
+    action(USERS.managerA, candidates[0].body, "confirm"),
+    action(USERS.adminA, candidates[1].body, "confirm"),
+  ]);
+  assert.deepEqual(race.map((result) => result.status).sort(), [200, 409]);
+  const winner = race.find((result) => result.status === 200).body;
+  const loser = candidates.find(
+    (candidate) => candidate.body.booking_id !== winner.booking_id,
+  ).body;
+  assert.equal(await count(winner.booking_id), 2);
+  assert.equal(await count(loser.booking_id), 0);
+  const offer = await action(USERS.adminA, loser, "propose", { start: at("13:30") });
+  assert.equal(offer.status, 200, JSON.stringify(offer));
+  assert.equal(await count(loser.booking_id), 2);
+  const reschedule = await action(USERS.managerA, winner, "reschedule", { start: at("13:30") });
+  assert.equal(reschedule.status, 409, JSON.stringify(reschedule));
+  assert.equal(await count(winner.booking_id), 2);
+  await fixture.admin.query("BEGIN");
+  await fixture.admin.query(
+    "UPDATE mawid_core.bookings SET offer_expires_at=clock_timestamp()-interval '1 minute' WHERE booking_id=$1",
+    [loser.booking_id],
+  );
+  await fixture.admin.query(
+    "UPDATE mawid_core.allocations a SET expires_at=b.offer_expires_at FROM mawid_core.bookings b WHERE a.booking_id=b.booking_id AND b.booking_id=$1",
+    [loser.booking_id],
+  );
+  await fixture.admin.query("COMMIT");
+  const expired = await action(USERS.customerA, offer.body, "accept");
+  assert.equal(expired.status, 409, JSON.stringify(expired));
+  assert.equal(expired.body.error.code, "OFFER_EXPIRED");
+  assert.equal(await count(loser.booking_id), 0);
+  const moved = await action(USERS.managerA, winner, "reschedule", { start: at("13:30") });
+  assert.equal(moved.status, 200, JSON.stringify(moved));
+  assert.equal(await count(winner.booking_id), 2);
+  assert.deepEqual(
+    moved.body.segments.map((s) => s.assigned_start.slice(11, 16)),
+    ["13:30", "14:00"],
+  );
+  await action(USERS.customerA, fresh.body, "withdraw");
+  const otherReminder = await pendingAt("10:00");
+  assert.equal(otherReminder.status, 201);
+  await fixture.admin.query(
+    "UPDATE mawid_core.memberships SET revoked_at=clock_timestamp() WHERE workspace_id=$1 AND actor_id=$2",
+    [w, id(105)],
+  );
+  const nextDue = (
+    await fixture.admin.query(
+      "SELECT response_due_at FROM mawid_core.bookings WHERE booking_id=$1",
+      [otherReminder.body.booking_id],
+    )
+  ).rows[0].response_due_at;
+  now = +nextDue + 1000;
+  await secondWorker.runOnce();
+  const recentReminders = (
+    await fixture.admin.query(
+      `SELECT n.actor_id FROM mawid_core.notification_inbox n JOIN mawid_core.booking_events e USING(workspace_id,event_id)
+     WHERE e.booking_id=$1 AND n.kind='pending_reminder'`,
+      [otherReminder.body.booking_id],
+    )
+  ).rows;
+  assert.deepEqual(recentReminders, [{ actor_id: id(101) }]);
   console.log(
     "Visit chain, second-segment conflict, replay, buffers and atomic cancellation verified.",
   );

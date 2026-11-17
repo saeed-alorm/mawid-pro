@@ -140,8 +140,11 @@ try {
       if (message === "mawid-local-shutdown") void close();
     });
   }
-} catch {
-  console.error("LOCAL_DATA_API_START_FAILED");
+} catch (error) {
+  const code = [error?.code, error?.message].find(
+    (value) => typeof value === "string" && /^[A-Z0-9_]{1,64}$/.test(value),
+  );
+  console.error("LOCAL_DATA_API_START_FAILED", code ?? "UNEXPECTED_ERROR");
   await close();
   process.exitCode = 1;
 }
