@@ -1,6 +1,8 @@
 const zone = "Asia/Beirut";
 export const holdExpiry = (now, start) => Math.min(now + 3600000, start);
-export const canSelfCancel = (now, start) => now <= start - 1800000;
+export const canSelfCancel = (now, start) => now < start;
+export const isLateCancellation = (now, start) =>
+  canSelfCancel(now, start) && start - now < 3600000;
 const formatter = new Intl.DateTimeFormat("sv-SE", {
   timeZone: zone,
   year: "numeric",

@@ -1,5 +1,11 @@
 # P1 architecture decision record — review pending
 
+> **17 November update:** use the [16 November meeting delta](../decisions/2026-11-16-pilot-workflow-delta.md)
+> for employee own-only access, permitted late cancellation and its 60-minute flag
+> boundary, the additional pending reminder, automatic review timing and the new
+> multi-professional visit requirement. Single-service wire examples and earlier
+> cancellation/reminder wording below are dated history, pending the visit contract.
+
 > **Latest owner instruction — 14 November:** all eight review items are approved. The four listed evidence gaps do **not** block continued engineering, including #6. See the [consolidated approval and explicit dependency exception](../decisions/2026-11-14-issue4-approval-and-continuation.md). Earlier blocking/unapproved-default statements below are dated history where superseded; missing evidence is still unverified, not passed.
 
 14 November 2026, Asia/Beirut. Refs [#4](https://github.com/saeed-alorm/mawid-pro/issues/4), dependency [#3](https://github.com/saeed-alorm/mawid-pro/issues/3). This consolidates the owner's supplied desktop handoff, not an automatic approval of its instructions or recommendations. Earlier dated [analysis](p1-architecture-analysis.md) remains historical. No dependent implementation is advanced here.

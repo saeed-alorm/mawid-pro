@@ -1,27 +1,27 @@
 {
-  "generated_at": "2026-11-16T07:09:03.698Z",
+  "generated_at": "2026-11-17T13:42:32.370Z",
   "node": "v24.22.1",
   "postgres": "17.12 (Debian 17.12-1.pgdg12+1)",
   "files": [
     {
       "name": "scripts/database/booking/service.mjs",
-      "sha256": "4899cd6a43464fd2f7000c19873e3a3d697fad178d2c0fec61b8ecf09973edb3"
+      "sha256": "7b396eb9ecbbff365f45bc255a3e0faa6e475f38457e0c9e0e77e7666bbef775"
     },
     {
       "name": "scripts/database/booking/time.mjs",
-      "sha256": "ed2f803d7a31d05c88203da5207e805abee1bfb61cdcd65df77f7952e75c408b"
+      "sha256": "5a13ffbeecaae2381bce2a786593dd8db73b07db241cd20a785138f3573f85aa"
     },
     {
       "name": "scripts/database/booking/verify.mjs",
-      "sha256": "47e3caa3cd28706253ce4f323c30ff0c8668ab1138979c3234e0f804174cd048"
+      "sha256": "4f3640f7523aee3d92d3c777fbf0f0a22bb8fef919ca6dfe51b99aea78025c8f"
     },
     {
       "name": "scripts/database/api/http-server.mjs",
-      "sha256": "858d4b7765fdc456189be6c6203b7ecb9932b9581cbafd45af806f7359e21390"
+      "sha256": "100d7fc8af94f096e9b9513350bef47c3511d6c9a6329725f73aa71b8cac21c5"
     },
     {
       "name": "scripts/database/api/fixture.mjs",
-      "sha256": "1327acb8abcbcc3c8423035fbbe41d5a53699177c27d7a32e16a90cbf3bfeb09"
+      "sha256": "84c0e18e008603831ffa057206baf185f2a9313fc7c5d93d06d2c33de10a2ba1"
     },
     {
       "name": "scripts/database/api/serve-local.mjs",
@@ -58,6 +58,14 @@
     {
       "name": "supabase/migrations/20261115101500_local_notifications.sql",
       "sha256": "e8f16abc8b10c77bb27fa7c68ea6966d283c326d484ad73962371fe1355d7d29"
+    },
+    {
+      "name": "supabase/migrations/20261116130000_verified_shop_identity.sql",
+      "sha256": "58a6652ac798f7d602a47f528212e7128fa78f011611ef96c98e5ed5d39210ec"
+    },
+    {
+      "name": "supabase/migrations/20261117132037_professional_scope_late_cancellation.sql",
+      "sha256": "5f7543c3ca63c03c8076d9315cff8d183f8cb76c88cc1d24ed0f92078d1619ba"
     }
   ],
   "checks": [
@@ -70,7 +78,7 @@
       "passed": true
     },
     {
-      "name": "offer hold crosses midnight and self-cancel includes exactly 30 minutes",
+      "name": "offer hold crosses midnight; pre-start cancellation is allowed and only the final hour is late",
       "passed": true
     },
     {
@@ -130,7 +138,7 @@
       "passed": true
     },
     {
-      "name": "four confirmed customer cancellations count once each without banning new requests",
+      "name": "four late customer cancellations count once each without banning new requests",
       "passed": true
     },
     {

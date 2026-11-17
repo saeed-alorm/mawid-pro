@@ -233,140 +233,145 @@ export function ServerBookingPage({ staff = false }: { staff?: boolean }) {
             {say("Server time", "وقت الخادم")}: {view.server_time} ·{" "}
             {say("Review from", "تبدأ المراجعة")}: {view.review_at}
           </p>
-          <section className="space-y-3 rounded-xl border p-4">
-            <h2 className="text-lg font-semibold">
-              {selected
-                ? say("Propose / assign", "اقتراح / تعيين")
-                : staff
-                  ? say("Staff-created appointment", "موعد من الإدارة")
-                  : say("Request a time", "طلب موعد")}
-            </h2>
-            <label className="block">
-              {say("Service", "الخدمة")}
-              <select
-                aria-label="Service"
-                value={service}
-                disabled={busy || !!selected}
-                onChange={(e) => {
-                  setService(e.target.value);
-                  setProfessional("");
-                  setSlots([]);
-                  setStart("");
-                }}
-              >
-                <option value="">—</option>
-                {view.services.map((s) => (
-                  <option key={s.service_id} value={s.service_id}>
-                    {s.name} · {s.duration_minutes} min
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="block">
-              {say("Professional", "الاختصاصي")}
-              <select
-                aria-label="Professional"
-                value={professional}
-                disabled={busy}
-                onChange={(e) => {
-                  setProfessional(e.target.value);
-                  setSlots([]);
-                  setStart("");
-                }}
-              >
-                <option value="">{say("Any professional", "أي اختصاصي")}</option>
-                {candidates.map((p) => (
-                  <option key={p.professional_id} value={p.professional_id}>
-                    {p.display_name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            {staff && !selected && (
+          {staff && !admin && !manager && (
+            <p>{say("Your appointments · read only", "مواعيدك · للاطلاع فقط")}</p>
+          )}
+          {(!staff || admin || manager) && (
+            <section className="space-y-3 rounded-xl border p-4">
+              <h2 className="text-lg font-semibold">
+                {selected
+                  ? say("Propose / assign", "اقتراح / تعيين")
+                  : staff
+                    ? say("Staff-created appointment", "موعد من الإدارة")
+                    : say("Request a time", "طلب موعد")}
+              </h2>
               <label className="block">
-                {say("Customer", "العميل")}
+                {say("Service", "الخدمة")}
                 <select
-                  aria-label="Customer"
-                  value={customer}
-                  disabled={busy}
-                  onChange={(e) => setCustomer(e.target.value)}
+                  aria-label="Service"
+                  value={service}
+                  disabled={busy || !!selected}
+                  onChange={(e) => {
+                    setService(e.target.value);
+                    setProfessional("");
+                    setSlots([]);
+                    setStart("");
+                  }}
                 >
                   <option value="">—</option>
-                  {view.customers.map((c) => (
-                    <option key={c.customer_id} value={c.customer_id}>
-                      {c.display_name}
+                  {view.services.map((s) => (
+                    <option key={s.service_id} value={s.service_id}>
+                      {s.name} · {s.duration_minutes} min
                     </option>
                   ))}
                 </select>
               </label>
-            )}
-            <Button disabled={busy || !service} onClick={() => void loadSlots()}>
-              {say("Refresh availability", "تحديث الأوقات المتاحة")}
-            </Button>
-            <label className="block">
-              {say("Available time (Beirut)", "الوقت المتاح (بيروت)")}
-              <select
-                aria-label="Available time"
-                value={start}
-                disabled={busy}
-                onChange={(e) => setStart(e.target.value)}
-              >
-                <option value="">—</option>
-                {slots.map((s) => (
-                  <option key={s.start} value={s.start}>
-                    {s.date} {s.time} {s.offset}
-                  </option>
-                ))}
-              </select>
-            </label>
-            {selected ? (
-              <div className="flex flex-wrap gap-3">
-                {manager && !selected.requested_professional_id && (
-                  <Button
-                    disabled={busy || !professional}
-                    onClick={() =>
-                      void mutate("assign", selected, { professional_id: professional })
-                    }
+              <label className="block">
+                {say("Professional", "الاختصاصي")}
+                <select
+                  aria-label="Professional"
+                  value={professional}
+                  disabled={busy}
+                  onChange={(e) => {
+                    setProfessional(e.target.value);
+                    setSlots([]);
+                    setStart("");
+                  }}
+                >
+                  <option value="">{say("Any professional", "أي اختصاصي")}</option>
+                  {candidates.map((p) => (
+                    <option key={p.professional_id} value={p.professional_id}>
+                      {p.display_name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              {staff && !selected && (
+                <label className="block">
+                  {say("Customer", "العميل")}
+                  <select
+                    aria-label="Customer"
+                    value={customer}
+                    disabled={busy}
+                    onChange={(e) => setCustomer(e.target.value)}
                   >
-                    {say("Save assignment (no reservation)", "حفظ التعيين (دون حجز الوقت)")}
-                  </Button>
-                )}
-                {admin && (
-                  <Button
-                    disabled={busy || !start || !professional}
-                    onClick={() =>
-                      void mutate("propose", selected, { professional_id: professional, start })
-                    }
-                  >
-                    {say("Propose time", "اقتراح وقت")}
-                  </Button>
-                )}
-                <Button onClick={() => setSelected(null)}>{say("Close", "إغلاق")}</Button>
-              </div>
-            ) : (
-              <Button
-                disabled={
-                  busy ||
-                  !start ||
-                  (staff ? !admin || !customer || !professional : !view.customer_ids.length)
-                }
-                onClick={() =>
-                  void act((c) =>
-                    c.mutate(staff ? "walk-ins" : "requests", {
-                      service_id: service,
-                      customer_id: staff ? customer : view.customer_ids[0],
-                      ...(professional ? { professional_id: professional } : {}),
-                      start,
-                    }),
-                  )
-                }
-              >
-                {staff
-                  ? say("Create appointment", "إنشاء موعد")
-                  : say("Submit request", "إرسال الطلب")}
+                    <option value="">—</option>
+                    {view.customers.map((c) => (
+                      <option key={c.customer_id} value={c.customer_id}>
+                        {c.display_name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
+              <Button disabled={busy || !service} onClick={() => void loadSlots()}>
+                {say("Refresh availability", "تحديث الأوقات المتاحة")}
               </Button>
-            )}
-          </section>
+              <label className="block">
+                {say("Available time (Beirut)", "الوقت المتاح (بيروت)")}
+                <select
+                  aria-label="Available time"
+                  value={start}
+                  disabled={busy}
+                  onChange={(e) => setStart(e.target.value)}
+                >
+                  <option value="">—</option>
+                  {slots.map((s) => (
+                    <option key={s.start} value={s.start}>
+                      {s.date} {s.time} {s.offset}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              {selected ? (
+                <div className="flex flex-wrap gap-3">
+                  {manager && !selected.requested_professional_id && (
+                    <Button
+                      disabled={busy || !professional}
+                      onClick={() =>
+                        void mutate("assign", selected, { professional_id: professional })
+                      }
+                    >
+                      {say("Save assignment (no reservation)", "حفظ التعيين (دون حجز الوقت)")}
+                    </Button>
+                  )}
+                  {admin && (
+                    <Button
+                      disabled={busy || !start || !professional}
+                      onClick={() =>
+                        void mutate("propose", selected, { professional_id: professional, start })
+                      }
+                    >
+                      {say("Propose time", "اقتراح وقت")}
+                    </Button>
+                  )}
+                  <Button onClick={() => setSelected(null)}>{say("Close", "إغلاق")}</Button>
+                </div>
+              ) : (
+                <Button
+                  disabled={
+                    busy ||
+                    !start ||
+                    (staff ? !admin || !customer || !professional : !view.customer_ids.length)
+                  }
+                  onClick={() =>
+                    void act((c) =>
+                      c.mutate(staff ? "walk-ins" : "requests", {
+                        service_id: service,
+                        customer_id: staff ? customer : view.customer_ids[0],
+                        ...(professional ? { professional_id: professional } : {}),
+                        start,
+                      }),
+                    )
+                  }
+                >
+                  {staff
+                    ? say("Create appointment", "إنشاء موعد")
+                    : say("Submit request", "إرسال الطلب")}
+                </Button>
+              )}
+            </section>
+          )}
           <section aria-label="Booking notifications" className="space-y-3">
             <h2>{say("Notifications", "الإشعارات")}</h2>
             <p>
@@ -472,9 +477,19 @@ export function ServerBookingPage({ staff = false }: { staff?: boolean }) {
                       </Button>
                     )}
                     {b.can_cancel && (
-                      <Button disabled={busy} onClick={() => void mutate("cancel", b)}>
-                        {say("Cancel appointment", "إلغاء الموعد")}
-                      </Button>
+                      <div>
+                        {!staff && b.cancellation_is_late && (
+                          <p>
+                            {say(
+                              "Cancellation within the final hour counts toward the salon's late-cancellation flag.",
+                              "الإلغاء خلال الساعة الأخيرة يُحتسب ضمن تنبيه الإلغاءات المتأخرة لدى الصالون.",
+                            )}
+                          </p>
+                        )}
+                        <Button disabled={busy} onClick={() => void mutate("cancel", b)}>
+                          {say("Cancel appointment", "إلغاء الموعد")}
+                        </Button>
+                      </div>
                     )}
                     {!staff &&
                       ["cancelled", "withdrawn", "declined", "expired"].includes(b.state) && (

@@ -126,7 +126,9 @@ try {
       buffer: Buffer.from(JSON.stringify(input)),
     });
     try {
-      await page.getByLabel("Service", { exact: true }).waitFor();
+      if (as === "professionalA")
+        await page.getByText("Your appointments · read only", { exact: true }).waitFor();
+      else await page.getByLabel("Service", { exact: true }).waitFor();
     } catch (error) {
       console.error(
         "UI state after session import:",
@@ -373,6 +375,48 @@ try {
         .getByText("pending", { exact: false })
         .first()
         .waitFor();
+    },
+  );
+  await check("customer UI warns about late cancellation and still allows it", async () => {
+    await fixture.admin.query("BEGIN");
+    await fixture.admin.query(
+      "UPDATE mawid_core.bookings SET assigned_start=date_trunc('minute',clock_timestamp())+interval '20 minutes',assigned_end=date_trunc('minute',clock_timestamp())+interval '50 minutes' WHERE booking_id=$1",
+      [created.booking_id],
+    );
+    await fixture.admin.query(
+      "UPDATE mawid_core.allocations a SET period=tstzrange(b.assigned_start,b.assigned_end,'[)') FROM mawid_core.bookings b WHERE a.booking_id=b.booking_id AND b.booking_id=$1",
+      [created.booking_id],
+    );
+    await fixture.admin.query("COMMIT");
+    await customer.getByRole("button", { name: "Refresh server state", exact: true }).click();
+    await expect(
+      customer.getByText(
+        "Cancellation within the final hour counts toward the salon's late-cancellation flag.",
+        { exact: true },
+      ),
+    ).toBeVisible();
+    await customer.getByRole("button", { name: "Cancel appointment", exact: true }).click();
+    await customer.getByRole("status").filter({ hasText: "Server accepted" }).waitFor();
+    const current = await api("customerA", `booking-core/bookings/${created.booking_id}`);
+    assert.equal(current.value.state, "cancelled");
+  });
+  await check(
+    "professional UI is read-only and has no booking creation or decision controls",
+    async () => {
+      const employee = await open("professionalA", true);
+      await expect(
+        employee.getByText("Your appointments · read only", { exact: true }),
+      ).toBeVisible();
+      await expect(employee.getByLabel("Service", { exact: true })).toHaveCount(0);
+      for (const name of [
+        "Create appointment",
+        "Approve",
+        "Reject",
+        "Assign / propose",
+        "Cancel appointment",
+      ])
+        await expect(employee.getByRole("button", { name, exact: true })).toHaveCount(0);
+      await employee.context().close();
     },
   );
   await check("revoked customer refresh clears all cached bookings in the actual UI", async () => {
