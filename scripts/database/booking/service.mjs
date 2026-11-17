@@ -230,7 +230,7 @@ export class LocalBookingService {
       WHERE p.workspace_id=$1 AND p.location_id=$2 AND e.service_id=$3 AND p.active AND ($4::uuid IS NULL OR p.professional_id=$4)
       AND EXISTS(SELECT 1 FROM mawid_core.professional_intervals i WHERE i.workspace_id=p.workspace_id AND i.location_id=p.location_id AND i.professional_id=p.professional_id AND i.kind='availability' AND i.period @> tstzrange($5,$6,'[)'))
       AND NOT EXISTS(SELECT 1 FROM mawid_core.professional_intervals i WHERE i.workspace_id=p.workspace_id AND i.professional_id=p.professional_id AND i.kind IN ('break','absence') AND i.period && tstzrange($5,$6,'[)'))
-      AND NOT EXISTS(SELECT 1 FROM mawid_core.allocations a WHERE a.workspace_id=p.workspace_id AND a.professional_id=p.professional_id AND ($7::uuid IS NULL OR a.booking_id<>$7) AND a.period && tstzrange($5,$6,'[)') AND (a.kind='confirmed' OR a.expires_at>$8))
+      AND NOT EXISTS(SELECT 1 FROM mawid_core.allocations a WHERE a.workspace_id=p.workspace_id AND a.professional_id=p.professional_id AND ($7::uuid IS NULL OR a.location_id<>p.location_id OR a.booking_id<>$7) AND a.period && tstzrange($5,$6,'[)') AND (a.kind='confirmed' OR a.expires_at>$8))
       ORDER BY p.professional_id`,
         [x.w, x.l, service, professional, iso(from), iso(to), ignore, iso(x.now)],
       )

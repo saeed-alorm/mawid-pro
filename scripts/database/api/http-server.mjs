@@ -254,7 +254,7 @@ export async function startLocalDataServer(
           throw new ApiError(404, "NOT_FOUND");
         }
         const visitRoute =
-          /^\/locations\/([^/]+)\/visit-core\/(view|slots|availability|requests|walk-ins|caller-intake|callers|visits\/([^/]+)(?:\/(confirm|propose|assign|reschedule|accept|decline|withdraw|cancel|reviews|reviews-feedback))?)$/.exec(
+          /^\/locations\/([^/]+)\/visit-core\/(view|slots|availability|requests|walk-ins|caller-intake|callers|visits\/([^/]+)(?:\/(confirm|propose|assign|reschedule|reschedule-slots|accept|decline|withdraw|cancel|reviews|reviews-feedback))?)$/.exec(
             tail,
           );
         if (booking && visitRoute) {
@@ -316,6 +316,21 @@ export async function startLocalDataServer(
           if (req.method === "GET" && identifier && !visitRoute[4])
             return send(200, await visits.read(user, workspace, location, identifier));
           if (req.method !== "POST") throw new ApiError(404, "NOT_FOUND");
+          if (visitRoute[4] === "reschedule-slots") {
+            const input = await jsonBody(
+              req,
+              z
+                .object({
+                  expected_version: z.string().regex(/^[1-9][0-9]{0,14}$/),
+                  assignments: z.array(uuid.nullable()).min(1).max(8).optional(),
+                })
+                .strict(),
+            );
+            return send(
+              200,
+              await visits.rescheduleSlots(user, workspace, location, identifier, input),
+            );
+          }
           if (part === "slots" || part === "availability") {
             const input = await jsonBody(
               req,

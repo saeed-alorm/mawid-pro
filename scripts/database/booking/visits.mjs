@@ -23,6 +23,11 @@ const segmentsFor = async (x, booking) =>
       key(x, booking),
     )
   ).rows;
+const savedSpecs = (segments) =>
+  segments.map((segment) => ({
+    ...segment,
+    duration: +segment.requested_end - +segment.requested_start,
+  }));
 
 const segmentProjection = (s) => ({
   position: s.position,
@@ -36,6 +41,17 @@ const segmentProjection = (s) => ({
   buffer_before_seconds: Number(s.buffer_before_seconds),
   buffer_after_seconds: Number(s.buffer_after_seconds),
 });
+const previewSegments = (chain, assigned = false) =>
+  chain.map((segment) =>
+    segmentProjection({
+      ...segment,
+      requested_start: segment.start,
+      requested_end: segment.end,
+      assigned_professional_id: assigned ? segment.professional : null,
+      assigned_start: assigned ? segment.start : null,
+      assigned_end: assigned ? segment.end : null,
+    }),
+  );
 
 export class VisitBookings {
   constructor(core, fail) {
@@ -126,38 +142,68 @@ export class VisitBookings {
   async availability(user, w, l, input, list = false) {
     return this.core.run(user, w, l, async (x) => {
       const specs = await this.specs(x, input.segments);
-      const preview = (chain) =>
-        chain.map((s) =>
-          segmentProjection({
-            ...s,
-            requested_start: s.start,
-            requested_end: s.end,
-          }),
-        );
       if (!list) {
         const chain = await this.chain(x, specs, instant(input.start));
-        return { available: true, contract_version: 2, segments: preview(chain) };
+        return { available: true, contract_version: 2, segments: previewSegments(chain) };
       }
-      const periods = await this.core.periods(x, x.now);
-      const items = [];
-      const stop = x.now + 7 * 86400000;
-      for (const [from, to] of periods) {
-        if (from > stop) break;
-        for (
-          let time = Math.ceil(Math.max(from, x.now + 1) / 1800000) * 1800000;
-          time < Math.min(to, stop);
-          time += 1800000
-        ) {
-          try {
-            const chain = await this.chain(x, specs, time, null, null, periods);
-            items.push({ start: iso(time).replace(".000Z", "Z"), segments: preview(chain) });
-          } catch (error) {
-            if (error.apiCode !== "SLOT_UNAVAILABLE") throw error;
-          }
-        }
-      }
-      return { contract_version: 2, items, timezone: "Asia/Beirut" };
+      return this.slots(x, specs);
     });
+  }
+
+  async slots(x, specs, { booking = null, assignments = null } = {}) {
+    const periods = await this.core.periods(x, x.now - 86400000);
+    const starts = new Set();
+    const stop = x.now + 7 * 86400000;
+    for (const [from, to] of periods) {
+      if (from > stop) break;
+      for (
+        let time = Math.ceil(Math.max(from, x.now + 1) / 1800000) * 1800000;
+        time < Math.min(to, stop);
+        time += 1800000
+      )
+        starts.add(time);
+    }
+    const savedStart = +booking?.assigned_start;
+    if (x.now < savedStart && savedStart <= x.now + 180 * 86400000) starts.add(savedStart);
+    const items = [];
+    for (const time of [...starts].sort((a, b) => a - b)) {
+      try {
+        const chain = await this.chain(x, specs, time, booking?.booking_id, assignments, periods);
+        items.push({
+          start: iso(time).replace(".000Z", "Z"),
+          segments: previewSegments(chain, Boolean(booking)),
+        });
+      } catch (error) {
+        if (error.apiCode !== "SLOT_UNAVAILABLE") throw error;
+      }
+    }
+    return { contract_version: 2, items, timezone: "Asia/Beirut" };
+  }
+
+  async rescheduleSlots(user, w, l, id, input) {
+    return this.core.run(user, w, l, async (x) => {
+      const b = (await x.c.query(`SELECT * FROM mawid_core.bookings WHERE ${scope}`, [w, l, id]))
+        .rows[0];
+      if (!b) this.fail(404, "NOT_FOUND");
+      const segments = await segmentsFor(x, b);
+      this.project(x, b, segments);
+      if (!partner(x)) this.fail(403, "ACTION_DENIED");
+      if (String(b.version) !== input.expected_version) this.fail(409, "STALE_VERSION");
+      if (b.state !== "confirmed") this.fail(409, "INVALID_TRANSITION");
+      const assignments = this.assignments(segments, input.assignments, "reschedule");
+      if (assignments.some((professional) => !professional)) this.fail(409, "ASSIGNMENT_REQUIRED");
+      const slots = await this.slots(x, savedSpecs(segments), { booking: b, assignments });
+      return { ...slots, booking_id: b.booking_id, version: String(b.version) };
+    });
+  }
+
+  assignments(segments, positional, action) {
+    if (positional && positional.length !== segments.length) this.fail(422, "ASSIGNMENT_COUNT");
+    return segments.map((s, i) =>
+      action === "accept"
+        ? s.assigned_professional_id
+        : (positional?.[i] ?? s.assigned_professional_id ?? s.requested_professional_id),
+    );
   }
 
   project(x, b, segments) {
@@ -457,14 +503,8 @@ export class VisitBookings {
       let state = b.state;
       let chain;
       let expires = b.offer_expires_at;
-      const positional = input.assignments;
-      if (positional && positional.length !== segments.length) this.fail(422, "ASSIGNMENT_COUNT");
       const alternative = action === "propose" || action === "reschedule";
-      const assignment = segments.map((s, i) =>
-        action === "accept"
-          ? s.assigned_professional_id
-          : (positional?.[i] ?? s.assigned_professional_id ?? s.requested_professional_id),
-      );
+      const assignment = this.assignments(segments, input.assignments, action);
       if (["assign", "confirm", "propose", "reschedule", "accept", "walk-in"].includes(action)) {
         const required =
           action === "reschedule" ? "confirmed" : action === "accept" ? "proposed" : "pending";
@@ -483,16 +523,7 @@ export class VisitBookings {
           : action === "accept"
             ? +b.assigned_start
             : +b.requested_start;
-        chain = await this.chain(
-          x,
-          segments.map((s) => ({
-            ...s,
-            duration: +s.requested_end - +s.requested_start,
-          })),
-          start,
-          b.booking_id,
-          assignment,
-        );
+        chain = await this.chain(x, savedSpecs(segments), start, b.booking_id, assignment);
         if (
           action === "accept" &&
           chain.some(
