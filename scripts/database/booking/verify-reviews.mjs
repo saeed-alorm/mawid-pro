@@ -11,6 +11,11 @@ const fixture = await createLocalFixture({ bookingFixtures: true, authorizationF
 const issuer = await createSignedSessionFixture(fixture);
 const data = issuer.service;
 const booking = new LocalBookingService(data, fixture.bookingConfig);
+const run = booking.run.bind(booking);
+let bookingTime;
+// Keep real identity, transaction and database state while exercising exact clock boundaries.
+booking.run = (user, workspace, location, fn) =>
+  run(user, workspace, location, (context) => fn({ ...context, now: bookingTime ?? context.now }));
 let now = Date.now();
 const notifications = new LocalNotifications(data, booking, fixture.notificationConfig, {
   key: Buffer.alloc(32, 2),
@@ -65,7 +70,55 @@ try {
     +(await invite(confirmed)),
     Date.parse(confirmed.segments.at(-1).assigned_end) + 120000,
   );
-  const rescheduled = await transition(confirmed, "reschedule", { start: day + "T10:00:00Z" });
+  const editPath = `visit-core/visits/${confirmed.booking_id}`;
+  const reschedule = {
+    operation_id: randomUUID(),
+    expected_version: confirmed.version,
+    start: day + "T10:00:00Z",
+  };
+  bookingTime = Date.parse(confirmed.segments[0].assigned_start) - 1;
+  const rescheduled = await result(USERS.managerA, editPath + "/reschedule", 200, reschedule);
+  assert.equal(rescheduled.can_reschedule, true);
+  const history = async () =>
+    (
+      await fixture.admin.query(
+        `SELECT version,action FROM mawid_core.booking_events WHERE booking_id=$1 ORDER BY version`,
+        [rescheduled.booking_id],
+      )
+    ).rows;
+  const pastEdit = {
+    expected_version: rescheduled.version,
+    start: day + "T11:30:00Z",
+  };
+  const beforeCutoffHistory = await history();
+  assert.deepEqual(
+    beforeCutoffHistory.map(({ action }) => action),
+    ["request", "confirm", "reschedule"],
+  );
+  for (const time of [
+    Date.parse(rescheduled.segments[0].assigned_start),
+    Date.parse(rescheduled.segments[0].assigned_start) + 1,
+    Date.parse(rescheduled.segments.at(-1).assigned_end) + 1,
+  ]) {
+    bookingTime = time;
+    const denied = await result(USERS.managerA, editPath + "/reschedule", 409, {
+      ...pastEdit,
+      operation_id: randomUUID(),
+    });
+    assert.equal(denied.error.code, "RESCHEDULE_CUTOFF");
+  }
+  const deniedPreview = await result(USERS.managerA, editPath + "/reschedule-slots", 409, {
+    expected_version: rescheduled.version,
+  });
+  assert.equal(deniedPreview.error.code, "RESCHEDULE_CUTOFF");
+  assert.equal((await result(USERS.managerA, editPath, 200)).can_reschedule, false);
+  assert.deepEqual(
+    await result(USERS.managerA, editPath + "/reschedule", 200, reschedule),
+    rescheduled,
+  );
+  await result(USERS.managerB, editPath + "/reschedule", 404, reschedule);
+  assert.deepEqual(await history(), beforeCutoffHistory);
+  bookingTime = undefined;
   now = +(await invite(confirmed));
   await notifications.runOnce();
   assert.equal((await invites()).length, 0);
@@ -135,12 +188,54 @@ try {
   assert.ok(!JSON.stringify(catalog).includes("Private fixture feedback"));
   const management = await result(USERS.managerA, reviewPath + "-feedback", 200);
   assert.equal(management.reviews[0].feedback, "Private fixture feedback");
+  const reviewedVisit = await result(USERS.managerA, editPath, 200);
+  const reservations = async () =>
+    (
+      await fixture.admin.query(
+        "SELECT segment_position,professional_id,period FROM mawid_core.allocations WHERE booking_id=$1 ORDER BY segment_position",
+        [rescheduled.booking_id],
+      )
+    ).rows;
+  const reviewedReservations = await reservations();
+  bookingTime = Date.parse(reviewedVisit.segments[0].assigned_start) - 1;
+  const reviewedEdit = await result(USERS.managerA, editPath + "/reschedule", 409, {
+    ...pastEdit,
+    operation_id: randomUUID(),
+  });
+  assert.equal(reviewedEdit.error.code, "VISIT_HAS_REVIEWS");
+  const reviewedPreview = await result(USERS.managerA, editPath + "/reschedule-slots", 409, {
+    expected_version: rescheduled.version,
+  });
+  assert.equal(reviewedPreview.error.code, "VISIT_HAS_REVIEWS");
+  assert.equal((await result(USERS.managerA, editPath, 200)).can_reschedule, false);
+  bookingTime = undefined;
+  const replacement = await result(USERS.customerA, "visit-core/requests", 201, {
+    customer_id: customer,
+    operation_id: randomUUID(),
+    start: day + "T14:00:00Z",
+    segments: [segment],
+  });
+  assert.notEqual(replacement.booking_id, rescheduled.booking_id);
+  assert.equal((await transition(replacement, "confirm")).state, "confirmed");
+  assert.deepEqual(await reservations(), reviewedReservations);
+  assert.deepEqual(await history(), beforeCutoffHistory);
+  assert.deepEqual((await result(USERS.managerA, editPath, 200)).segments, reviewedVisit.segments);
+  assert.deepEqual(await result(USERS.managerA, reviewPath + "-feedback", 200), management);
+  const afterReplacement = (
+    await result(USERS.customerA, "visit-core/view", 200)
+  ).professionals.find((p) => p.professional_id === professional);
+  assert.deepEqual([afterReplacement.rating_average, afterReplacement.rating_count], [5, 1]);
   await fixture.admin.query("SELECT mawid_core.anonymize_customer($1,$2)", [w, customer]);
   const erased = await result(USERS.managerA, reviewPath + "-feedback", 200);
   assert.equal(erased.reviews[0].feedback, null);
   await result(USERS.customerA, reviewPath, 404);
+  await fixture.admin.query(
+    "UPDATE mawid_core.memberships SET revoked_at=clock_timestamp() WHERE workspace_id=$1 AND actor_id=$2",
+    [w, IDS.managerActorA],
+  );
+  await result(USERS.managerA, editPath + "/reschedule", 404, reschedule);
   console.log(
-    "Signed review ownership, scheduling, revision suppression, uniqueness, ratings and erasure verified.",
+    "Signed review ownership, reschedule cutoff and replay, scheduling, revision suppression, ratings and erasure verified.",
   );
 } finally {
   await server.close();

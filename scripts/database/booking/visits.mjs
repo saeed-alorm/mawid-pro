@@ -8,6 +8,13 @@ const terminal = ["cancelled", "declined", "withdrawn", "expired"];
 const partner = (x) => x.roles.some((role) => role === "admin" || role === "manager");
 const key = (x, b) => [x.w, x.l, b.booking_id];
 const scope = "workspace_id=$1 AND location_id=$2 AND booking_id=$3";
+const visitSelect = `SELECT b.*, EXISTS (
+  SELECT 1 FROM mawid_core.visit_reviews r
+  WHERE (r.workspace_id,r.location_id,r.booking_id)=(b.workspace_id,b.location_id,b.booking_id)
+) AS has_reviews FROM mawid_core.bookings b`;
+const headerScope = "b.workspace_id=$1 AND b.location_id=$2 AND b.booking_id=$3";
+const rescheduleBlock = (x, b) =>
+  b.has_reviews ? "VISIT_HAS_REVIEWS" : x.now < +b.assigned_start ? null : "RESCHEDULE_CUTOFF";
 const sortKeys = (value) => {
   if (Array.isArray(value)) return value.map(sortKeys);
   if (value && typeof value === "object")
@@ -195,14 +202,15 @@ export class VisitBookings {
 
   async rescheduleSlots(user, w, l, id, input) {
     return this.core.run(user, w, l, async (x) => {
-      const b = (await x.c.query(`SELECT * FROM mawid_core.bookings WHERE ${scope}`, [w, l, id]))
-        .rows[0];
+      const b = (await x.c.query(`${visitSelect} WHERE ${headerScope}`, [w, l, id])).rows[0];
       if (!b) this.fail(404, "NOT_FOUND");
       const segments = await segmentsFor(x, b);
       this.project(x, b, segments);
       if (!partner(x)) this.fail(403, "ACTION_DENIED");
       if (String(b.version) !== input.expected_version) this.fail(409, "STALE_VERSION");
       if (b.state !== "confirmed") this.fail(409, "INVALID_TRANSITION");
+      const blocked = rescheduleBlock(x, b);
+      if (blocked) this.fail(409, blocked);
       const assignments = this.assignments(segments, input.assignments, "reschedule");
       if (assignments.some((professional) => !professional)) this.fail(409, "ASSIGNMENT_REQUIRED");
       const slots = await this.slots(x, savedSpecs(segments), {
@@ -246,6 +254,7 @@ export class VisitBookings {
       ...this.core.project(x, b),
       contract_version: 2,
       segments: segments.map(segmentProjection),
+      ...(partner(x) && b.state === "confirmed" ? { can_reschedule: !rescheduleBlock(x, b) } : {}),
       ...(partner(x) && b.intake_source
         ? { intake_source: b.intake_source, entered_by: b.entered_by }
         : {}),
@@ -255,8 +264,7 @@ export class VisitBookings {
   async read(user, w, l, id) {
     return this.core.run(user, w, l, async (x) => {
       await this.core.expire(x);
-      const b = (await x.c.query(`SELECT * FROM mawid_core.bookings WHERE ${scope}`, [w, l, id]))
-        .rows[0];
+      const b = (await x.c.query(`${visitSelect} WHERE ${headerScope}`, [w, l, id])).rows[0];
       if (!b) this.fail(404, "NOT_FOUND");
       return this.project(x, b, await segmentsFor(x, b));
     });
@@ -281,7 +289,7 @@ export class VisitBookings {
         ...ratingByProfessional.get(p.professional_id),
       }));
       const { rows } = await x.c.query(
-        `SELECT b.* FROM mawid_core.bookings b
+        `${visitSelect}
          WHERE b.workspace_id=$1 AND b.location_id=$2 AND ($3::uuid IS NULL OR b.booking_id>$3)
            AND ($4::boolean OR b.customer_id=ANY($5::uuid[]) OR EXISTS(
              SELECT 1 FROM mawid_core.visit_segments s
@@ -390,8 +398,7 @@ export class VisitBookings {
     return this.core.run(user, w, l, async (x) => {
       const { c, actor, now } = x;
       let b = id
-        ? (await c.query(`SELECT * FROM mawid_core.bookings WHERE ${scope} FOR UPDATE`, [w, l, id]))
-            .rows[0]
+        ? (await c.query(`${visitSelect} WHERE ${headerScope} FOR UPDATE OF b`, [w, l, id])).rows[0]
         : null;
       if (id && !b) this.fail(404, "NOT_FOUND");
       let segments = b ? await segmentsFor(x, b) : [];
@@ -527,6 +534,10 @@ export class VisitBookings {
         const required =
           action === "reschedule" ? "confirmed" : action === "accept" ? "proposed" : "pending";
         if (b.state !== required) this.fail(409, "INVALID_TRANSITION");
+        if (action === "reschedule") {
+          const blocked = rescheduleBlock(x, b);
+          if (blocked) this.fail(409, blocked);
+        }
         if (assignment.some((professional) => !professional)) this.fail(409, "ASSIGNMENT_REQUIRED");
         if (
           !alternative &&
