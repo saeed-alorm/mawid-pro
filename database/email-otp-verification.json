@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-16T11:38:07.515Z",
+  "generated_at": "2026-11-17T20:32:32.235Z",
   "node": "v24.22.1",
   "images": [
     "postgres:17.12-bookworm@sha256:40865bc877a289da75963d97d72b59633f639fc5af7a4e856bfa3714cae5b536",
@@ -18,6 +18,10 @@
     },
     {
       "name": "a delivered six-digit Email OTP creates a verified provider session",
+      "passed": true
+    },
+    {
+      "name": "native session projection and notification destinations use real current Auth state",
       "passed": true
     },
     {
@@ -84,11 +88,11 @@
   "files": [
     {
       "name": "scripts/database/identity/session-gate.mjs",
-      "sha256": "0bf3dfb313e574f1af587a2c5e84dc14711f4a3bc9a2fd071469e43ff8e19d8f"
+      "sha256": "88c24d8d511c4c6465288408ca9de0c7541ac7b3384ae11ef7c3597cc9a25e06"
     },
     {
       "name": "scripts/database/identity/verified-data.mjs",
-      "sha256": "af7715186a1446c73761b87b496cf04f2c2e07c5ef3b8e46c7867967833122a4"
+      "sha256": "b7a421d3d5793dcef0f85120d4f5b6cc7eae6a619299aa43c5116ed1e4502651"
     },
     {
       "name": "scripts/database/identity/verified-pg-fixture.mjs",
@@ -96,15 +100,15 @@
     },
     {
       "name": "scripts/database/identity/postgres-session-reader.mjs",
-      "sha256": "43e5be5eceaa77ac3d59c55377b6c1d5ad6b4d6fb8d7733900e146ec724b9bc8"
+      "sha256": "6352cd46de25bd27a68f2086a776aceffdbab3e40e559eb0f97f898ff859148a"
     },
     {
       "name": "scripts/database/identity/auth-fixture.mjs",
-      "sha256": "a432c02c7a97a23401db20d973c4ca783b6ab78b89258fddf889fb69a6bfa9df"
+      "sha256": "e5f87cad5168efb49e92cd28bcc7b5f08b9e66f1c83cd3f73d16d8f715e97919"
     },
     {
       "name": "scripts/database/identity/verify-email-otp.mjs",
-      "sha256": "08fb59e886ca8f36adba814d8052d75c407b4654d82c17e1c0b9a452c4932032"
+      "sha256": "b7ed7aad43b75d8bd17e4aa14a322b63eb092bdc70d22879d22e4a7f5ed74f0f"
     },
     {
       "name": "scripts/database/identity/templates/email-otp.html",
@@ -112,7 +116,7 @@
     },
     {
       "name": "scripts/database/api/http-server.mjs",
-      "sha256": "100d7fc8af94f096e9b9513350bef47c3511d6c9a6329725f73aa71b8cac21c5"
+      "sha256": "918b0d7a5efa377577c6012e59e0f3bc235e97ec4acc2da1a205399251bf2297"
     },
     {
       "name": "scripts/database/api/data-service.mjs",

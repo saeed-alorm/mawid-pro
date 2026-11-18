@@ -66,6 +66,11 @@ the code on the MAWID staging page and look for **Email verified**. The page
 confirms the account with Supabase and keeps the session in memory until sign-out,
 expiry, or reload. Booking and staff access remain unavailable in this build.
 
+The separate [verified booking preparation](docs/engineering/native-completion-public-handoff.md)
+adds a locally verified staging adapter and reviewed configuration example. It is
+not deployed; hosted grants, write rehearsal and keyless sender configuration
+remain required. Pilot access stays disabled.
+
 ## Source map
 
 - `src/routes/`, `src/router.tsx`: routing and application shell.

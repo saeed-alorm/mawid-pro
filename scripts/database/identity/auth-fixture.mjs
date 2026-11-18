@@ -2,6 +2,7 @@ import { createServer } from "node:net";
 import { execFileSync, spawnSync } from "node:child_process";
 import { randomBytes, randomUUID } from "node:crypto";
 import { fileURLToPath } from "node:url";
+import { readFileSync } from "node:fs";
 import { exportJWK, generateKeyPair } from "jose";
 import { Pool } from "pg";
 import { postgresSessionReader } from "./postgres-session-reader.mjs";
@@ -263,6 +264,22 @@ export async function createAuthFixture(fixture) {
         readerPassword +
         "'; GRANT mawid_identity_reader TO mawid_fixture_identity; GRANT USAGE ON SCHEMA auth TO mawid_fixture_identity; GRANT SELECT(id,user_id,created_at,updated_at,not_after) ON auth.sessions TO mawid_fixture_identity; GRANT SELECT(id,banned_until,deleted_at,email_confirmed_at) ON auth.users TO mawid_fixture_identity; CREATE POLICY fixture_identity_session ON auth.sessions FOR SELECT TO mawid_fixture_identity USING (id=NULLIF(current_setting('mawid.verified_session',true),'')::uuid AND user_id=NULLIF(current_setting('mawid.verified_subject',true),'')::uuid); CREATE POLICY fixture_identity_user ON auth.users FOR SELECT TO mawid_fixture_identity USING (id=NULLIF(current_setting('mawid.verified_subject',true),'')::uuid);",
     );
+    // Exercise the exact approved hosted session function against disposable
+    // real Auth, without changing hosted Auth grants or deploying anything.
+    const reviewed = readFileSync(
+      new URL("../../../supabase/hosted/staging-grants.review.sql", import.meta.url),
+      "utf8",
+    );
+    const sessionSql = reviewed.slice(
+      reviewed.indexOf("CREATE OR REPLACE FUNCTION"),
+      reviewed.indexOf("REVOKE ALL"),
+    );
+    if (!sessionSql.startsWith("CREATE OR REPLACE FUNCTION mawid_core.staging_auth_session()"))
+      throw Error("INVALID_HOSTED_SESSION_REVIEW");
+    await fixture.admin.query(
+      sessionSql +
+        "REVOKE ALL ON FUNCTION mawid_core.staging_auth_session() FROM PUBLIC; GRANT EXECUTE ON FUNCTION mawid_core.staging_auth_session() TO mawid_fixture_identity;",
+    );
     identityReader = new Pool({
       ...c,
       user: "mawid_fixture_identity",
@@ -292,7 +309,11 @@ export async function createAuthFixture(fixture) {
       audience: "authenticated",
       jwks: { keys: [publicJwk] },
       policy,
-      readSession: postgresSessionReader(identityReader, { issuer, ...policy }),
+      readSession: postgresSessionReader(identityReader, {
+        issuer,
+        ...policy,
+        hostedStaging: true,
+      }),
     });
     return {
       gate,
@@ -302,9 +323,14 @@ export async function createAuthFixture(fixture) {
         const {
           rows: [counts],
         } = await identityReader.query(
-          "SELECT (SELECT count(*) FROM auth.sessions) AS sessions,(SELECT count(*) FROM auth.users) AS users,(SELECT count(*) FROM mawid_core.identity_bindings) AS bindings",
+          "SELECT (SELECT count(*) FROM auth.sessions) AS sessions,(SELECT count(*) FROM auth.users) AS users,(SELECT count(*) FROM mawid_core.identity_bindings) AS bindings,(SELECT count(*) FROM mawid_core.staging_auth_session()) AS hosted_sessions",
         );
-        return counts.sessions === "0" && counts.users === "0" && counts.bindings === "0";
+        return (
+          counts.sessions === "0" &&
+          counts.users === "0" &&
+          counts.bindings === "0" &&
+          counts.hosted_sessions === "0"
+        );
       },
       async mailCount(email) {
         return (await mailbox(email)).length;

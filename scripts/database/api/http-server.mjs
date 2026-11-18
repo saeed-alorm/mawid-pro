@@ -4,6 +4,7 @@ import { z } from "zod";
 import { parseImport, exportCsv } from "../csv.mjs";
 import { BookingError, LEGACY_VISIT_UPDATE_REQUIRED } from "../booking/service.mjs";
 import { SessionError } from "../identity/session-gate.mjs";
+import { APPLICATIONS, ENVIRONMENTS } from "../notifications/applications.mjs";
 
 const uuid = z.string().regex(/^[a-f0-9]{8}(-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i);
 const page = z
@@ -154,22 +155,28 @@ function paginated(rows, limit, idKey) {
   };
 }
 
-export async function startLocalDataServer(
+export async function createDataServer(
   service,
-  { port = 0, log = (event) => console.error(JSON.stringify(event)), booking, notifications } = {},
+  {
+    origin: configuredOrigin,
+    mode = "fictional-local",
+    log = (event) => console.error(JSON.stringify(event)),
+    booking,
+    notifications,
+  } = {},
 ) {
   // No public listener or login/actor-selection endpoint. Sessions are issued by the fixture owner.
   await service.verifyPrincipals();
   await booking?.verify();
   await notifications?.verify();
-  let origin;
-  const server = createServer(
+  return createServer(
     { maxHeaderSize: 16384, requestTimeout: 15000, headersTimeout: 10000 },
     async (req, res) => {
+      const origin = typeof configuredOrigin === "function" ? configuredOrigin() : configuredOrigin;
       const requestId = randomUUID();
       res.setHeader("cache-control", "no-store");
       res.setHeader("x-content-type-options", "nosniff");
-      res.setHeader("x-mawid-mode", "fictional-local");
+      res.setHeader("x-mawid-mode", mode);
       res.setHeader("x-request-id", requestId);
       const send = (status, value) => {
         res.writeHead(status, { "content-type": "application/json; charset=utf-8" });
@@ -183,6 +190,20 @@ export async function startLocalDataServer(
         if (!user) throw new ApiError(401, "SESSION_REQUIRED");
         const url = new URL(req.url, origin);
         if (url.origin !== origin) throw new ApiError(400, "INVALID_REQUEST");
+        if (url.pathname === "/v1/session" && req.method === "GET") {
+          const input = params(url, z.object({ workspace_id: uuid, location_id: uuid }).strict());
+          if (!booking) throw new ApiError(404, "NOT_FOUND");
+          return send(
+            200,
+            await booking.run(user, input.workspace_id, input.location_id, async (x) => ({
+              actor_id: x.actor,
+              workspace_id: x.w,
+              location_id: x.l,
+              roles: x.roles,
+              customer_ids: x.customers,
+            })),
+          );
+        }
         if (url.pathname === "/v1/workspaces" && req.method === "GET") {
           const workspaces = await service.transaction(user, async (client) => {
             const result = await client.query(`
@@ -209,15 +230,16 @@ export async function startLocalDataServer(
           );
         if (notifications && noticeRoute) {
           const location = validate(uuid, noticeRoute[1]);
-          if (!noticeRoute[2].startsWith("inbox")) params(url, z.object({}).strict());
+          if (req.method === "POST" && noticeRoute[2] === "registrations")
+            params(url, z.object({}).strict());
           if (req.method === "POST" && noticeRoute[2] === "registrations") {
             const input = await jsonBody(
               req,
               z
                 .object({
                   installation_id: uuid,
-                  application_id: z.literal("com.mawid.demo"),
-                  environment: z.literal("development"),
+                  application_id: z.enum(APPLICATIONS),
+                  environment: z.enum(ENVIRONMENTS),
                   locale: z.enum(["en", "ar"]),
                   token: z
                     .string()
@@ -229,7 +251,16 @@ export async function startLocalDataServer(
             );
             return send(200, await notifications.register(user, workspace, location, input));
           }
-          if (req.method === "DELETE" && noticeRoute[3])
+          if (req.method === "DELETE" && noticeRoute[3]) {
+            const scope = params(
+              url,
+              z
+                .object({
+                  application_id: z.enum(APPLICATIONS).default("com.mawid.demo"),
+                  environment: z.enum(ENVIRONMENTS).default("development"),
+                })
+                .strict(),
+            );
             return send(
               200,
               await notifications.unregister(
@@ -237,8 +268,10 @@ export async function startLocalDataServer(
                 workspace,
                 location,
                 validate(uuid, noticeRoute[3]),
+                scope,
               ),
             );
+          }
           if (req.method === "GET" && noticeRoute[2] === "inbox") {
             const { contract } = params(
               url,
@@ -707,6 +740,11 @@ export async function startLocalDataServer(
       }
     },
   );
+}
+
+export async function startLocalDataServer(service, { port = 0, ...options } = {}) {
+  let origin;
+  const server = await createDataServer(service, { ...options, origin: () => origin });
   await new Promise((resolve, reject) => {
     server.once("error", reject);
     server.listen(port, "127.0.0.1", resolve);

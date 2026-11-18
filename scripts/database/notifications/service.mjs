@@ -2,6 +2,8 @@ import { Pool } from "pg";
 import { randomUUID } from "node:crypto";
 import { BookingError } from "../booking/service.mjs";
 import { TokenVault, retryDelay, MAX_ATTEMPTS } from "./policy.mjs";
+import { applicationAllows } from "./applications.mjs";
+import { VerifiedDataService } from "../identity/verified-data.mjs";
 
 const denied = () => {
   throw new BookingError(404, "NOT_FOUND");
@@ -20,15 +22,30 @@ const segmentProfessionals = (booking = "b") => `ARRAY(
     AND coalesce(s.assigned_professional_id,s.requested_professional_id) IS NOT NULL
 )`;
 
-export class LocalNotifications {
-  constructor(data, booking, config, { key, sender, now = Date.now, random = Math.random } = {}) {
+const fixtureAuthority = Symbol("local-notification-fixture");
+export class Notifications {
+  constructor(
+    data,
+    booking,
+    config,
+    {
+      key,
+      sender,
+      now = Date.now,
+      random = Math.random,
+      environment = "development",
+      applicationScopes,
+    } = {},
+    authority,
+  ) {
     if (
-      config?.host !== "127.0.0.1" ||
-      config.user !== "mawid_fixture_notify" ||
-      !/^mawid_local_data_[a-f0-9]+$/.test(config.database) ||
-      !sender?.send
+      (authority !== fixtureAuthority && !(data instanceof VerifiedDataService)) ||
+      !sender?.send ||
+      !["development", "staging"].includes(environment)
     )
       throw Error("INVALID_NOTIFICATION_CONFIG");
+    this.environment = environment;
+    this.applicationScopes = applicationScopes;
     this.data = data;
     this.booking = booking;
     this.sender = sender;
@@ -51,7 +68,7 @@ export class LocalNotifications {
     const {
       rows: [r],
     } = await this.pool.query(
-      "SELECT rolsuper OR rolbypassrls OR rolcreatedb OR rolcreaterole OR rolreplication AS privileged,pg_has_role(current_user,'mawid_local_notify','MEMBER') AS worker,pg_has_role(current_user,'mawid_local_actor','MEMBER') AS actor FROM pg_roles WHERE rolname=session_user",
+      "SELECT rolsuper OR rolbypassrls OR rolcreatedb OR rolcreaterole OR rolreplication AS privileged,pg_has_role(current_user,'mawid_local_notify','MEMBER') AS worker,pg_has_role(current_user,'mawid_local_actor','MEMBER') OR pg_has_role(current_user,'mawid_local_booking','MEMBER') OR pg_has_role(current_user,'mawid_local_maintenance','MEMBER') AS actor FROM pg_roles WHERE rolname=session_user",
     );
     if (!r || r.privileged || !r.worker || r.actor) throw Error("UNSAFE_NOTIFICATION_WORKER");
   }
@@ -103,6 +120,18 @@ export class LocalNotifications {
       async (c) => (await c.query("SELECT mawid_core.actor() AS id")).rows[0].id,
     );
   }
+  applicationAllowed(application, access, w, l, kind = "booking") {
+    return (
+      applicationAllows(application, access, kind) &&
+      (!this.applicationScopes ||
+        this.applicationScopes.some(
+          (s) =>
+            s.application_id === application &&
+            s.workspace_id === w &&
+            (s.location_id === null || s.location_id === l),
+        ))
+    );
+  }
   async scope(c, actor, w, l) {
     const a = await this.access(c, actor, w, l);
     if (
@@ -120,16 +149,20 @@ export class LocalNotifications {
   async register(user, w, l, input) {
     const actor = await this.actor(user),
       digest = this.vault.digest(input.token);
+    const identity = await this.data.notificationIdentity?.(user);
     return this.transaction(async (c) => {
       await c.query("SELECT pg_advisory_xact_lock(hashtextextended($1,8))", [digest]);
       await this.data.assertSession?.(user);
-      await this.scope(c, actor, w, l);
+      const access = await this.scope(c, actor, w, l);
+      if (!this.applicationAllowed(input.application_id, access, w, l)) denied();
+      if (input.environment !== (this.environment ?? "development"))
+        throw new BookingError(422, "VALIDATION_FAILED");
       // Possession of a token or guessed installation ID never changes its actor.
       if (
         (
           await c.query(
-            "SELECT 1 FROM mawid_core.push_destinations WHERE token_digest=$1 AND actor_id<>$2 AND revoked_at IS NULL",
-            [digest, actor],
+            "SELECT 1 FROM mawid_core.push_destinations WHERE token_digest=$1 AND (actor_id<>$2 OR application_id<>$3 OR environment<>$4) AND revoked_at IS NULL",
+            [digest, actor, input.application_id, input.environment],
           )
         ).rows.length
       )
@@ -148,9 +181,9 @@ export class LocalNotifications {
       };
       const ciphertext = this.vault.encrypt(input.token, binding(row));
       await c.query(
-        `INSERT INTO mawid_core.push_destinations(destination_id,workspace_id,location_id,actor_id,installation_id,application_id,environment,locale,token_ciphertext,token_digest)
-        VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
-        ON CONFLICT(destination_id) DO UPDATE SET token_ciphertext=EXCLUDED.token_ciphertext,token_digest=EXCLUDED.token_digest,locale=EXCLUDED.locale,updated_at=clock_timestamp(),revoked_at=NULL,version=mawid_core.push_destinations.version+1`,
+        `INSERT INTO mawid_core.push_destinations(destination_id,workspace_id,location_id,actor_id,installation_id,application_id,environment,locale,token_ciphertext,token_digest,identity_issuer,identity_subject,identity_session,identity_binding_version)
+        VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
+        ON CONFLICT(destination_id) DO UPDATE SET token_ciphertext=EXCLUDED.token_ciphertext,token_digest=EXCLUDED.token_digest,locale=EXCLUDED.locale,identity_issuer=EXCLUDED.identity_issuer,identity_subject=EXCLUDED.identity_subject,identity_session=EXCLUDED.identity_session,identity_binding_version=EXCLUDED.identity_binding_version,updated_at=clock_timestamp(),revoked_at=NULL,version=mawid_core.push_destinations.version+1`,
         [
           row.destination_id,
           w,
@@ -162,17 +195,28 @@ export class LocalNotifications {
           input.locale,
           ciphertext,
           digest,
+          identity?.issuer ?? null,
+          identity?.subject ?? null,
+          identity?.sessionId ?? null,
+          identity?.bindingVersion ?? null,
         ],
       );
       return { destination_id: row.destination_id, registered: true };
     }, user);
   }
-  async unregister(user, w, l, installation) {
+  async unregister(
+    user,
+    w,
+    l,
+    installation,
+    { application_id = "com.mawid.demo", environment = "development" } = {},
+  ) {
     const actor = await this.actor(user);
+    const identity = await this.data.notificationIdentity?.(user);
     await this.transaction(async (c) => {
       await c.query(
-        "UPDATE mawid_core.push_destinations SET revoked_at=clock_timestamp(),token_ciphertext='',version=version+1 WHERE workspace_id=$1 AND location_id=$2 AND actor_id=$3 AND installation_id=$4",
-        [w, l, actor, installation],
+        "UPDATE mawid_core.push_destinations SET revoked_at=clock_timestamp(),token_ciphertext='',version=version+1 WHERE workspace_id=$1 AND location_id=$2 AND actor_id=$3 AND installation_id=$4 AND application_id=$5 AND environment=$6 AND ($7::uuid IS NULL OR identity_session=$7)",
+        [w, l, actor, installation, application_id, environment, identity?.sessionId ?? null],
       );
     }, user);
     return { registered: false };
@@ -192,7 +236,7 @@ export class LocalNotifications {
         AND ($5 OR b.customer_id=ANY($6::uuid[]) OR ${segmentProfessionals()} && $7::uuid[])
         AND (n.kind<>'pending_reminder' OR ($5 AND b.state='pending'))
         AND ($8 OR (b.segment_count=1 AND n.kind<>'review_invitation'))
-        AND (n.kind<>'review_invitation' OR (n.actor_id=$3 AND b.customer_id=ANY($6::uuid[])))
+        AND (n.kind<>'review_invitation' OR (n.actor_id=$3 AND b.customer_id=ANY($6::uuid[]) AND b.state='confirmed' AND e.version=b.version AND $9))
         GROUP BY n.notification_id,e.booking_id,e.version,b.state ORDER BY n.created_at DESC,n.notification_id LIMIT 50`,
           [
             w,
@@ -203,6 +247,7 @@ export class LocalNotifications {
             a.customers,
             a.professionals,
             visitContract,
+            a.roles.length === 0,
           ],
         )
       ).rows;
@@ -222,7 +267,7 @@ export class LocalNotifications {
       const a = await this.scope(c, actor, w, l);
       const n = (
         await c.query(
-          `SELECT n.actor_id,n.kind,e.booking_id,b.customer_id,b.state,b.segment_count,
+          `SELECT n.actor_id,n.kind,e.booking_id,e.version,b.version AS current_version,b.customer_id,b.state,b.segment_count,
           ${segmentProfessionals()} AS professional_ids FROM mawid_core.notification_inbox n
         JOIN mawid_core.booking_events e USING(workspace_id,event_id) JOIN mawid_core.bookings b USING(workspace_id,location_id,booking_id)
         WHERE n.notification_id=$1 AND n.workspace_id=$2 AND e.location_id=$3`,
@@ -232,7 +277,9 @@ export class LocalNotifications {
       if (!n || n.actor_id !== actor || !canRead(a, n)) denied();
       if (
         n.kind === "review_invitation" &&
-        actor !== (await this.reviewRecipient(c, { ...n, workspace_id: w, location_id: l }))
+        (n.state !== "confirmed" ||
+          n.version !== n.current_version ||
+          actor !== (await this.reviewRecipient(c, { ...n, workspace_id: w, location_id: l })))
       )
         denied();
       if (!visitContract && (n.segment_count !== 1 || n.kind === "review_invitation")) denied();
@@ -248,9 +295,15 @@ export class LocalNotifications {
       return n;
     }, user);
     // Fresh server booking projection authorizes again, including expired offers.
-    return visitContract
+    const projection = await (visitContract
       ? this.booking.visits.read(user, w, l, row.booking_id)
-      : this.booking.read(user, w, l, row.booking_id);
+      : this.booking.read(user, w, l, row.booking_id));
+    if (
+      row.kind === "review_invitation" &&
+      (projection.state !== "confirmed" || projection.version !== row.version)
+    )
+      denied();
+    return { ...projection, notification_kind: row.kind, notification_id: notification };
   }
   async enqueue(c, e, actor, kind, stale = false) {
     const n = (
@@ -261,12 +314,21 @@ export class LocalNotifications {
         [e.workspace_id, e.event_id, actor, kind],
       )
     ).rows[0];
+    const access = await this.access(c, actor, e.workspace_id, e.location_id);
     const destinations = (
       await c.query(
-        "SELECT destination_id FROM mawid_core.push_destinations WHERE workspace_id=$1 AND location_id=$2 AND actor_id=$3 AND revoked_at IS NULL AND updated_at>$4",
-        [e.workspace_id, e.location_id, actor, new Date(this.now() - 90 * 86400000)],
+        "SELECT destination_id,application_id FROM mawid_core.push_destinations WHERE workspace_id=$1 AND location_id=$2 AND actor_id=$3 AND revoked_at IS NULL AND updated_at>$4 AND environment=$5",
+        [
+          e.workspace_id,
+          e.location_id,
+          actor,
+          new Date(this.now() - 90 * 86400000),
+          this.environment ?? "development",
+        ],
       )
-    ).rows;
+    ).rows.filter((d) =>
+      this.applicationAllowed(d.application_id, access, e.workspace_id, e.location_id, kind),
+    );
     if (!destinations.length) destinations.push({ destination_id: null });
     for (const d of destinations)
       await c.query(
@@ -409,7 +471,7 @@ export class LocalNotifications {
       const row = (
         await c.query(
           `SELECT n.actor_id,n.notification_id,n.workspace_id,n.event_id,n.kind,e.location_id,e.version,e.action,b.customer_id,b.state,b.version AS current_version,${segmentProfessionals()} AS professional_ids,
-        p.destination_id,p.application_id,p.environment,p.locale,p.token_ciphertext,p.version AS destination_version,p.revoked_at,p.updated_at
+        p.destination_id,p.application_id,p.environment,p.locale,p.token_ciphertext,p.version AS destination_version,p.revoked_at,p.updated_at,p.identity_issuer,p.identity_subject,p.identity_session,p.identity_binding_version
         FROM mawid_core.notification_inbox n JOIN mawid_core.booking_events e USING(workspace_id,event_id)
         JOIN mawid_core.bookings b USING(workspace_id,location_id,booking_id)
         LEFT JOIN mawid_core.push_destinations p ON p.destination_id=$2 AND p.actor_id=n.actor_id AND p.workspace_id=n.workspace_id AND p.location_id=e.location_id WHERE n.notification_id=$1`,
@@ -417,6 +479,22 @@ export class LocalNotifications {
         )
       ).rows[0];
       if (!row) return { skip: "NOT_FOUND" };
+      if (
+        this.data.notificationSessionActive &&
+        !(await this.data.notificationSessionActive({
+          issuer: row.identity_issuer,
+          subject: row.identity_subject,
+          sessionId: row.identity_session,
+          principal: row.actor_id,
+          bindingVersion: row.identity_binding_version,
+        }))
+      ) {
+        await c.query(
+          "UPDATE mawid_core.push_destinations SET revoked_at=clock_timestamp(),token_ciphertext='',version=version+1 WHERE destination_id=$1 AND version=$2",
+          [row.destination_id, row.destination_version],
+        );
+        return { skip: "ACCESS_REVOKED" };
+      }
       const a = await this.access(c, row.actor_id, row.workspace_id, row.location_id);
       if (
         !canRead(a, row) ||
@@ -438,7 +516,16 @@ export class LocalNotifications {
           : row.version !== row.current_version
       )
         return { skip: "SUPERSEDED" };
-      if (row.application_id !== "com.mawid.demo" || row.environment !== "development")
+      if (
+        !this.applicationAllowed(
+          row.application_id,
+          a,
+          row.workspace_id,
+          row.location_id,
+          row.kind,
+        ) ||
+        row.environment !== (this.environment ?? "development")
+      )
         return { skip: "ENVIRONMENT_MISMATCH" };
       return row;
     });
@@ -543,6 +630,9 @@ export class LocalNotifications {
                   deliveryId: job.delivery_id,
                   locale: target.locale,
                   applicationId: target.application_id,
+                  environment: target.environment,
+                  workspaceId: target.workspace_id,
+                  locationId: target.location_id,
                   signal: controller.signal,
                 }),
                 new Promise((resolve) =>
@@ -565,5 +655,17 @@ export class LocalNotifications {
     }
     await this.reconcile();
     return { processed };
+  }
+}
+
+export class LocalNotifications extends Notifications {
+  constructor(data, booking, config, options) {
+    if (
+      config?.host !== "127.0.0.1" ||
+      config.user !== "mawid_fixture_notify" ||
+      !/^mawid_local_data_[a-f0-9]+$/.test(config.database)
+    )
+      throw Error("INVALID_NOTIFICATION_CONFIG");
+    super(data, booking, config, options, fixtureAuthority);
   }
 }

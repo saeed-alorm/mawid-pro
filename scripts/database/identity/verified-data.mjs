@@ -44,6 +44,13 @@ export class VerifiedDataService extends ScopedDataService {
     return this.#gate.principal(handle);
   }
 
+  notificationIdentity(handle) {
+    return this.#gate.identity(handle);
+  }
+  notificationSessionActive(identity) {
+    return this.#gate.notificationSessionActive(identity);
+  }
+
   async transaction(handle, fn) {
     await this.assertSession(handle);
     return dataTransaction(this.#pool, async (client) => {

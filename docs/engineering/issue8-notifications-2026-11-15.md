@@ -1,5 +1,11 @@
 # Issue #8: local transactional notifications
 
+**17 November preparation:** the [native integration handoff](native-completion-public-handoff.md)
+records package-scoped customer/management registration, session-bound dispatch,
+current visit/review opening, and the separate staging adapter/configuration review.
+Earlier demo-only descriptions below are the dated original slice. Hosted
+configuration and device delivery are separate evidence gates; pilot access remains disabled.
+
 Tracks [#8](https://github.com/saeed-alorm/mawid-pro/issues/8), FEAT-32/34.
 Base main: `f6b9a98656d681dbac2060c925dfa7e0e754ee0e` (merged #23, with #21/#22).
 Real authentication remains in [#5](https://github.com/saeed-alorm/mawid-pro/issues/5).
@@ -47,12 +53,12 @@ creates no overdue pushes, reminders or new booking events on a timer.
 
 All endpoints require the existing server-issued session:
 
-| Method | Path beneath `/v1/workspaces/:workspace/locations/:location/notifications/` |
-| --- | --- |
-| POST | `registrations` — installation UUID, server-allowlisted application/environment, EN/AR locale and private token |
-| DELETE | `registrations/:installation` — revoke this actor's scoped installation |
-| GET | `inbox` — bounded status list with authoritative current booking state |
-| POST | `inbox/:notification/open` — idempotent open and fresh authorized booking projection |
+| Method | Path beneath `/v1/workspaces/:workspace/locations/:location/notifications/`                                     |
+| ------ | --------------------------------------------------------------------------------------------------------------- |
+| POST   | `registrations` — installation UUID, server-allowlisted application/environment, EN/AR locale and private token |
+| DELETE | `registrations/:installation` — revoke this actor's scoped installation                                         |
+| GET    | `inbox` — bounded status list with authoritative current booking state                                          |
+| POST   | `inbox/:notification/open` — idempotent open and fresh authorized booking projection                            |
 
 Actor identity comes from the session, never registration tokens, application IDs,
 brand values or request fields. Registration, dispatch and opening all recheck

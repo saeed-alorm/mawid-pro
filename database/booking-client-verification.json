@@ -2,7 +2,7 @@
   "mode": "fictional-local-only",
   "notification_transport": "simulated",
   "device_acceptance": false,
-  "generated_at": "2026-11-17T13:41:09.074Z",
+  "generated_at": "2026-11-17T20:29:52.580Z",
   "checks": [
     {
       "name": "view and slots authorize customer scope, deny cross-shop access and omit staff-only metadata",
@@ -14,6 +14,14 @@
     },
     {
       "name": "manager assigns Any without reservation; separate admin confirms; customer UI and notification refresh to v3",
+      "passed": true
+    },
+    {
+      "name": "management previews the saved visit with its existing reservation and timings",
+      "passed": true
+    },
+    {
+      "name": "availability preserves partial results and lets the customer continue or pick a date",
       "passed": true
     },
     {
@@ -37,14 +45,20 @@
       "passed": true
     },
     {
+      "name": "employee-first Arabic booking retains the first preference and adds an independent service",
+      "passed": true
+    },
+    {
       "name": "revoked customer refresh clears all cached bookings in the actual UI",
       "passed": true
     }
   ],
   "sha256": {
-    "scripts/database/booking/service.mjs": "7b396eb9ecbbff365f45bc255a3e0faa6e475f38457e0c9e0e77e7666bbef775",
-    "scripts/database/api/http-server.mjs": "100d7fc8af94f096e9b9513350bef47c3511d6c9a6329725f73aa71b8cac21c5",
-    "src/lib/booking-client.ts": "31017bafcb4a7e7060d8eef314e9e321bbada8a33e292e69e6117884445ed41a",
-    "src/components/server-booking.tsx": "be309aeb6e71b62e3174b1fd3bc8373be13fa057abb315430abc4047dff61610"
+    "scripts/database/booking/service.mjs": "fe8261ea542e1201c6a12c566debf847edae0c74690f041318c8ab67bbc8e09b",
+    "scripts/database/booking/visits.mjs": "d7ea2d0471698c8b7818ecd0924f30d931f3b6da3d92e9498496893fc238ed63",
+    "scripts/database/booking/visit-search.mjs": "d53cfbf8ea672b2a8ed2931bf2b949b4a5f9621fd13ec742f9b213a8ef807fe7",
+    "scripts/database/api/http-server.mjs": "918b0d7a5efa377577c6012e59e0f3bc235e97ec4acc2da1a205399251bf2297",
+    "src/lib/booking-client.ts": "d3a1e47d541b330385bd68d7aa8074a79de54359c8ee2deb1c1b7f7db68c77da",
+    "src/components/server-booking.tsx": "1c7c65d137463e1b7d55d62b3f9f25adc37cf53d6f029b2629e5502fe2eeb24b"
   }
 }

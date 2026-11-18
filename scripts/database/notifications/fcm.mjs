@@ -56,7 +56,18 @@ export class FcmSender {
     // ADC refreshes short-lived access tokens on the trusted server only.
     return new FcmSender({ projectId, getAccessToken: () => auth.getAccessToken() });
   }
-  async send({ token, notificationId, eventId, deliveryId, locale, applicationId, signal }) {
+  async send({
+    token,
+    notificationId,
+    eventId,
+    deliveryId,
+    locale,
+    applicationId,
+    environment = "development",
+    workspaceId,
+    locationId,
+    signal,
+  }) {
     let access;
     try {
       access = await this.#token();
@@ -87,8 +98,11 @@ export class FcmSender {
                 notification_id: notificationId,
                 event_id: eventId,
                 delivery_id: deliveryId,
-                environment: "development",
+                environment,
                 schema: "1",
+                application_id: applicationId,
+                ...(workspaceId ? { workspace_id: workspaceId } : {}),
+                ...(locationId ? { location_id: locationId } : {}),
               },
               android: {
                 priority: "NORMAL",

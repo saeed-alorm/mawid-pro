@@ -1,9 +1,17 @@
 {
-  "generated_at": "2026-11-17T13:34:46.543Z",
+  "generated_at": "2026-11-17T20:33:04.166Z",
   "transport": "simulated",
   "checks": [
     {
       "name": "registration requires an authenticated authorized actor, not a token, package or workspace",
+      "passed": true
+    },
+    {
+      "name": "destination session binding is complete or entirely absent at the database boundary",
+      "passed": true
+    },
+    {
+      "name": "native packages are scoped by application and environment and cannot grant roles",
       "passed": true
     },
     {

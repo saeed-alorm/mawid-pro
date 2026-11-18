@@ -1,0 +1,434 @@
+{
+  "generated_at": "2026-11-17T20:36:46.121Z",
+  "base_commit": "29c7a778b94d4b99a0a6c4b75a017096bd372ab6",
+  "implementation_commit": "e53bc9d00cb9d983e2d773b078f7ee48d885e460",
+  "platform": "Windows; disposable PostgreSQL 17.12 and real Supabase Auth/SMTP catcher; Chromium",
+  "toolchain": {
+    "node": "v24.22.1",
+    "npm": "11.9.0",
+    "wrangler": "4.162.0",
+    "installation": {
+      "command": "npm ci",
+      "passed": true,
+      "packages": 533,
+      "audit_advisories": {
+        "moderate": 7,
+        "high": 14,
+        "critical": 7
+      },
+      "dependency_changes": false
+    }
+  },
+  "initial_checks": [
+    {
+      "command": "npm run test:data-csv",
+      "started": "2026-11-17T20:19:37.085Z",
+      "finished": "2026-11-17T20:19:39.883Z",
+      "exit_code": 0,
+      "error": null,
+      "log": "test-data-csv.log"
+    },
+    {
+      "command": "npm run test:data-api",
+      "started": "2026-11-17T20:19:41.276Z",
+      "finished": "2026-11-17T20:19:56.722Z",
+      "exit_code": 0,
+      "error": null,
+      "log": "test-data-api.log"
+    },
+    {
+      "command": "npm run test:data-auth",
+      "started": "2026-11-17T20:19:58.622Z",
+      "finished": "2026-11-17T20:20:28.377Z",
+      "exit_code": 0,
+      "error": null,
+      "log": "test-data-auth.log"
+    },
+    {
+      "command": "npm run test:identity",
+      "started": "2026-11-17T20:20:30.562Z",
+      "finished": "2026-11-17T20:20:56.835Z",
+      "exit_code": 0,
+      "error": null,
+      "log": "test-identity.log"
+    },
+    {
+      "command": "npm run test:identity-email",
+      "started": "2026-11-17T20:20:59.241Z",
+      "finished": "2026-11-17T20:22:03.029Z",
+      "exit_code": 0,
+      "error": null,
+      "log": "test-identity-email.log"
+    },
+    {
+      "command": "npm run test:booking",
+      "started": "2026-11-17T20:22:04.901Z",
+      "finished": "2026-11-17T20:22:19.944Z",
+      "exit_code": 0,
+      "error": null,
+      "log": "test-booking.log"
+    },
+    {
+      "command": "npm run test:visit-migration",
+      "started": "2026-11-17T20:22:22.137Z",
+      "finished": "2026-11-17T20:22:33.171Z",
+      "exit_code": 0,
+      "error": null,
+      "log": "test-visit-migration.log"
+    },
+    {
+      "command": "npm run test:visits",
+      "started": "2026-11-17T20:22:35.128Z",
+      "finished": "2026-11-17T20:22:57.131Z",
+      "exit_code": 0,
+      "error": null,
+      "log": "test-visits.log"
+    },
+    {
+      "command": "npm run test:reviews",
+      "started": "2026-11-17T20:22:58.845Z",
+      "finished": "2026-11-17T20:23:12.262Z",
+      "exit_code": 0,
+      "error": null,
+      "log": "test-reviews.log"
+    },
+    {
+      "command": "npm run test:meeting-policy",
+      "started": "2026-11-17T20:23:14.442Z",
+      "finished": "2026-11-17T20:23:48.166Z",
+      "exit_code": 0,
+      "error": null,
+      "log": "test-meeting-policy.log"
+    },
+    {
+      "command": "npm run test:notifications",
+      "started": "2026-11-17T20:23:50.264Z",
+      "finished": "2026-11-17T20:24:18.048Z",
+      "exit_code": 0,
+      "error": null,
+      "log": "test-notifications.log"
+    },
+    {
+      "command": "npm run test:data-maintenance",
+      "started": "2026-11-17T20:24:19.849Z",
+      "finished": "2026-11-17T20:24:34.472Z",
+      "exit_code": 0,
+      "error": null,
+      "log": "test-data-maintenance.log"
+    },
+    {
+      "command": "npm run test:data-migrations",
+      "started": "2026-11-17T20:24:36.143Z",
+      "finished": "2026-11-17T20:24:59.413Z",
+      "exit_code": 0,
+      "error": null,
+      "log": "test-data-migrations.log"
+    },
+    {
+      "command": "npm run test",
+      "started": "2026-11-17T20:25:01.259Z",
+      "finished": "2026-11-17T20:25:25.181Z",
+      "exit_code": 0,
+      "error": null,
+      "log": "test.log"
+    },
+    {
+      "command": "npm run lint",
+      "started": "2026-11-17T20:25:27.587Z",
+      "finished": "2026-11-17T20:25:52.935Z",
+      "exit_code": 1,
+      "error": null,
+      "log": "lint.log"
+    },
+    {
+      "command": "npm run typecheck",
+      "started": "2026-11-17T20:25:54.376Z",
+      "finished": "2026-11-17T20:26:22.866Z",
+      "exit_code": 0,
+      "error": null,
+      "log": "typecheck.log"
+    },
+    {
+      "command": "npm run build",
+      "started": "2026-11-17T20:26:24.023Z",
+      "finished": "2026-11-17T20:26:49.416Z",
+      "exit_code": 0,
+      "error": null,
+      "log": "build.log"
+    },
+    {
+      "command": "npm run build:pages",
+      "started": "2026-11-17T20:26:51.735Z",
+      "finished": "2026-11-17T20:27:20.074Z",
+      "exit_code": 0,
+      "error": null,
+      "log": "build-pages.log"
+    },
+    {
+      "command": "npm run verify:pages",
+      "started": "2026-11-17T20:27:22.294Z",
+      "finished": "2026-11-17T20:27:25.230Z",
+      "exit_code": 0,
+      "error": null,
+      "log": "verify-pages.log"
+    },
+    {
+      "command": "npm run verify:toolchain",
+      "started": "2026-11-17T20:27:27.496Z",
+      "finished": "2026-11-17T20:27:30.027Z",
+      "exit_code": 0,
+      "error": null,
+      "log": "verify-toolchain.log"
+    },
+    {
+      "command": "npm run build:staging",
+      "started": "2026-11-17T20:27:31.995Z",
+      "finished": "2026-11-17T20:27:38.408Z",
+      "exit_code": 1,
+      "error": null,
+      "log": "build-staging.log"
+    },
+    {
+      "command": "node node_modules/playwright/cli.js install chromium",
+      "started": "2026-11-17T20:27:40.615Z",
+      "finished": "2026-11-17T20:27:46.999Z",
+      "exit_code": 0,
+      "error": null,
+      "log": "node.log"
+    },
+    {
+      "command": "npm run test:browser -- --workers=1",
+      "started": "2026-11-17T20:27:48.983Z",
+      "finished": "2026-11-17T20:28:11.532Z",
+      "exit_code": 0,
+      "error": null,
+      "log": "test-browser.log"
+    },
+    {
+      "command": "npm run test:booking-clients",
+      "started": "2026-11-17T20:28:13.365Z",
+      "finished": "2026-11-17T20:29:57.338Z",
+      "exit_code": 0,
+      "error": null,
+      "log": "test-booking-clients.log"
+    }
+  ],
+  "corrected_and_additional_checks": [
+    {
+      "name": "final-format",
+      "command": "node.exe node_modules/prettier/bin/prettier.cjs --write scripts/database/notifications/service.mjs scripts/database/notifications/verify.mjs docs/engineering/native-completion-public-handoff.md",
+      "started": "2026-11-17T20:31:12.572Z",
+      "finished": "2026-11-17T20:31:13.442Z",
+      "exit_code": 0,
+      "error": null,
+      "log": "final-format.log"
+    },
+    {
+      "name": "final-test-data-api",
+      "command": "node.exe C:/Users/Saeed/AppData/Local/npm-cache/_npx/837a9a36660814c5/node_modules/npm/bin/npm-cli.js run test:data-api",
+      "started": "2026-11-17T20:31:13.443Z",
+      "finished": "2026-11-17T20:31:26.867Z",
+      "exit_code": 0,
+      "error": null,
+      "log": "final-test-data-api.log"
+    },
+    {
+      "name": "final-test-identity",
+      "command": "node.exe C:/Users/Saeed/AppData/Local/npm-cache/_npx/837a9a36660814c5/node_modules/npm/bin/npm-cli.js run test:identity",
+      "started": "2026-11-17T20:31:26.870Z",
+      "finished": "2026-11-17T20:31:47.693Z",
+      "exit_code": 0,
+      "error": null,
+      "log": "final-test-identity.log"
+    },
+    {
+      "name": "final-test-identity-email",
+      "command": "node.exe C:/Users/Saeed/AppData/Local/npm-cache/_npx/837a9a36660814c5/node_modules/npm/bin/npm-cli.js run test:identity-email",
+      "started": "2026-11-17T20:31:47.694Z",
+      "finished": "2026-11-17T20:32:36.916Z",
+      "exit_code": 0,
+      "error": null,
+      "log": "final-test-identity-email.log"
+    },
+    {
+      "name": "final-test-notifications",
+      "command": "node.exe C:/Users/Saeed/AppData/Local/npm-cache/_npx/837a9a36660814c5/node_modules/npm/bin/npm-cli.js run test:notifications",
+      "started": "2026-11-17T20:32:36.917Z",
+      "finished": "2026-11-17T20:33:04.901Z",
+      "exit_code": 0,
+      "error": null,
+      "log": "final-test-notifications.log"
+    },
+    {
+      "name": "final-test-reviews",
+      "command": "node.exe C:/Users/Saeed/AppData/Local/npm-cache/_npx/837a9a36660814c5/node_modules/npm/bin/npm-cli.js run test:reviews",
+      "started": "2026-11-17T20:33:04.902Z",
+      "finished": "2026-11-17T20:33:15.891Z",
+      "exit_code": 0,
+      "error": null,
+      "log": "final-test-reviews.log"
+    },
+    {
+      "name": "final-test-data-migrations",
+      "command": "node.exe C:/Users/Saeed/AppData/Local/npm-cache/_npx/837a9a36660814c5/node_modules/npm/bin/npm-cli.js run test:data-migrations",
+      "started": "2026-11-17T20:33:15.893Z",
+      "finished": "2026-11-17T20:33:34.421Z",
+      "exit_code": 0,
+      "error": null,
+      "log": "final-test-data-migrations.log"
+    },
+    {
+      "name": "final-lint",
+      "command": "node.exe C:/Users/Saeed/AppData/Local/npm-cache/_npx/837a9a36660814c5/node_modules/npm/bin/npm-cli.js run lint",
+      "started": "2026-11-17T20:33:34.422Z",
+      "finished": "2026-11-17T20:33:51.958Z",
+      "exit_code": 0,
+      "error": null,
+      "log": "final-lint.log"
+    },
+    {
+      "name": "final-build-staging",
+      "command": "node.exe C:/Users/Saeed/AppData/Local/npm-cache/_npx/837a9a36660814c5/node_modules/npm/bin/npm-cli.js run build:staging",
+      "started": "2026-11-17T20:33:51.963Z",
+      "finished": "2026-11-17T20:33:57.570Z",
+      "exit_code": 0,
+      "error": null,
+      "log": "final-build-staging.log"
+    },
+    {
+      "name": "final-worker-dry-run",
+      "command": "node.exe C:/Users/Saeed/AppData/Local/npm-cache/_npx/c943b712072b77c4/node_modules/wrangler/bin/wrangler.js deploy --dry-run --config wrangler.booking-staging.example.jsonc --outdir C:\\Users\\Saeed\\Documents\\ChatGPT\\MAWID/visit-phase-evidence/native-completion-public/worker-bundle",
+      "started": "2026-11-17T20:33:57.572Z",
+      "finished": "2026-11-17T20:34:10.004Z",
+      "exit_code": 0,
+      "error": null,
+      "log": "final-worker-dry-run.log"
+    },
+    {
+      "name": "github-setup-compile",
+      "command": "python -m py_compile scripts/github-setup.py",
+      "started": "2026-11-17T20:34:10.006Z",
+      "finished": "2026-11-17T20:34:10.441Z",
+      "exit_code": 0,
+      "error": null,
+      "log": "github-setup-compile.log"
+    },
+    {
+      "name": "github-setup-tests",
+      "command": "python -m unittest discover -s tests -p test_github_setup.py",
+      "started": "2026-11-17T20:34:10.444Z",
+      "finished": "2026-11-17T20:34:11.938Z",
+      "exit_code": 0,
+      "error": null,
+      "log": "github-setup-tests.log"
+    },
+    {
+      "name": "final-test-data-db",
+      "command": "node.exe C:/Users/Saeed/AppData/Local/npm-cache/_npx/837a9a36660814c5/node_modules/npm/bin/npm-cli.js run test:data-db",
+      "started": "2026-11-17T20:34:17.852Z",
+      "finished": "2026-11-17T20:35:52.616Z",
+      "exit_code": 0,
+      "error": null,
+      "log": "final-test-data-db.log"
+    }
+  ],
+  "initial_failures": [
+    {
+      "command": "npm run lint",
+      "detail": "6 formatting errors in newly edited notification files; corrected rerun passes with 11 pre-existing Fast Refresh warnings."
+    },
+    {
+      "command": "npm run build:staging",
+      "detail": "Staging requires a hosted Supabase URL and publishable key. Corrected build uses existing public staging browser configuration in memory only."
+    },
+    {
+      "command": "notification package regression",
+      "detail": "Expected native management registration 200; actual 422 before implementation. Initial fixture startup timed out during locked install; sequential retry reproduced the assertion."
+    },
+    {
+      "command": "partner cancellation projection regression",
+      "detail": "Expected count 4; actual undefined before implementation."
+    }
+  ],
+  "read_only_staging": {
+    "checked_at": "2026-11-17T20:20:49.351Z",
+    "methods": ["GET"],
+    "checks": [
+      {
+        "name": "existing-staging-workspaces",
+        "status": 404,
+        "code": "NOT_FOUND"
+      },
+      {
+        "name": "new-booking-session-route",
+        "status": 404,
+        "code": "NOT_FOUND"
+      }
+    ],
+    "limits": [
+      "Used existing short-lived test session only; no sign-in, refresh, email, mutation or migration."
+    ]
+  },
+  "artifacts": {
+    "pages": {
+      "files": 89,
+      "tree_sha256": "f1ed73981bede427a37fee438970bf3a12483057ad3910385c686e193b2719c5",
+      "provenance": {
+        "kind": "fictional-public-web-prototype",
+        "platform": "web-github-pages",
+        "version": null,
+        "tag": null,
+        "commit": "29c7a778b94d4b99a0a6c4b75a017096bd372ab6",
+        "source_dirty": true,
+        "lock_sha256": "a31f3ee94be0604649611c4ae0bc8eba4f575ebf69281d66dab1b3fb1456f8f6",
+        "node": "v24.22.1",
+        "command": "npm run build:pages",
+        "generated_at": "2026-11-17T20:27:19.860Z",
+        "acceptance": "CI/build success is not production or pilot acceptance"
+      },
+      "acceptance": "Local fictional Pages artifact only; built before implementation commit with dirty source explicitly recorded."
+    },
+    "worker": {
+      "files": 3,
+      "tree_sha256": "ddf1dcfa541716608d7a9683794a258c7bb81ffec6250af0d45685b8f167500c",
+      "acceptance": "Wrangler deploy --dry-run only; placeholders remain, no deployed runtime or delivery asserted."
+    }
+  },
+  "implementation_file_sha256": {
+    "package.json": "bbc275f2a8e1ec544edbdcc90ae9483bb9e9f6841ad7a0e7acd422074467d56f",
+    "scripts/database/api/http-server.mjs": "918b0d7a5efa377577c6012e59e0f3bc235e97ec4acc2da1a205399251bf2297",
+    "scripts/database/booking/service.mjs": "fe8261ea542e1201c6a12c566debf847edae0c74690f041318c8ab67bbc8e09b",
+    "scripts/database/booking/verify-meeting-policy.mjs": "0d45a213b8b87033cf1211952d85cdecd9900d1c4306da6c97f9980f9a140740",
+    "scripts/database/booking/verify-reviews.mjs": "4902c45fcc9014b6f7e376929310b9c34c65383d48ab3f03ee9e03c4642bfecd",
+    "scripts/database/booking/verify-visits.mjs": "0f69b77d7f9db33482d3f1f7533cec2794f378363ba7ced5332f61e12dadd7ef",
+    "scripts/database/hosted/config.mjs": "b3dedc3217584cc90e632a4c0ead4c7e9b72814ce26c17020cbf97b82274926a",
+    "scripts/database/hosted/config.test.mjs": "ffba3820331d14b8cb77b3bdaa75f4fa48bccc625f3c11a96a5838808fb3bbdb",
+    "scripts/database/hosted/runtime.mjs": "369c6a4f13b484794062bb864931bfdec158b9400bca1c7024fa70c1903c5d1e",
+    "scripts/database/hosted/worker.mjs": "0d4cb30ab3b4173cc11d887406a830850674656db49834d9561a22e61a4bb4b4",
+    "scripts/database/identity/auth-fixture.mjs": "e5f87cad5168efb49e92cd28bcc7b5f08b9e66f1c83cd3f73d16d8f715e97919",
+    "scripts/database/identity/postgres-session-reader.mjs": "6352cd46de25bd27a68f2086a776aceffdbab3e40e559eb0f97f898ff859148a",
+    "scripts/database/identity/session-gate.mjs": "88c24d8d511c4c6465288408ca9de0c7541ac7b3384ae11ef7c3597cc9a25e06",
+    "scripts/database/identity/verified-data.mjs": "b7a421d3d5793dcef0f85120d4f5b6cc7eae6a619299aa43c5116ed1e4502651",
+    "scripts/database/identity/verify-email-otp.mjs": "b7ed7aad43b75d8bd17e4aa14a322b63eb092bdc70d22879d22e4a7f5ed74f0f",
+    "scripts/database/notifications/applications.mjs": "8da25aeb29a29dea1dc3b220b80a4ce4d8be924e983f406fe96bd3c902c8cd36",
+    "scripts/database/notifications/fcm.mjs": "56bab752320e4a81d5a7964f428dc85569ea5f28ee30511e35f4e32b1c008c2b",
+    "scripts/database/notifications/fcm.test.mjs": "288f85b1bb202c64c550b1dce35b40cc5ecc69dfc64f4be1b5782e94d3622c96",
+    "scripts/database/notifications/service.mjs": "7c01d3d20000e71697d3e6ce85baea2705616f36e912266e61a30da2385c7103",
+    "scripts/database/notifications/verify.mjs": "a3a07ea24c4b2154452eef57e1689f6dfb1f7688385039622b2fd538a3107cd2",
+    "supabase/hosted/staging-grants.review.sql": "0b4a57ca5b1747efc4b1b0c8a1ceaf104d28a86d7a3b7349561bf2def1bb1bcf",
+    "supabase/migrations/20261117220000_native_notification_packages.sql": "04df2012f7c9055eb498bd73ae321aa67e61482558be7d340c70ce7444fff6e8",
+    "wrangler.booking-staging.example.jsonc": "7c928608396f8ee23d52ea3e82b99cfeec778ae44bc33c5656b9607b44592f23"
+  },
+  "review": {
+    "assistant_self_review": true,
+    "root_review": "Nullable identity binding-version CHECK fixed; negative partial INSERT/UPDATE coverage added. No remaining blocking finding reported by root review.",
+    "maintainer_approval": false
+  },
+  "limits": [
+    "Pilot disabled; approved architecture and FEAT-01–50 unchanged.",
+    "No push, PR, deployment, hosted migration, billing or external message.",
+    "Hosted API origin/allowlisted subjects/scopes, reviewed role write mode, credentials/key custody and FCM private binding contract remain configuration/rehearsal gates.",
+    "Real Auth verification here is disposable local Auth, not hosted target-build or physical two-device acceptance.",
+    "PR34 CI commands, 20-minute jobs and read-only contents permission preserved."
+  ]
+}

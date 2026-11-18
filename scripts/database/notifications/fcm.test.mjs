@@ -8,7 +8,10 @@ const input = () => ({
   eventId: randomUUID(),
   deliveryId: randomUUID(),
   locale: "ar",
-  applicationId: "com.mawid.demo",
+  applicationId: "com.mawid.customer.platinum",
+  environment: "staging",
+  workspaceId: randomUUID(),
+  locationId: randomUUID(),
 });
 function sender(response) {
   return new FcmSender({
@@ -47,12 +50,20 @@ test("FCM sends only generic EN/AR text and opaque IDs with stable replacement t
   assert.equal(wire.message.notification.title, "تحديث من موعد");
   assert.equal(wire.message.android.notification.tag, job.notificationId);
   assert.equal(wire.message.android.notification.visibility, "PRIVATE");
+  assert.equal(wire.message.android.restrictedPackageName, job.applicationId);
+  assert.equal(wire.message.data.application_id, job.applicationId);
+  assert.equal(wire.message.data.environment, job.environment);
+  assert.equal(wire.message.data.workspace_id, job.workspaceId);
+  assert.equal(wire.message.data.location_id, job.locationId);
   assert.deepEqual(Object.keys(wire.message.data).sort(), [
+    "application_id",
     "delivery_id",
     "environment",
     "event_id",
+    "location_id",
     "notification_id",
     "schema",
+    "workspace_id",
   ]);
   assert.ok(!JSON.stringify(wire).includes("customer_id"));
 });
