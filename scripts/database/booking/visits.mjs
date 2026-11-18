@@ -1,5 +1,12 @@
 import { createHash } from "node:crypto";
-import { instant, responseDeadline, nextReview, holdExpiry, canSelfCancel } from "./time.mjs";
+import {
+  instant,
+  responseDeadline,
+  nextReview,
+  holdExpiry,
+  canSelfCancel,
+  isLateCancellation,
+} from "./time.mjs";
 import { VisitSearchLimit, VisitSlotSearch, searchBudget } from "./visit-search.mjs";
 
 const iso = (time) => new Date(time).toISOString();
@@ -420,6 +427,9 @@ export class VisitBookings {
       )
         this.fail(403, "ACTION_DENIED");
 
+      // Acknowledging the warning permits the same saved operation; it does
+      // not change the requested mutation or the persisted replay identity.
+      const { acknowledge_late_cancellation: acknowledgedLate, ...operationInput } = input;
       const hash = createHash("sha256")
         .update(
           JSON.stringify(
@@ -428,7 +438,7 @@ export class VisitBookings {
               location_id: l,
               id,
               action,
-              input,
+              input: operationInput,
             }),
           ),
         )
@@ -589,6 +599,8 @@ export class VisitBookings {
       } else if (action === "cancel") {
         if (b.state !== "confirmed") this.fail(409, "INVALID_TRANSITION");
         if (own && !canSelfCancel(now, +b.assigned_start)) this.fail(409, "CANCEL_CUTOFF");
+        if (own && acknowledgedLate === false && isLateCancellation(now, +b.assigned_start))
+          this.fail(409, "LATE_CANCELLATION_CONFIRMATION_REQUIRED");
         state = "cancelled";
       }
       if (action !== "request") {

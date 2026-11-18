@@ -426,6 +426,7 @@ export async function createDataServer(
           if (["propose", "reschedule"].includes(action)) fields.start = start;
           if (["walk-in", "confirm", "assign", "propose", "reschedule"].includes(action))
             fields.assignments = z.array(uuid.nullable()).min(1).max(8).optional();
+          if (action === "cancel") fields.acknowledge_late_cancellation = z.boolean().optional();
           const input = await jsonBody(req, z.object(fields).strict());
           const result = await visits.mutate(user, workspace, location, action, input, identifier);
           if (result.error) throw new ApiError(result.status, result.error.code);

@@ -156,7 +156,9 @@ try {
   assert.equal(confirmed.status, 200, JSON.stringify(confirmed));
   assert.equal(await count(confirmed.body.booking_id), 2);
   assert.equal(confirmed.body.segments[0].assigned_end, confirmed.body.segments[1].assigned_start);
-  const cancelled = await action(USERS.customerA, confirmed.body, "cancel");
+  const cancelled = await action(USERS.customerA, confirmed.body, "cancel", {
+    acknowledge_late_cancellation: false,
+  });
   assert.equal(cancelled.status, 200, JSON.stringify(cancelled));
   assert.equal(await count(confirmed.body.booking_id), 0);
 
@@ -444,8 +446,17 @@ try {
 
   const cancellation = { operation_id: randomUUID(), expected_version: moved.body.version };
   const cancelledVisitPath = visitPath + "/cancel";
-  const late = await request(USERS.customerA, cancelledVisitPath, cancellation);
+  const unacknowledged = { ...cancellation, acknowledge_late_cancellation: false };
+  const blocked = await request(USERS.customerA, cancelledVisitPath, unacknowledged);
+  assert.equal(blocked.status, 409, JSON.stringify(blocked));
+  assert.equal(blocked.body.error.code, "LATE_CANCELLATION_CONFIRMATION_REQUIRED");
+  assert.equal((await request(USERS.customerA, visitPath)).body.state, "confirmed");
+  const late = await request(USERS.customerA, cancelledVisitPath, {
+    ...cancellation,
+    acknowledge_late_cancellation: true,
+  });
   assert.equal(late.status, 200, JSON.stringify(late));
+  assert.deepEqual(await request(USERS.customerA, cancelledVisitPath, unacknowledged), late);
   assert.deepEqual(await request(USERS.customerA, cancelledVisitPath, cancellation), late);
   const manager = await data.authenticate("Bearer " + data.issueSession(USERS.managerA).token);
   assert.equal(
