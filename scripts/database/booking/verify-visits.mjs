@@ -395,9 +395,9 @@ try {
     "UPDATE mawid_core.services SET duration_minutes=30,buffer_before=5,buffer_after=0 WHERE workspace_id=$1 AND location_id=$2 AND service_id=$3",
     [w, l, second],
   );
-  // Shift the fictional confirmed visit into the final half hour without
+  // Shift the fictional confirmed visit into the final hour without
   // bypassing the allocation/segment commit constraints.
-  const shift = Date.now() + 1800000 - Date.parse(moved.body.segments[0].assigned_start);
+  const shift = Date.now() + 40 * 60_000 - Date.parse(moved.body.segments[0].assigned_start);
   await fixture.admin.query("BEGIN");
   for (const table of ["bookings", "visit_segments"]) {
     await fixture.admin.query(
@@ -413,8 +413,37 @@ try {
     [winner.booking_id, shift],
   );
   await fixture.admin.query("COMMIT");
+  const visitPath = "/visit-core/visits/" + winner.booking_id;
+  const detail = await request(USERS.customerA, visitPath);
+  assert.equal(detail.status, 200, JSON.stringify(detail));
+  assert.equal(detail.body.segments.length, 2);
+  const firstStart = Date.parse(detail.body.segments[0].assigned_start);
+  assert.equal(Date.parse(detail.body.assigned_start), firstStart);
+  assert.ok(
+    Date.parse(detail.body.segments[1].assigned_start) - Date.parse(detail.body.server_time) >=
+      3_600_000,
+  );
+  assert.equal(detail.body.can_cancel, true);
+  assert.equal(detail.body.cancellation_is_late, true);
+  assert.equal(detail.body.late_cancellation_count, undefined);
+  assert.equal(detail.body.late_cancellation_flagged, undefined);
+
+  for (const [remaining, canCancel, isLate] of [
+    [3_600_000, true, false],
+    [3_599_999, true, true],
+    [0, false, false],
+  ]) {
+    const projected = booking.visits.project(
+      { now: firstStart - remaining, roles: [], customers: [customer] },
+      detail.body,
+      detail.body.segments,
+    );
+    assert.equal(projected.can_cancel, canCancel);
+    assert.equal(projected.cancellation_is_late, isLate);
+  }
+
   const cancellation = { operation_id: randomUUID(), expected_version: moved.body.version };
-  const cancelledVisitPath = "/visit-core/visits/" + winner.booking_id + "/cancel";
+  const cancelledVisitPath = visitPath + "/cancel";
   const late = await request(USERS.customerA, cancelledVisitPath, cancellation);
   assert.equal(late.status, 200, JSON.stringify(late));
   assert.deepEqual(await request(USERS.customerA, cancelledVisitPath, cancellation), late);
