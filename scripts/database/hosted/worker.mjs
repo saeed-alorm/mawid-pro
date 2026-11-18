@@ -9,7 +9,7 @@ const server = createServer((req, res) => requests.getStore()(req, res));
 server.listen(8080);
 const http = httpServerHandler(server);
 function sender(env) {
-  if (!env.FCM_SENDER?.fetch) throw Error("HOSTED_FCM_SENDER_REQUIRED");
+  if (!env.FCM_SENDER?.fetch) return;
   return {
     transport: "fcm",
     async send({ signal, ...job }) {
@@ -46,8 +46,16 @@ export default {
     let runtime;
     try {
       runtime = createHostedRuntime(env, sender(env));
-      if (new URL(request.url).origin !== runtime.config.origin)
-        return new Response(null, { status: 421 });
+      const url = new URL(request.url);
+      if (url.origin !== runtime.config.origin) return new Response(null, { status: 421 });
+      if (
+        runtime.config.probeOnly &&
+        (request.method !== "GET" || !["/v1/session", "/v1/workspaces"].includes(url.pathname))
+      )
+        return Response.json(
+          { error: { code: "NOT_FOUND" } },
+          { status: 404, headers: { "cache-control": "no-store" } },
+        );
       await runtime.verify();
       const requestServer = await createDataServer(runtime.data, {
         ...runtime,
@@ -70,6 +78,7 @@ export default {
     let runtime;
     try {
       runtime = createHostedRuntime(env, sender(env));
+      if (runtime.config.probeOnly || !runtime.notifications) return;
       await runtime.verify();
       await runtime.notifications.runOnce();
     } finally {

@@ -24,28 +24,37 @@ export function hostedConfig(env) {
   const subjects = new Set(required(env.STAGING_SUBJECTS).split(","));
   if (subjects.size < 1 || subjects.size > 8 || [...subjects].some((s) => !uuid.test(s)))
     throw Error("INVALID_STAGING_SUBJECTS");
-  const applicationScopes = JSON.parse(required(env.MAWID_APPLICATION_SCOPES));
-  if (
-    !Array.isArray(applicationScopes) ||
-    !applicationScopes.length ||
-    applicationScopes.length > 200 ||
-    applicationScopes.some(
-      (s) =>
-        !["com.mawid.customer.platinum", "com.mawid.management"].includes(s.application_id) ||
-        !uuid.test(s.workspace_id) ||
-        !(s.location_id === null || uuid.test(s.location_id)),
-    )
-  )
-    throw Error("INVALID_APPLICATION_SCOPES");
-  const key = Buffer.from(required(env.MAWID_PUSH_KEY_BASE64), "base64");
-  if (key.length !== 32) throw Error("TOKEN_KEY_REQUIRED");
-  const pools = {};
-  for (const [name, [role, variable]] of Object.entries({
+  const notificationMode = env.MAWID_HOSTED_NOTIFICATIONS ?? "enabled";
+  if (!["enabled", "disabled"].includes(notificationMode)) throw Error("INVALID_NOTIFICATION_MODE");
+  const probeMode = env.MAWID_HOSTED_PROBE_ONLY ?? "false";
+  if (!["true", "false"].includes(probeMode)) throw Error("INVALID_PROBE_MODE");
+  const bindings = {
     ACTOR: ["mawid_staging_actor", "STAGING_SCOPED_DATABASE_URL"],
     IDENTITY: ["mawid_staging_session", "STAGING_SESSION_DATABASE_URL"],
     BOOKING: ["mawid_staging_booking", "STAGING_BOOKING_DATABASE_URL"],
-    NOTIFICATIONS: ["mawid_staging_notify", "STAGING_NOTIFICATION_DATABASE_URL"],
-  })) {
+  };
+  let notifications;
+  if (notificationMode === "enabled") {
+    const applicationScopes = JSON.parse(required(env.MAWID_APPLICATION_SCOPES));
+    if (
+      !Array.isArray(applicationScopes) ||
+      !applicationScopes.length ||
+      applicationScopes.length > 200 ||
+      applicationScopes.some(
+        (s) =>
+          !["com.mawid.customer.platinum", "com.mawid.management"].includes(s.application_id) ||
+          !uuid.test(s.workspace_id) ||
+          !(s.location_id === null || uuid.test(s.location_id)),
+      )
+    )
+      throw Error("INVALID_APPLICATION_SCOPES");
+    const key = Buffer.from(required(env.MAWID_PUSH_KEY_BASE64), "base64");
+    if (key.length !== 32) throw Error("TOKEN_KEY_REQUIRED");
+    notifications = { key, applicationScopes };
+    bindings.NOTIFICATIONS = ["mawid_staging_notify", "STAGING_NOTIFICATION_DATABASE_URL"];
+  }
+  const pools = {};
+  for (const [name, [role, variable]] of Object.entries(bindings)) {
     const url = new URL(required(env[variable]));
     if (
       url.protocol !== "postgresql:" ||
@@ -71,8 +80,8 @@ export function hostedConfig(env) {
     jwks: new URL(issuer + "/.well-known/jwks.json"),
     policy,
     subjects,
-    key,
     pools,
-    applicationScopes,
+    notifications,
+    probeOnly: probeMode === "true",
   };
 }
