@@ -155,6 +155,8 @@ function paginated(rows, limit, idKey) {
   };
 }
 
+export const DATA_HTTP_MAX_HEADER_SIZE = 16384;
+
 export async function createDataServer(
   service,
   {
@@ -163,6 +165,7 @@ export async function createDataServer(
     log = (event) => console.error(JSON.stringify(event)),
     booking,
     notifications,
+    maxHeaderSize = DATA_HTTP_MAX_HEADER_SIZE,
   } = {},
 ) {
   // No public listener or login/actor-selection endpoint. Sessions are issued by the fixture owner.
@@ -170,7 +173,11 @@ export async function createDataServer(
   await booking?.verify();
   await notifications?.verify();
   return createServer(
-    { maxHeaderSize: 16384, requestTimeout: 15000, headersTimeout: 10000 },
+    {
+      ...(maxHeaderSize === null ? {} : { maxHeaderSize }),
+      requestTimeout: 15000,
+      headersTimeout: 10000,
+    },
     async (req, res) => {
       const origin = typeof configuredOrigin === "function" ? configuredOrigin() : configuredOrigin;
       const requestId = randomUUID();

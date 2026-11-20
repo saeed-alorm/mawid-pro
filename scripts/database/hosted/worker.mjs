@@ -1,13 +1,19 @@
 import { createServer } from "node:http";
 import { AsyncLocalStorage } from "node:async_hooks";
 import { httpServerHandler } from "cloudflare:node";
-import { createDataServer } from "../api/http-server.mjs";
+import { createDataServer, DATA_HTTP_MAX_HEADER_SIZE } from "../api/http-server.mjs";
 import { createHostedRuntime } from "./runtime.mjs";
+import { allowsHostedRoute } from "./rehearsal.mjs";
 
 const requests = new AsyncLocalStorage();
 const server = createServer((req, res) => requests.getStore()(req, res));
 server.listen(8080);
 const http = httpServerHandler(server);
+const notFound = () =>
+  Response.json(
+    { error: { code: "NOT_FOUND" } },
+    { status: 404, headers: { "cache-control": "no-store" } },
+  );
 function sender(env) {
   if (!env.FCM_SENDER?.fetch) return;
   return {
@@ -48,20 +54,25 @@ export default {
       runtime = createHostedRuntime(env, sender(env));
       const url = new URL(request.url);
       if (url.origin !== runtime.config.origin) return new Response(null, { status: 421 });
-      if (
-        runtime.config.probeOnly &&
-        (request.method !== "GET" || !["/v1/session", "/v1/workspaces"].includes(url.pathname))
-      )
-        return Response.json(
-          { error: { code: "NOT_FOUND" } },
-          { status: 404, headers: { "cache-control": "no-store" } },
-        );
+      if (!allowsHostedRoute(runtime.config, request.method, url)) return notFound();
+      let headerBytes = 2;
+      for (const [name, value] of request.headers) {
+        headerBytes += Buffer.byteLength(name) + Buffer.byteLength(value) + 4;
+        if (headerBytes > DATA_HTTP_MAX_HEADER_SIZE)
+          return Response.json(
+            { error: { code: "REQUEST_HEADERS_TOO_LARGE" } },
+            { status: 431, headers: { "cache-control": "no-store" } },
+          );
+      }
       await runtime.verify();
       const requestServer = await createDataServer(runtime.data, {
         ...runtime,
         origin: runtime.config.origin,
         mode: "verified-staging",
+        maxHeaderSize: null,
       });
+      if (runtime.config.rehearsal && !allowsHostedRoute(runtime.config, request.method, url))
+        return notFound();
       return await requests.run(requestServer.listeners("request")[0], () =>
         http.fetch(request, env, ctx),
       );
