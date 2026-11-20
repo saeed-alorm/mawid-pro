@@ -1,15 +1,21 @@
 import { createServer } from "node:http";
 import { AsyncLocalStorage } from "node:async_hooks";
 import { httpServerHandler } from "cloudflare:node";
-import { createDataServer } from "../api/http-server.mjs";
+import { createDataServer, DATA_HTTP_MAX_HEADER_SIZE } from "../api/http-server.mjs";
 import { createHostedRuntime } from "./runtime.mjs";
+import { allowsHostedRoute } from "./rehearsal.mjs";
 
 const requests = new AsyncLocalStorage();
 const server = createServer((req, res) => requests.getStore()(req, res));
 server.listen(8080);
 const http = httpServerHandler(server);
+const notFound = () =>
+  Response.json(
+    { error: { code: "NOT_FOUND" } },
+    { status: 404, headers: { "cache-control": "no-store" } },
+  );
 function sender(env) {
-  if (!env.FCM_SENDER?.fetch) throw Error("HOSTED_FCM_SENDER_REQUIRED");
+  if (!env.FCM_SENDER?.fetch) return;
   return {
     transport: "fcm",
     async send({ signal, ...job }) {
@@ -46,14 +52,27 @@ export default {
     let runtime;
     try {
       runtime = createHostedRuntime(env, sender(env));
-      if (new URL(request.url).origin !== runtime.config.origin)
-        return new Response(null, { status: 421 });
+      const url = new URL(request.url);
+      if (url.origin !== runtime.config.origin) return new Response(null, { status: 421 });
+      if (!allowsHostedRoute(runtime.config, request.method, url)) return notFound();
+      let headerBytes = 2;
+      for (const [name, value] of request.headers) {
+        headerBytes += Buffer.byteLength(name) + Buffer.byteLength(value) + 4;
+        if (headerBytes > DATA_HTTP_MAX_HEADER_SIZE)
+          return Response.json(
+            { error: { code: "REQUEST_HEADERS_TOO_LARGE" } },
+            { status: 431, headers: { "cache-control": "no-store" } },
+          );
+      }
       await runtime.verify();
       const requestServer = await createDataServer(runtime.data, {
         ...runtime,
         origin: runtime.config.origin,
         mode: "verified-staging",
+        maxHeaderSize: null,
       });
+      if (runtime.config.rehearsal && !allowsHostedRoute(runtime.config, request.method, url))
+        return notFound();
       return await requests.run(requestServer.listeners("request")[0], () =>
         http.fetch(request, env, ctx),
       );
@@ -70,6 +89,7 @@ export default {
     let runtime;
     try {
       runtime = createHostedRuntime(env, sender(env));
+      if (runtime.config.probeOnly || !runtime.notifications) return;
       await runtime.verify();
       await runtime.notifications.runOnce();
     } finally {
