@@ -8,8 +8,9 @@ const management = "com.mawid.management";
 const platinum = "com.mawid.customer.platinum";
 const endpoint = "https://fcm-sender.internal/send";
 const audience =
-  "//iam.googleapis.com/projects/104578849291/locations/global/workloadIdentityPools/mawid-staging/providers/fcm-sender";
-const sts = "https://sts.googleapis.com/v1/token";
+  "//iam.googleapis.com/projects/104578849291/locations/global/workloadIdentityPools/mawid-staging-fcm/providers/fcm-sender-x509";
+const sts = "https://sts.mtls.googleapis.com/v1/token";
+const leafFirstChain = ["bGVhZi1maXh0dXJl", "aW50ZXJtZWRpYXRlLWZpeHR1cmU="];
 const iam =
   "https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/mawid-staging-fcm@mawid-development.iam.gserviceaccount.com:generateAccessToken";
 const fcm = "https://fcm.googleapis.com/v1/projects/mawid-development/messages:send";
@@ -42,52 +43,59 @@ const providerError = (status, errorCode, headers) =>
 
 function fixture() {
   const calls = [],
-    assertions = [],
     overrides = new Map();
   const destinations = new Map([management, platinum].map((pkg) => [tokenFor(pkg), pkg]));
   let clock = Date.UTC(2026, 0, 1);
+  let exchanges = 0;
   const env = {
     PILOT_ACCESS: "disabled",
     MAWID_FCM_LIVE: "enabled",
-    FCM_WORKLOAD_IDENTITY: {
-      getAssertion(value) {
-        assertions.push(value);
-        return `synthetic-assertion-${assertions.length}`;
+    FCM_STS_TRUST_CHAIN: JSON.stringify(leafFirstChain),
+    FCM_STS_CERT: {
+      fetch(url, options) {
+        assert.equal(this, env.FCM_STS_CERT);
+        return respond("certificate", url, options);
       },
     },
   };
+  async function respond(transport, url, options) {
+    const body = JSON.parse(options.body);
+    calls.push({
+      transport,
+      url,
+      body,
+      headers: options.headers,
+      redirect: options.redirect,
+      method: options.method,
+    });
+    const override = overrides.get(url)?.shift();
+    if (override instanceof Error) throw override;
+    if (override) return override;
+    if (url === sts) {
+      assert.equal(transport, "certificate");
+      exchanges += 1;
+      return Response.json({
+        access_token: `federated-${exchanges}`,
+        issued_token_type: accessType,
+        token_type: "Bearer",
+      });
+    }
+    assert.equal(transport, "standard");
+    if (url === iam)
+      return Response.json({
+        accessToken: `access-${exchanges}`,
+        expireTime: new Date(clock + 600000).toISOString(),
+      });
+    if (url !== fcm) throw Error("unexpected network destination");
+    const { token, android } = body.message;
+    if (!destinations.has(token)) return providerError(404, "UNREGISTERED");
+    if (destinations.get(token) !== android.restrictedPackageName)
+      return providerError(400, "INVALID_ARGUMENT");
+    return Response.json({ name: "projects/mawid-development/messages/synthetic" });
+  }
   const worker = privateSender({
     now: () => clock,
-    request: async (url, options) => {
-      const body = JSON.parse(options.body);
-      calls.push({
-        url,
-        body,
-        headers: options.headers,
-        redirect: options.redirect,
-        method: options.method,
-      });
-      const override = overrides.get(url)?.shift();
-      if (override instanceof Error) throw override;
-      if (override) return override;
-      if (url === sts)
-        return Response.json({
-          access_token: `federated-${assertions.length}`,
-          issued_token_type: accessType,
-          token_type: "Bearer",
-        });
-      if (url === iam)
-        return Response.json({
-          accessToken: `access-${assertions.length}`,
-          expireTime: new Date(clock + 600000).toISOString(),
-        });
-      if (url !== fcm) throw Error("unexpected network destination");
-      const { token, android } = body.message;
-      if (!destinations.has(token)) return providerError(404, "UNREGISTERED");
-      if (destinations.get(token) !== android.restrictedPackageName)
-        return providerError(400, "INVALID_ARGUMENT");
-      return Response.json({ name: "projects/mawid-development/messages/synthetic" });
-    },
+    request: (url, options) => respond("standard", url, options),
   });
   const raw = (body, url = endpoint, options = {}) =>
     worker.fetch(
@@ -111,7 +119,6 @@ function fixture() {
   return {
     env,
     calls,
-    assertions,
     destinations,
     raw,
     send,
@@ -132,6 +139,9 @@ test("private staging contract rejects other routes, environments, packages and 
     { applicationId: "com.mawid.customer.cedar" },
     { locale: "fr" },
     { projectId: "different" },
+    { serviceAccount: "other@example.invalid" },
+    { audience: "different" },
+    { subject_token: "different" },
     { notification: { title: "custom" } },
     { topic: "all" },
     { deliveryId: "not-a-uuid" },
@@ -146,7 +156,7 @@ test("private staging contract rejects other routes, environments, packages and 
     await (await fake.raw("{}", endpoint, { headers: { "content-type": "text/plain" } })).json(),
     bad,
   );
-  assert.equal(fake.calls.length + fake.assertions.length, 0);
+  assert.equal(fake.calls.length, 0);
 });
 
 test("live switch defaults closed; pilot or missing private identity refuses all Google calls", async () => {
@@ -154,12 +164,20 @@ test("live switch defaults closed; pilot or missing private identity refuses all
     { MAWID_FCM_LIVE: undefined },
     { MAWID_FCM_LIVE: "disabled" },
     { PILOT_ACCESS: "enabled" },
-    { FCM_WORKLOAD_IDENTITY: undefined },
+    { FCM_STS_CERT: undefined, FCM_WORKLOAD_IDENTITY: { getAssertion: () => "legacy" } },
+    { FCM_STS_TRUST_CHAIN: undefined },
+    { FCM_STS_TRUST_CHAIN: "not JSON" },
+    { FCM_STS_TRUST_CHAIN: "[]" },
+    { FCM_STS_TRUST_CHAIN: JSON.stringify(["-----BEGIN PRIVATE KEY-----"]) },
+    { FCM_STS_TRUST_CHAIN: JSON.stringify(["YQ"]) },
+    { FCM_STS_TRUST_CHAIN: JSON.stringify(["YQ==", "not base64!"]) },
+    { FCM_STS_TRUST_CHAIN: JSON.stringify(Array(5).fill("YQ==")) },
+    { FCM_STS_TRUST_CHAIN: JSON.stringify(["YWFh".repeat(1300)]) },
   ]) {
     const fake = fixture();
     Object.assign(fake.env, vars);
     assert.deepEqual(await fake.send(job()), denied);
-    assert.equal(fake.calls.length + fake.assertions.length, 0);
+    assert.equal(fake.calls.length, 0);
   }
 });
 
@@ -187,19 +205,22 @@ test("pins WIF audience, account, scope and project; restricts delivery in both 
     });
     assert.deepEqual(await fake.send({ ...payload, token: tokenFor(other) }), bad);
   }
-  assert.deepEqual(fake.assertions, [audience]);
   assert.deepEqual(
     fake.calls.map((call) => call.url),
     [sts, iam, fcm, fcm, fcm, fcm],
+  );
+  assert.deepEqual(
+    fake.calls.map((call) => call.transport),
+    ["certificate", "standard", "standard", "standard", "standard", "standard"],
   );
   assert.ok(fake.calls.every((call) => call.redirect === "error" && call.method === "POST"));
   assert.equal(fake.calls[0].headers.authorization, undefined);
   assert.deepEqual(fake.calls[0].body, {
     audience,
-    subjectToken: "synthetic-assertion-1",
-    subjectTokenType: "urn:ietf:params:oauth:token-type:jwt",
-    grantType: "urn:ietf:params:oauth:grant-type:token-exchange",
-    requestedTokenType: accessType,
+    subject_token: JSON.stringify(leafFirstChain),
+    subject_token_type: "urn:ietf:params:oauth:token-type:mtls",
+    grant_type: "urn:ietf:params:oauth:grant-type:token-exchange",
+    requested_token_type: accessType,
     scope: "https://www.googleapis.com/auth/iam",
   });
   assert.equal(fake.calls[1].headers.authorization, "Bearer federated-1");
@@ -233,7 +254,7 @@ test("unauthenticated remints once for the same delivery; repeated 401 or forbid
     const payload = job();
     fake.next(fcm, ...errors.map((status) => providerError(status, "AUTH")));
     assert.deepEqual(await fake.send(payload), expected);
-    assert.equal(fake.assertions.length, count);
+    assert.equal(fake.calls.filter((call) => call.url === sts).length, count);
     const attempts = fake.calls.filter((call) => call.url === fcm);
     assert.equal(attempts.length, count);
     for (const [index, attempt] of attempts.entries()) {
@@ -288,7 +309,11 @@ test("quota, upstream outages, aborted transport and invalid acknowledgements re
 
 test("no FCM request on federated exchange or account mint failure", async () => {
   for (const [url, response, expected] of [
+    [sts, providerError(400, "CERTIFICATE_CHAIN_REJECTED"), denied],
     [sts, providerError(403, "DENIED"), denied],
+    [sts, Error("synthetic TLS handshake failed"), { status: "retry", code: "UNAVAILABLE" }],
+    [sts, providerError(503, "UNAVAILABLE"), { status: "retry", code: "UNAVAILABLE" }],
+    [iam, providerError(403, "DENIED"), denied],
     [iam, providerError(500, "UNAVAILABLE"), { status: "retry", code: "UNAVAILABLE" }],
     [sts, Response.json({ access_token: "bad" }), { status: "retry", code: "UNAVAILABLE" }],
     [
@@ -300,6 +325,9 @@ test("no FCM request on federated exchange or account mint failure", async () =>
     const fake = fixture();
     fake.next(url, response);
     assert.deepEqual(await fake.send(job()), expected);
-    assert.ok(!fake.calls.some((call) => call.url === fcm));
+    assert.deepEqual(
+      fake.calls.map((call) => call.url),
+      url === sts ? [sts] : [sts, iam],
+    );
   }
 });

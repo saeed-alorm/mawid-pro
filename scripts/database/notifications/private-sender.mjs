@@ -1,6 +1,6 @@
 import { boundedJson } from "./bounded-json.mjs";
 import { FcmTransport } from "./fcm-transport.mjs";
-import { stagingIdentity } from "./staging-identity.mjs";
+import { stagingIdentity, x509SubjectToken } from "./staging-identity.mjs";
 
 const uuid = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
 const ids = ["notificationId", "eventId", "deliveryId", "workspaceId", "locationId"];
@@ -34,7 +34,7 @@ export function privateSender({
       if (
         env.PILOT_ACCESS !== "disabled" ||
         env.MAWID_FCM_LIVE !== "enabled" ||
-        typeof env.FCM_WORKLOAD_IDENTITY?.getAssertion !== "function"
+        typeof env.FCM_STS_CERT?.fetch !== "function"
       )
         return result("failed", "AUTHORIZATION");
       let job;
@@ -48,10 +48,12 @@ export function privateSender({
       if (!valid(job)) return result("failed", "PAYLOAD");
       let sender = clients.get(env);
       if (!sender) {
+        const subjectToken = x509SubjectToken(env.FCM_STS_TRUST_CHAIN);
+        if (!subjectToken) return result("failed", "AUTHORIZATION");
         sender = new FcmTransport({
           projectId: "mawid-development",
           request,
-          ...stagingIdentity(env.FCM_WORKLOAD_IDENTITY, request, now),
+          ...stagingIdentity(env.FCM_STS_CERT, subjectToken, request, now),
         });
         clients.set(env, sender);
       }
