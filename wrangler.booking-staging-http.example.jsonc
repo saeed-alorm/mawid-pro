@@ -1,0 +1,25 @@
+{
+  "$schema": "https://unpkg.com/wrangler@4.162.0/config-schema.json",
+  "name": "mawid-booking-staging",
+  "main": "scripts/database/hosted/worker.mjs",
+  "compatibility_date": "2026-11-17",
+  "compatibility_flags": ["nodejs_compat", "enable_nodejs_http_server_modules"],
+  "workers_dev": true,
+  "preview_urls": false,
+  "observability": {
+    "enabled": false,
+  },
+  "vars": {
+    "MAWID_HOSTED_MODE": "staging",
+    "MAWID_HOSTED_NOTIFICATIONS": "disabled",
+    "MAWID_HOSTED_PROBE_ONLY": "true",
+    "PILOT_ACCESS": "disabled",
+    "STAGING_AUTH_ISSUER": "https://<staging-project-ref>.supabase.co/auth/v1",
+    "STAGING_SUBJECTS": "<operator-allowlisted-fictional-auth-subject-uuid>",
+    "MAWID_API_ORIGIN": "https://mawid-booking-staging.<account-subdomain>.workers.dev",
+    "MAWID_SESSION_POLICY": "{\"maximumSessionMs\":3600000,\"inactivityMs\":1800000,\"maximumAccessSeconds\":3600,\"clockToleranceSeconds\":5}",
+  },
+  "triggers": {
+    "crons": [],
+  },
+}

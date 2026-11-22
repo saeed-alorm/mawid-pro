@@ -67,6 +67,12 @@ The shared HTTP bridge checks both the request host and any browser
 needs a reviewed same-origin serving arrangement. Earlier hosted OTP evidence
 covers sign-in only.
 
+### Booking API rehearsal before the sender is available
+
+For a Cloudflare account without an active zone, the [HTTP rehearsal manifest](../../wrangler.booking-staging-http.example.jsonc) uses the dedicated `mawid-booking-staging.<account-subdomain>.workers.dev` origin. With `MAWID_HOSTED_NOTIFICATIONS=disabled`, the Worker uses only the actor, session reader and booking roles. Supply those three database URL secrets and the Supabase root CA where needed. Use only reviewed fictional subjects. The example sets `MAWID_HOSTED_PROBE_ONLY=true` and serves only `GET /v1/session` and `GET /v1/workspaces`. Booking schedule reads can expire holds, so keep the probe guard on for the initial route and scope checks. Preview URLs and cron stay disabled.
+
+After the probes pass and the fictional writes are authorized, setting `MAWID_HOSTED_PROBE_ONLY=false` enables the full booking routes. Notification registration, inbox routes, job processing and push delivery still require a separate configuration. Booking writes preserve the booking events and scheduled jobs defined by the database contract, so reconcile rehearsal state and queued jobs before enabling dispatch. The default [full staging manifest](../../wrangler.booking-staging.example.jsonc) requires the notification database login, push key, app scopes and private sender. Complete the real delivery checks against that configuration. [Cloudflare workers.dev routing](https://developers.cloudflare.com/workers/configuration/routing/workers-dev/)
+
 ## Operator preflight and migration order
 
 1. Bind the candidate to a reviewed exact source SHA and artifact hash. Inventory

@@ -10,7 +10,8 @@ import { hostedConfig } from "./config.mjs";
 // synthetic issuer, service-role JWT or client-selected principal is accepted.
 export function createHostedRuntime(env, sender) {
   const config = hostedConfig(env);
-  if (sender?.transport !== "fcm") throw Error("HOSTED_FCM_SENDER_REQUIRED");
+  if (config.notifications && sender?.transport !== "fcm")
+    throw Error("HOSTED_FCM_SENDER_REQUIRED");
   const reader = new Pool({ ...config.pools.IDENTITY, max: 2, statement_timeout: 2000 });
   reader.on("error", () => {});
   const readSession = postgresSessionReader(reader, {
@@ -30,12 +31,13 @@ export function createHostedRuntime(env, sender) {
   actor.on("error", () => {});
   const data = new VerifiedDataService(actor, gate);
   const booking = new BookingService(data, config.pools.BOOKING);
-  const notifications = new Notifications(data, booking, config.pools.NOTIFICATIONS, {
-    key: config.key,
-    sender,
-    environment: "staging",
-    applicationScopes: config.applicationScopes,
-  });
+  const notifications = config.notifications
+    ? new Notifications(data, booking, config.pools.NOTIFICATIONS, {
+        ...config.notifications,
+        sender,
+        environment: "staging",
+      })
+    : undefined;
   return {
     config,
     data,
@@ -51,13 +53,13 @@ export function createHostedRuntime(env, sender) {
       if (!r || r.privileged || !r.reader || r.app_role) throw Error("UNSAFE_IDENTITY_READER");
       await data.verifyPrincipals();
       await booking.verify();
-      await notifications.verify();
+      await notifications?.verify();
     },
     async close() {
       await Promise.allSettled([
         data.close(),
         booking.close(),
-        notifications.close(),
+        notifications?.close(),
         reader.end(),
       ]);
     },
